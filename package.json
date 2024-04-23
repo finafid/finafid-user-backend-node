@@ -1,0 +1,24 @@
+{
+  "name": "weather",
+  "version": "1.0.0",
+  "description": "For express js tutorial",
+  "main": "./Restapi/app.js",
+  "scripts": {
+    "start": "node ./Restapi/app.js",
+    "dev": "nodemon "
+  },
+  "author": "Deep Chakraborty",
+  "license": "ISC",
+  "dependencies": {
+    "aws-sdk": "^2.1601.0",
+    "bcrypt": "^5.1.1",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.1",
+    "express-validator": "^7.0.1",
+    "joi": "^17.12.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.2.2",
+    "nodemailer": "^6.9.13",
+    "razorpay": "^2.9.2"
+  }
+}

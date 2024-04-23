@@ -1,0 +1,283 @@
+const { response } = require("express");
+const User = require("../../models/auth/userSchema"); 
+const { sendMail, oneMinuteExpiry, threeMinuteExpiry } = require("../../utils/mailer")
+const bcrypt = require('bcrypt');
+const jwt = require("jsonwebtoken")
+const { validationResult } = require("express-validator");
+const Otp = require("../../models/auth/sendOtp")
+const BlackList = require("../../models/auth/blackList")
+
+const userRegistration = async (req, res) => {
+    const newUser = new User(req.body); // Corrected variable name
+    newUser.password = await bcrypt.hash(req.body.password, 10); // Corrected variable name
+    try {
+       
+
+        savedUser.password = undefined;
+        return res.status(201).json({ message: 'success', data: savedUser });
+    } catch (err) {
+        return res.status(500).json({ message: 'error', error: err.message });
+    }
+};
+const userLogin = async (req, res) => {
+    try {
+        const user = await User.findOne({ email: req.body.email });
+        if (!user) {
+            return res.status(401)
+                .json({ message: 'Authy failed,Invalid Email and Password' })
+        }
+        const isPassEqual = await bcrypt.compare(req.body.password, user.password)
+        if (!isPassEqual) {
+            return res.status(401)
+                .json({ message: 'Authy failed,Invalid Email and Password' })
+        }
+        const tokenObject = {
+            _id: user._id,
+            fullname: user.fullname,
+            email: user.email
+        }
+        const jwtToken = jwt.sign(tokenObject, process.env.SECRET, { expiresIn: '1h' });
+        return res.status(200).json({
+            token: jwtToken
+        })
+    } catch (err) {
+        return res.status(500).json({
+            message: 'error', err
+        });
+    }
+};
+
+const mailVarification = async (req, res) => {
+    try {
+        if (req.query.id == undefined) {
+            return res.status(500).json({
+                message: 'error', err
+            });
+        }
+        const userData = await User.findOne({ _id: req.query.id });
+        if (userData) {
+            if (userData.email_validation == true) {
+                return res.status(200).json({
+                    message: 'Mail Already varified', err
+                })
+            }
+            User.findByIdAndUpdate({ _id: req.query.id }), {
+                $set: { email_validation: true }
+            }
+            return res.status(200).json({
+                message: 'Mail varified success fully'
+            })
+
+        } else {
+            return res.status(500).json({
+                message: 'User not found', err
+            })
+        }
+
+    } catch (err) {
+        return res.status(500).json({
+            message: 'error', err
+        });
+    }
+}
+const genOtp = async () => {
+    return Math.floor(1000 + Math.random() * 9000)
+}
+const sendMailVarification = async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        console.log(errors);
+        if (!errors.isEmpty()) {
+            return res.status(500).json({
+                success: false,
+                message: 'Error in request'
+            });
+        }
+
+        const { email } = req.body;
+        const userData = await User.findOne({ email });
+        if (!userData) {
+            return res.status(500).json({
+                success: false,
+                message: 'User is not present'
+            });
+        }
+
+        if (userData.email_validation === true) {
+            return res.status(200).json({
+                success: true,
+                message: 'Email is already verified'
+            });
+        }
+
+        const g_otp = await genOtp();
+        console.log(g_otp)
+        const cDate = new Date();
+        const oldOtpData = await Otp.findOne({ email: userData.email });
+        console.log(oldOtpData)
+        if (oldOtpData) {
+            const sendNextOtp = await oneMinuteExpiry(oldOtpData.timestamp);
+            if (!sendNextOtp) {
+                return res.status(500).json({
+                    success: false,
+                    message: 'Time is less than expected'
+                });
+            }
+        }
+
+        await Otp.findOneAndUpdate(
+            { email: userData.email },
+            { otp: g_otp, timestamp: new Date(cDate.getTime()) },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
+
+        const msg = `<div style="font-family: Arial, sans-serif; color: #333; background-color: #f9f9f9; padding: 20px;">
+            <p style="margin-bottom: 10px;">Dear ${userData.fullname},</p>
+            <p style="margin-bottom: 10px;">The OTP for your email is ${g_otp}.</p>
+            <p style="margin-bottom: 10px;">Best regards,</p>
+            <p style="margin-bottom: 0;">The [Your Company] Team</p>
+        </div>`;
+
+        await sendMail(userData.email, "Email Verification", msg);
+
+        return res.status(200).json({
+            success: true,
+            message: 'Email is successfully verified'
+        });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            success: false,
+            message: 'Error occurred',
+            error: err.message
+        });
+    }
+};
+
+const varifyOtp = async (req, res) => {
+    try {
+        const errors = validationResult(req)
+        if (!errors.isEmpty()) {
+            return res.status(500).json({
+                success: false,
+                message: 'Error is there in the code ', 
+            });
+        }
+        const { email, otp } = req.body;
+        const otpData = await Otp.findOne({
+            email,
+            otp
+        })
+        console.log(email,otp)
+        if (!otpData) {
+            return res.status(500).json({
+                success: false,
+                message: 'No otp data is found', 
+            });
+        }
+        const isOtpExpired = await threeMinuteExpiry(otpData.timestamp)
+        if (isOtpExpired) {
+            return res.status(400).json({
+                success: false,
+                message: 'Otp is expired', 
+            });
+        }
+        await User.findOneAndUpdate({
+            email:email
+        }, {
+            $set: {
+                email_validation: true
+            }
+        },{ new: true });
+        return res.status(200).json({
+            success: true,
+            message: 'Account varified succesfully'
+        });
+
+
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message +' Internal error is found', 
+        });
+    }
+}
+
+const updatePasswordForResetPassword=async(req,res)=>{
+    try{
+        const errors = validationResult(req)
+        if (!errors.isEmpty()) {
+            return res.status(500).json({
+                success: false,
+                message: 'Error in the function',
+            });
+        }
+        console.log(errors)
+        const  {email,password}=req.body;
+        const newPassword = await bcrypt.hash(password, 10);
+        console.log(newPassword)
+        const userData=await User.findOneAndUpdate({email:email},{
+            $set:{
+                password:newPassword
+            }
+        },{ new: true })
+        console.log(userData)
+        if (!userData) {
+            return res.status(500).json({
+                success: false,
+                message: 'User is not present'
+            });
+        }
+        await userData.save();
+    }catch (error) {
+        return res.status(500).json({
+            success: false,
+            message:error.message + ' Internal Server error', 
+        });
+    }
+}
+const logout=async(req,res)=>{
+    try{
+        const errors = validationResult(req)
+        if (!errors.isEmpty()) {
+            return res.status(500).json({
+                success: false,
+                message: 'error', err
+            });
+        }
+        const token = req.body.token || req.query.token || req.headers["authorization"];
+        if (!token) {
+        return res.status(403).json({
+            success: false,
+            msg: "Token is not present"
+        });
+}
+    const bearer = token.split(' ');
+    const bToken = bearer[1];
+    const newBlackList=new BlackList({
+        token:bToken      
+    })
+    await newBlackList.save();
+    return res.status(201).json({
+        success:true,
+        message:"Logout successfully"
+    })
+
+    }catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: 'error', err
+        });
+    }
+}
+
+
+module.exports = {
+    userRegistration,
+    userLogin,
+    mailVarification,
+    sendMailVarification,
+    varifyOtp,
+    updatePasswordForResetPassword,
+    logout
+}
