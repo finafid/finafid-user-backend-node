@@ -1,11 +1,12 @@
 const mongoose = require('mongoose');
+const User=require('../../models/auth/userSchema')
 
 const orderSchema = new mongoose.Schema({
-    orderItem: {
+    orderItem: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'OrderItem',
         required: true
-    },
+    }],
     user: {
         type: mongoose.Schema.Types.ObjectId, // Corrected type definition
         ref: 'User',

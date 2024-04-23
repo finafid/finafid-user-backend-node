@@ -5,7 +5,7 @@ const routs=express.Router();
 const {getAllProduct,categoryDetails,createCategory,
     createSubCategory,createProductType,createProduct,createBrand,productOnId}=require('../controllers/product/productCon')
 const {addToWishlist,getTheWishlist,deleteFromWishlist,addToCart,getTheCart,deleteFromCart}=require('../controllers/cart&wishlist/cartWlController') 
-const {placeOrder}=require('../controllers/order/orderController')
+const { placeOrder,getOrderDetails,getOrderById,updateStatus}=require('../controllers/order/orderController')
 
 const auth=require('../middlewares/Auth')
 
@@ -46,7 +46,11 @@ routs.get('/getTheCart',auth,getTheCart)
 routs.post('/deleteFromCart',auth,deleteFromCart)
 
 //order
-routs.post('/placeOrder',auth,placeOrder)
+routs.post('/placeOrder',auth,placeOrder);
+routs.get('/getOrderDetails',auth,getOrderDetails)
+routs.get('/getOrderById/:orderId',auth,getOrderById)
+routs.post('/updateStatus',auth,updateStatus)
+
 
 
 
