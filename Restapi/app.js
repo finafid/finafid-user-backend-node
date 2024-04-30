@@ -19,14 +19,16 @@ async function startServer() {
   startServer();
   app.use(express.json())
   app.use(express.urlencoded({ extended: true }));
-  // app.use("/",(req,res)=>{
-  //   res.json({
-  //     success:true,
-  //     message:"Welcom to finafid"
-  //   })
-  // })
-  app.use('/api/v1',routs)
   app.use(cors());
+  app.use("/",(req,res)=>{
+    res.json({
+      success:true,
+      message:"Welcom to finafid"
+    })
+  })
+  
+  app.use('/api/v1',routs)
+
 app.listen(port,()=>{
 console.log(`Server is running in port ${port}`)
 })
