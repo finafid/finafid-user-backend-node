@@ -3,8 +3,10 @@ const express = require("express")
 const app = express()
 const port=process.env.PORT || 8080;
 const routs=require('./routes')
+const cors = require('cors');
 
 const connectdb = require("./config/dbconfig")
+
 async function startServer() {
     try {
       await connectdb();
@@ -24,7 +26,7 @@ async function startServer() {
   //   })
   // })
   app.use('/api/v1',routs)
-
+  app.use(cors());
 app.listen(port,()=>{
 console.log(`Server is running in port ${port}`)
 })

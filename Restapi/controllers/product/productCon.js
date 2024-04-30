@@ -3,7 +3,7 @@ const subCategory=require('../../models/product/SubCategory')
 const productType=require('../../models/product/productType')
 const productSc=require('../../models/product/productSc')
 const Brand=require('../../models/brand/brandSc')
-
+const ProductSearch=require('../../models/product/productSearchSchema')
 const { model } = require('mongoose')
 const getAllProduct= async (req,res)=>{
     try{
@@ -183,6 +183,29 @@ const createProductType=async(req,res)=>{
 }
 
 
+const createCustemSearch=async(req, res)=>{
+    try{
+       
+        const newProductSearch=new ProductSearch({
+            subCategoryId:req.body.subCategoryId,
+            searchResult:req.body.searchResult
+        })
+        await newProductSearch.save();
+    }catch(error){
+        res.status(500).json({ message: error.message +' Internal Server Error' });
+    }
+}
+const getSearchResult=async(req,res)=>{
+    try{
+        const searchDetails=await ProductSearch.find({
+            subCategoryId:req.param.subCategoryId
+        })
+        res.send(searchDetails);
+        
+    }catch(error){
+        res.status(500).json({ message: error.message +' Internal Server Error' });
+    }
+}
 module.exports={
 getAllProduct,
 categoryDetails,
@@ -191,5 +214,7 @@ createSubCategory,
 createProductType,
 createProduct,
 createBrand,
-productOnId
+productOnId,
+createCustemSearch,
+getSearchResult
 }

@@ -13,8 +13,8 @@ const userRegistration = async (req, res) => {
     try {
        
 
-        savedUser.password = undefined;
-        return res.status(201).json({ message: 'success', data: savedUser });
+        newUser.password = undefined;
+        return res.status(201).json({ message: 'success', data: newUser });
     } catch (err) {
         return res.status(500).json({ message: 'error', error: err.message });
     }
@@ -271,7 +271,41 @@ const logout=async(req,res)=>{
     }
 }
 
+const userDetails=async(req,res)=>{
+    try{
+        console.log(req.user)
+        const user = await User.findById({_id:req.user._id});
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        res.status(200).json(user);
+    }catch(error){
+        res.status(500).json({ message: error.message +' Internal Server Error' });
+    }
+}
+const renewToken=async(req,res)=>{
+    try{
+        
+    }
+    catch(error){
+        res.status(500).json({ message: error.message +' Internal Server Error' });
+    }
+}
+const getRefreshToken=async(req,res)=>{
+    try{
+        const userId=req.body.user._id;
+        const userData=User.findById({
+            _id:userId
+        })
+        if(!userData){
+            res.status(500).json({ message: error.message +' Internal Server Error' });
+        }
 
+    }
+    catch(error){
+        res.status(500).json({ message: error.message +' Internal Server Error' });
+    }
+}
 module.exports = {
     userRegistration,
     userLogin,
@@ -279,5 +313,7 @@ module.exports = {
     sendMailVarification,
     varifyOtp,
     updatePasswordForResetPassword,
-    logout
+    logout,
+    userDetails,
+    getRefreshToken
 }

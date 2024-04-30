@@ -1,9 +1,10 @@
 const express=require('express');
-const { userLogin, userRegistration,mailVarification,sendMailVarification,varifyOtp,updatePasswordForResetPassword,logout} = require('../controllers/auth');
+const { userLogin, userRegistration,mailVarification,sendMailVarification,varifyOtp,updatePasswordForResetPassword,logout,userDetails,getRefreshToken} = require('../controllers/auth');
 const { userRegistrationValidation ,userLoginValidation,emailVarification,otpVarification,passwordVarification} = require('../middlewares/userValidation');
 const routs=express.Router();
 const {getAllProduct,categoryDetails,createCategory,
-    createSubCategory,createProductType,createProduct,createBrand,productOnId}=require('../controllers/product/productCon')
+    createSubCategory,createProductType,createProduct,createBrand,productOnId,createCustemSearch,
+    getSearchResult}=require('../controllers/product/productCon')
 const {addToWishlist,getTheWishlist,deleteFromWishlist,addToCart,getTheCart,deleteFromCart}=require('../controllers/cart&wishlist/cartWlController') 
 const { placeOrder,getOrderDetails,getOrderById,updateStatus}=require('../controllers/order/orderController')
 
@@ -11,7 +12,7 @@ const auth=require('../middlewares/Auth')
 
 routs.post('/register',userRegistrationValidation,userRegistration);
 routs.post('/login',userLoginValidation,userLogin);
-
+routs.post('/refresh_token',auth,getRefreshToken)
 // routs.get('/mailVarification',mailVarification);
 routs.post('/send_mail_Varification',emailVarification,sendMailVarification);
 routs.post('/otp_varification',varifyOtp)
@@ -22,6 +23,8 @@ routs.post('/updatePassword',passwordVarification,updatePasswordForResetPassword
 
 //Logout api
 routs.get('/logout',auth,logout)
+//user Details
+routs.get('/userDetails',auth,userDetails)
 
 // Product Details
 
@@ -33,6 +36,8 @@ routs.post('/createProductType',createProductType)
 routs.post('/createProduct',createProduct)
 routs.post('/createBrand',createBrand)
 routs.get('/getProductById',productOnId)
+routs.get('/getProductsAfterFiltration/:subCategoryId',getSearchResult)
+routs.get('/getProductsAfterFiltration',getSearchResult)
 
 
 //Wishlist

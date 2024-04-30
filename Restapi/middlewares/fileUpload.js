@@ -1,23 +1,33 @@
 const AWS = require('aws-sdk');
+const multer =require('multer')
 
-
-const s3 = new AWS.S3({
-    accessKeyId: 'YOUR_ACCESS_KEY_ID',
-    secretAccessKey: 'YOUR_SECRET_ACCESS_KEY'
+AWS.config.update({
+    accessKeyId: process.env.accessKeyId,
+    secretAccessKey: process.env.secretAccessKey,
+    region: process.env.region
+})
+const s3=new AWS.S3();
+const bucketParams = {
+    Bucket: 'image_upload_for_finafid_user'
+};
+s3.createBucket(bucketParams, (err, data) => {
+    if (err) {
+        console.error('Error creating bucket:', err);
+    } else {
+        console.log('Bucket created successfully:', data.Location);
+    }
 });
+const uploadParams = {
+    Bucket: image_upload_for_finafid_user,
+    Key: 'example.jpg',
+    Body: '/path/to/local/file.jpg'
+};
+const storage= multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'uploads/') 
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + '-' + file.originalname) 
+    }
+})
 
-async function uploadImageToCDN(imageFile) {
-    const params = {
-        Bucket: 'your-bucket-name',
-        Key: 'unique-key-for-image.jpg', 
-        Body: imageFile.buffer, 
-        ContentType: imageFile.mimetype 
-    };
-
-    try {
-        const data = await s3.upload(params).promise();
-        return data.Location;
-    } catch (error) {
-        console.error('Error uploading image to CDN:', error);
-        throw error; 
-}}
