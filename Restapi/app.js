@@ -20,7 +20,7 @@ async function startServer() {
   app.use(express.json())
   app.use(express.urlencoded({ extended: true }));
   app.use(cors());
-  app.use("/",(req,res)=>{
+  app.use("/ping",(req,res)=>{
     res.json({
       success:true,
       message:"Welcom to finafid"

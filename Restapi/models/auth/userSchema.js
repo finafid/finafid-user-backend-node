@@ -14,6 +14,11 @@ const UserSchema=new Schema({
         type:String,
         required:true
     },
+    phone:{
+        type:Number,
+        required:true,
+        unique:true
+    },
     email_validation: {
         type: Boolean,
         required: false,

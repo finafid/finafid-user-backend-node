@@ -1,5 +1,6 @@
 const express=require('express');
-const { userLogin, userRegistration,mailVarification,sendMailVarification,varifyOtp,updatePasswordForResetPassword,logout,userDetails,getRefreshToken} = require('../controllers/auth');
+const { userLogin, userRegistration,mailVarification,sendMailVarification,varifyOtp,updatePasswordForResetPassword,logout,userDetails,
+    getRefreshToken,sendMailVerificationForForgotPassword} = require('../controllers/auth');
 const { userRegistrationValidation ,userLoginValidation,emailVarification,otpVarification,passwordVarification} = require('../middlewares/userValidation');
 const routs=express.Router();
 const {getAllProduct,categoryDetails,createCategory,
@@ -18,7 +19,7 @@ routs.post('/send_mail_Varification',emailVarification,sendMailVarification);
 routs.post('/otp_varification',varifyOtp)
 
 //Forgot password 
-
+routs.post('/sendMailForUpdatePassword',emailVarification,sendMailVerificationForForgotPassword);
 routs.post('/updatePassword',passwordVarification,updatePasswordForResetPassword);
 
 //Logout api

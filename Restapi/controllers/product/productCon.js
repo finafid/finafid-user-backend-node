@@ -144,6 +144,10 @@ const createCategory=async(req,res)=>{
 const createSubCategory=async(req,res)=>{
     try{
         const {name,description,img,mainCategoryId}=req.body
+        const mainCatagoryDetails= await mainCategory.find({_id:mainCategoryId})
+        if(!mainCatagoryDetails){
+            res.status(500).json({ message: 'Main category is not present'});
+        }
         const newSubCategory=new subCategory({
             name,
             description,

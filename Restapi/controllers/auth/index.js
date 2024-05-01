@@ -7,12 +7,24 @@ const { validationResult } = require("express-validator");
 const Otp = require("../../models/auth/sendOtp")
 const BlackList = require("../../models/auth/blackList")
 
+
+
 const userRegistration = async (req, res) => {
-    const newUser = new User(req.body); // Corrected variable name
-    newUser.password = await bcrypt.hash(req.body.password, 10); // Corrected variable name
+    const {email,phone}=req.body;
+    const userDetails=await User.findOne({$or:[{email},{phone}]})
+    
+    if(userDetails){
+        return res.status(400).json({
+            message: 'Account is already Register',
+            success:false});
+    }
+    const newUser = new User(req.body); 
+
+    newUser.password = await bcrypt.hash(req.body.password, 10);
     try {
        
-
+        await newUser.save()
+        
         newUser.password = undefined;
         return res.status(201).json({ message: 'success', data: newUser });
     } catch (err) {
@@ -106,7 +118,7 @@ const sendMailVarification = async (req, res) => {
         if (userData.email_validation === true) {
             return res.status(200).json({
                 success: true,
-                message: 'Email is already verified'
+                message: 'Email is already varified'
             });
         }
 
@@ -114,7 +126,7 @@ const sendMailVarification = async (req, res) => {
         console.log(g_otp)
         const cDate = new Date();
         const oldOtpData = await Otp.findOne({ email: userData.email });
-        console.log(oldOtpData)
+       
         if (oldOtpData) {
             const sendNextOtp = await oneMinuteExpiry(oldOtpData.timestamp);
             if (!sendNextOtp) {
@@ -132,7 +144,7 @@ const sendMailVarification = async (req, res) => {
         );
 
         const msg = `<div style="font-family: Arial, sans-serif; color: #333; background-color: #f9f9f9; padding: 20px;">
-            <p style="margin-bottom: 10px;">Dear ${userData.fullname},</p>
+            <p style="margin-bottom: 10px;">Dear ${userData.fullName},</p>
             <p style="margin-bottom: 10px;">The OTP for your email is ${g_otp}.</p>
             <p style="margin-bottom: 10px;">Best regards,</p>
             <p style="margin-bottom: 0;">The [Your Company] Team</p>
@@ -142,7 +154,69 @@ const sendMailVarification = async (req, res) => {
 
         return res.status(200).json({
             success: true,
-            message: 'Email is successfully verified'
+            message: 'Otp is send to the email'
+        });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            success: false,
+            message: 'Error occurred',
+            error: err.message
+        });
+    }
+};
+const sendMailVerificationForForgotPassword=async(req,res)=> {
+    try {
+        const errors = validationResult(req);
+        console.log(errors);
+        if (!errors.isEmpty()) {
+            return res.status(500).json({
+                success: false,
+                message: 'Error in request'
+            });
+        }
+
+        const { email } = req.body;
+        const userData = await User.findOne({ email });
+        if (!userData) {
+            return res.status(500).json({
+                success: false,
+                message: 'User is not present'
+            });
+        }
+        const g_otp = await genOtp();
+        console.log(g_otp)
+        const cDate = new Date();
+        const oldOtpData = await Otp.findOne({ email: userData.email });
+       
+        if (oldOtpData) {
+            const sendNextOtp = await oneMinuteExpiry(oldOtpData.timestamp);
+            if (!sendNextOtp) {
+                return res.status(500).json({
+                    success: false,
+                    message: 'Time is less than expected'
+                });
+            }
+        }
+
+        await Otp.findOneAndUpdate(
+            { email: userData.email },
+            { otp: g_otp, timestamp: new Date(cDate.getTime()) },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
+
+        const msg = `<div style="font-family: Arial, sans-serif; color: #333; background-color: #f9f9f9; padding: 20px;">
+            <p style="margin-bottom: 10px;">Dear ${userData.fullName},</p>
+            <p style="margin-bottom: 10px;">The OTP for your email is ${g_otp}.</p>
+            <p style="margin-bottom: 10px;">Best regards,</p>
+            <p style="margin-bottom: 0;">The [Your Company] Team</p>
+        </div>`;
+
+        await sendMail(userData.email, "Email Verification", msg);
+
+        return res.status(200).json({
+            success: true,
+            message: 'Otp is send to the email'
         });
     } catch (err) {
         console.error(err);
@@ -229,6 +303,10 @@ const updatePasswordForResetPassword=async(req,res)=>{
             });
         }
         await userData.save();
+        return res.status(200).json({
+            success: true,
+            message:'Password updated successfully', 
+        });
     }catch (error) {
         return res.status(500).json({
             success: false,
@@ -315,5 +393,6 @@ module.exports = {
     updatePasswordForResetPassword,
     logout,
     userDetails,
-    getRefreshToken
+    getRefreshToken,
+    sendMailVerificationForForgotPassword
 }
