@@ -4,12 +4,14 @@ const { userLogin, userRegistration,mailVarification,sendMailVarification,varify
 const { userRegistrationValidation ,userLoginValidation,emailVarification,otpVarification,passwordVarification} = require('../middlewares/userValidation');
 const routs=express.Router();
 const {getAllProduct,categoryDetails,createCategory,
-    createSubCategory,createProductType,createProduct,createBrand,productOnId,createCustemSearch,
+    createSubCategory,createProductType,createProduct,createBrand,productOnId,uploadFiles1,
     getSearchResult}=require('../controllers/product/productCon')
 const {addToWishlist,getTheWishlist,deleteFromWishlist,addToCart,getTheCart,deleteFromCart}=require('../controllers/cart&wishlist/cartWlController') 
 const { placeOrder,getOrderDetails,getOrderById,updateStatus}=require('../controllers/order/orderController')
+const {upload}=require('../utils/fileUpload')
 
-const auth=require('../middlewares/Auth')
+const auth=require('../middlewares/Auth');
+const multer = require('multer');
 
 routs.post('/register',userRegistrationValidation,userRegistration);
 routs.post('/login',userLoginValidation,userLogin);
@@ -36,7 +38,7 @@ routs.post('/createSubCategory',createSubCategory)
 routs.post('/createProductType',createProductType)
 routs.post('/createProduct',createProduct)
 routs.post('/createBrand',createBrand)
-routs.get('/getProductById',productOnId)
+routs.get('/getProductById/:productId',productOnId)
 routs.get('/getProductsAfterFiltration/:subCategoryId',getSearchResult)
 routs.get('/getProductsAfterFiltration',getSearchResult)
 
@@ -56,6 +58,11 @@ routs.post('/placeOrder',auth,placeOrder);
 routs.get('/getOrderDetails',auth,getOrderDetails)
 routs.get('/getOrderById/:orderId',auth,getOrderById)
 routs.post('/updateStatus',auth,updateStatus)
+
+
+//test
+
+routs.post('/uploadFiles',upload.single('file'),uploadFiles1)
 
 
 

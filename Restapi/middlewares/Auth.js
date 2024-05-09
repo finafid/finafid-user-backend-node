@@ -4,6 +4,7 @@ const BlackList = require("../models/auth/blackList")
 
 const verifyToken = async (req, res, next) => {
     const token = req.body.token || req.query.token || req.headers["authorization"];
+    console.log(token)
     if (!token) {
         return res.status(403).json({
             success: false,
@@ -15,9 +16,9 @@ const verifyToken = async (req, res, next) => {
         const bToken = bearer[1];
         console.log(bToken)
         const blackList= await BlackList.findOne({
-            token:bToken
+            token:token
         })
-        console.log(blackList)
+        // console.log(blackList)
         if(blackList){
             return res.status(400).json({
                 success:false,

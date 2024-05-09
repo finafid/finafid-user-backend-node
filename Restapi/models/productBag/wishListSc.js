@@ -9,7 +9,7 @@ const wishListSchema = new Schema({
         ref: 'Product',
         required: true,
     }],
-    User: {
+    UserId: {
         type: Schema.Types.ObjectId,
         ref: 'User', 
         required: true,

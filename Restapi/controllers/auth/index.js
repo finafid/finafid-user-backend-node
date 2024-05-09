@@ -6,6 +6,8 @@ const jwt = require("jsonwebtoken")
 const { validationResult } = require("express-validator");
 const Otp = require("../../models/auth/sendOtp")
 const BlackList = require("../../models/auth/blackList")
+const Cart=require("../../models/productBag/cartSc")
+const WishList=require("../../models/productBag/wishListSc")
 
 
 
@@ -48,7 +50,7 @@ const userLogin = async (req, res) => {
             fullname: user.fullname,
             email: user.email
         }
-        const jwtToken = jwt.sign(tokenObject, process.env.SECRET, { expiresIn: '1h' });
+        const jwtToken = jwt.sign(tokenObject, process.env.SECRET, { expiresIn: '10h' });
         return res.status(200).json({
             token: jwtToken
         })
@@ -352,10 +354,23 @@ const logout=async(req,res)=>{
 const userDetails=async(req,res)=>{
     try{
         console.log(req.user)
-        const user = await User.findById({_id:req.user._id});
+        const user = await User.findById({_id:req.user._id}).select('-password');
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
+        // user.password = undefined;
+        const cartDetails=await Cart.findOne({UserId:req.user._id}).lean();
+        // if(!cartDetails){
+        //     return res.status(404).json({ message: 'No cart not found' });
+        // }
+        const wishListDetails=await WishList.findOne({UserId:req.user._id}).lean();
+        // if(!wishListDetails){
+        //     return res.status(404).json({ message: 'No wishList Details not found' });
+        // }
+        user.cartDetails = cartDetails;
+        user.wishListDetails = wishListDetails;
+        user[cartDetails]=cartDetails
+        user[wishListDetails]=wishListDetails
         res.status(200).json(user);
     }catch(error){
         res.status(500).json({ message: error.message +' Internal Server Error' });
