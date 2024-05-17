@@ -4,7 +4,6 @@ const productType = require('../../models/product/productType')
 const productSc = require('../../models/product/productSc')
 const Brand = require('../../models/brand/brandSc')
 const ProductSearch = require('../../models/product/productSearchSchema')
-const multer = require('multer')
 const { genarateStringOfImageList ,compressAndResizeImage} = require('../../utils/fileUpload')
 const { model } = require('mongoose')
 const sharp = require("sharp");
@@ -241,6 +240,29 @@ const uploadFiles1 = async (req, res) => {
         res.status(500).json({ message: error.message + ' Internal Server Error' });
     }
 }
+const { ObjectId } = require('mongodb'); // Import ObjectId from mongodb
+
+const getProductBasisOfSubcategory = async (req, res) => {
+    try {
+        const subCategoryName = req.query.subCategoryName;        
+        const subCategoryRecord = await subCategory.findOne({ name: subCategoryName });      
+        if (!subCategoryRecord) {
+            return res.status(404).json({ message: "Subcategory not found" });
+        }
+        const subCategoryId = subCategoryRecord._id.toString();
+        const id = subCategoryId; 
+        const productTypeList = await productType.find({ subCategory: id });
+        const productList = await Promise.all(productTypeList.map(async (productType) => {
+            return await productSc.findOne({ productType: productType._id });
+        }));
+        
+        res.status(200).json({ productList });
+    } catch (error) {
+        res.status(500).json({ message: error.message + ' Internal Server Error' });
+    }
+};
+
+
 module.exports = {
     getAllProduct,
     categoryDetails,
@@ -252,5 +274,6 @@ module.exports = {
     productOnId,
     createCustemSearch,
     getSearchResult,
-    uploadFiles1
+    uploadFiles1,
+    getProductBasisOfSubcategory
 }

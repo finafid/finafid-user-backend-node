@@ -59,10 +59,7 @@ async function genarateStringOfImageList(body, key, res) {
                 })
             }
 
-            res.status(200).json({
-                success: true,
-                message: "File uploaded sucessfully"
-            })
+           
         })
     } catch {
         console.error(error);

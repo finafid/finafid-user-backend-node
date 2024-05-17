@@ -8,7 +8,7 @@ const Otp = require("../../models/auth/sendOtp")
 const BlackList = require("../../models/auth/blackList")
 const Cart=require("../../models/productBag/cartSc")
 const WishList=require("../../models/productBag/wishListSc")
-
+const { genarateStringOfImageList ,compressAndResizeImage} = require('../../utils/fileUpload')
 
 
 const userRegistration = async (req, res) => {
@@ -48,9 +48,11 @@ const userLogin = async (req, res) => {
         const tokenObject = {
             _id: user._id,
             fullname: user.fullname,
-            email: user.email
+            email: user.email,
+           
         }
         const jwtToken = jwt.sign(tokenObject, process.env.SECRET, { expiresIn: '10h' });
+        tokenObject.imgUrl= user.imgUrl
         return res.status(200).json({
             token: jwtToken
         })
@@ -399,6 +401,43 @@ const getRefreshToken=async(req,res)=>{
         res.status(500).json({ message: error.message +' Internal Server Error' });
     }
 }
+const updateUserDetails = async (req, res) => {
+    try {
+        const userDetails = await User.findOne({ _id: req.user._id });
+
+        const { fullName, gender } = req.body;
+        
+        if (fullName) {
+            userDetails.fullName = fullName;
+            await userDetails.save();
+        }
+
+        if (gender) {
+            userDetails.gender = gender;
+            await userDetails.save();
+        }
+        console.log(req.file)
+        if (req.file) {
+          
+            const inputImagePath = req.file.buffer;
+            const width = 800;
+            const compressionQuality = 5;
+            const extention = req.file.originalname.split(".")[1];
+            const imageBuffer = await compressAndResizeImage(inputImagePath, extention, width, compressionQuality);
+            req.file.originalname = req.file.originalname.split(".")[0].split(" ").join("-") + "-" + Date.now() + "." + extention;
+            const imgUrl = "https://d2w5oj0jmt3sl6.cloudfront.net/" + req.file.originalname;
+            console.log(imgUrl)
+            userDetails.imgUrl = imgUrl;
+            await userDetails.save()
+            genarateStringOfImageList(imageBuffer, req.file.originalname, res);
+        }
+        console.log(userDetails)
+        return res.status(200).json(userDetails);
+    } catch (error) {
+        return res.status(500).json({ message: error.message + ' Internal Server Error' });
+    }
+};
+
 module.exports = {
     userRegistration,
     userLogin,
@@ -409,5 +448,6 @@ module.exports = {
     logout,
     userDetails,
     getRefreshToken,
-    sendMailVerificationForForgotPassword
+    sendMailVerificationForForgotPassword,
+    updateUserDetails
 }

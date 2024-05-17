@@ -1,17 +1,17 @@
 const express=require('express');
 const { userLogin, userRegistration,mailVarification,sendMailVarification,varifyOtp,updatePasswordForResetPassword,logout,userDetails,
-    getRefreshToken,sendMailVerificationForForgotPassword} = require('../controllers/auth');
+    getRefreshToken,sendMailVerificationForForgotPassword,updateUserDetails} = require('../controllers/auth');
 const { userRegistrationValidation ,userLoginValidation,emailVarification,otpVarification,passwordVarification} = require('../middlewares/userValidation');
 const routs=express.Router();
 const {getAllProduct,categoryDetails,createCategory,
     createSubCategory,createProductType,createProduct,createBrand,productOnId,uploadFiles1,
-    getSearchResult}=require('../controllers/product/productCon')
+    getSearchResult,getProductBasisOfSubcategory}=require('../controllers/product/productCon')
 const {addToWishlist,getTheWishlist,deleteFromWishlist,addToCart,getTheCart,deleteFromCart}=require('../controllers/cart&wishlist/cartWlController') 
 const { placeOrder,getOrderDetails,getOrderById,updateStatus}=require('../controllers/order/orderController')
 const {upload}=require('../utils/fileUpload')
-
+const {createGiftCard,getGiftCardDetails,getGiftCardByUser}=require('../controllers/GiftCard/giftCardController')
 const auth=require('../middlewares/Auth');
-const multer = require('multer');
+
 
 routs.post('/register',userRegistrationValidation,userRegistration);
 routs.post('/login',userLoginValidation,userLogin);
@@ -28,10 +28,11 @@ routs.post('/updatePassword',passwordVarification,updatePasswordForResetPassword
 routs.get('/logout',auth,logout)
 //user Details
 routs.get('/userDetails',auth,userDetails)
+routs.post('/updateUserDetails',auth,upload.single('avatar'),updateUserDetails)
 
 // Product Details
 
-routs.get('/allProducts',auth,getAllProduct)
+routs.get('/allProducts',getAllProduct)
 routs.get('/allCategoryDetails',categoryDetails)
 routs.post('/createCategory',createCategory)
 routs.post('/createSubCategory',createSubCategory)
@@ -39,6 +40,7 @@ routs.post('/createProductType',createProductType)
 routs.post('/createProduct',createProduct)
 routs.post('/createBrand',createBrand)
 routs.get('/getProductById/:productId',productOnId)
+routs.get('/getProductBasisOfSubcategory',getProductBasisOfSubcategory)
 routs.get('/getProductsAfterFiltration/:subCategoryId',getSearchResult)
 routs.get('/getProductsAfterFiltration',getSearchResult)
 
@@ -58,6 +60,12 @@ routs.post('/placeOrder',auth,placeOrder);
 routs.get('/getOrderDetails',auth,getOrderDetails)
 routs.get('/getOrderById/:orderId',auth,getOrderById)
 routs.post('/updateStatus',auth,updateStatus)
+
+
+//giftCard
+routs.post('/createGiftCard',auth,createGiftCard);
+routs.get('/getGiftCardDetails/:orderId',auth,getGiftCardDetails)
+routs.get('/getGiftCardByUser',auth,getGiftCardByUser)
 
 
 //test
