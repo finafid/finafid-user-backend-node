@@ -7,7 +7,6 @@ const productSchema = new Schema({
         type: String,
         required: true
     },
-    
     productType: {
         type: Schema.Types.ObjectId,
         ref: 'productType' ,

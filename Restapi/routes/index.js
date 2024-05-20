@@ -6,7 +6,7 @@ const routs=express.Router();
 const {getAllProduct,categoryDetails,createCategory,
     createSubCategory,createProductType,createProduct,createBrand,productOnId,uploadFiles1,
     getSearchResult,getProductBasisOfSubcategory}=require('../controllers/product/productCon')
-const {addToWishlist,getTheWishlist,deleteFromWishlist,addToCart,getTheCart,deleteFromCart}=require('../controllers/cart&wishlist/cartWlController') 
+const {addToWishlist,getTheWishlist,deleteFromWishlist,addToCart,getTheCart,deleteFromCart,clearCart}=require('../controllers/cart&wishlist/cartWlController') 
 const { placeOrder,getOrderDetails,getOrderById,updateStatus}=require('../controllers/order/orderController')
 const {upload}=require('../utils/fileUpload')
 const {createGiftCard,getGiftCardDetails,getGiftCardByUser}=require('../controllers/GiftCard/giftCardController')
@@ -47,13 +47,15 @@ routs.get('/getProductsAfterFiltration',getSearchResult)
 
 //Wishlist
 routs.post('/addToWishlist',auth,addToWishlist)
-routs.get('/getTheWishlist',auth,getTheWishlist)
+routs.get('/getWishlistItems',auth,getTheWishlist)
 routs.post('/deleteFromWishlist',auth,deleteFromWishlist)
 
 //Cart
 routs.post('/addToCart',auth,addToCart)
-routs.get('/getTheCart',auth,getTheCart)
+routs.get('/getCartItems',auth,getTheCart)
 routs.post('/deleteFromCart',auth,deleteFromCart)
+routs.get('/clearCart',auth,clearCart)
+
 
 //order
 routs.post('/placeOrder',auth,placeOrder);
@@ -66,6 +68,8 @@ routs.post('/updateStatus',auth,updateStatus)
 routs.post('/createGiftCard',auth,createGiftCard);
 routs.get('/getGiftCardDetails/:orderId',auth,getGiftCardDetails)
 routs.get('/getGiftCardByUser',auth,getGiftCardByUser)
+
+
 
 
 //test

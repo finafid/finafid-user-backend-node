@@ -4,7 +4,7 @@ const Product = require("../../models/product/productSc");
 const User=require("../../models/auth/userSchema")
 
 const wishListSchema = new Schema({
-    Product: [{
+    productIdList: [{
         type: Schema.Types.ObjectId,
         ref: 'Product',
         required: true,
