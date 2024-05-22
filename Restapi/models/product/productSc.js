@@ -1,66 +1,70 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
-const productType=require('../product/productType')
+const productType = require("../product/productType");
 
-const productSchema = new Schema({
+const productSchema = new Schema(
+  {
     name: {
-        type: String,
-        required: true
+      type: String,
+      required: true,
     },
     productType: {
-        type: Schema.Types.ObjectId,
-        ref: 'productType' ,
-        require:true,
+      type: Schema.Types.ObjectId,
+      ref: "productType",
+      require: true,
     },
-    brand:{
-        type:Schema.Types.ObjectId,
-        ref:'Brand',
-        required:true
+    brand: {
+      type: Schema.Types.ObjectId,
+      ref: "Brand",
+      required: true,
     },
     quantity: {
-        type: Number,
-        required: true
+      type: Number,
+      required: true,
     },
-    item_code:{
-        type:String,
-        required:true
+    item_code: {
+      type: String,
+      required: true,
     },
     price: {
-        type: Number,
-        required: true
+      type: Number,
+      required: true,
     },
     description: {
-        type: String,
-        required: true
+      type: String,
+      required: true,
     },
-    imgUrl:[{
+    imgUrl: [
+      {
         type: String,
-        required: true
-    }],
+        required: true,
+      },
+    ],
     details: {
-        type: Schema.Types.Mixed
+      type: Schema.Types.Mixed,
     },
     attributes: {
-        color: {
-            type: String,
-            required: true
-        },
-        size: {
-            type: Number,
-            required: true
-        },
-        strength: {
-            type: Number,
-            required: true
-        },
+      color: {
+        type: String,
+        required: true,
+      },
+      size: {
+        type: Number,
+        required: true,
+      },
+      strength: {
+        type: Number,
+        required: true,
+      },
     },
-    isCustomizable:{
-        type:Boolean,
-        default:false
-        
-    }
-},{ timestamps: true });
+    isCustomizable: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  { timestamps: true }
+);
 
-const Product = mongoose.model('Product', productSchema);
+const Product = mongoose.model("Product", productSchema);
 
-module.exports = Product; 
+module.exports = Product;
