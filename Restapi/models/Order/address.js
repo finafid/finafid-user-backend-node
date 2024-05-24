@@ -1,43 +1,50 @@
-const { string } = require('joi');
-const mongoose=require('require');
-const addressSchema=new mongoose.Schema({
-   user:{
-    type:Schema.type.objectId,
-    ref:'User',
-    required:true
-   },
-   locality:{
-    type:string,
-
-   },
-   city:{
-    type:string,
-    required:true
-   },
-   street:{
-    type:string,
-    required:true
-   },
-   houseNumber: {
-    type: String,
-    required: true,
-    validate: {
-        validator: function(value) {
-          
-            return /^[a-zA-Z0-9]+$/.test(value);
-        },
-        message: 'House number must be alphanumeric'
-    }
+const mongoose = require("mongoose");
+const addressSchema = new mongoose.Schema(
+  {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
     },
-    state:{
-        type:string,
-        required:true
-       },
-    country:{
-        type:string,
-        required:true
-    }
-},{ timestamps: true });
+    addressType: {
+      type: String,
+      enum: ["home", "office", "others"],
+    },
+    receiverName: {
+      type: String,
+    },
+    receiverPhone: {
+      type: String,
+    },
+    locality: {
+      type: String,
+    },
+    city: {
+      type: String,
+    },
+    street: {
+      type: String,
+    },
+    houseNumber: {
+      type: String,
 
+      validate: {
+        validator: function (value) {
+          return /^[a-zA-Z0-9]+$/.test(value);
+        },
+        message: "House number must be alphanumeric",
+      },
+    },
+    pinCode: {
+      type: Number,
+    },
+    landMark: {
+      type: String,
+    },
+    state: {
+      type: String,
+    },
+  },
+  { timestamps: true }
+);
 
-module.exports=mongoose.model('Address',addressSchema)
+module.exports = mongoose.model("Address", addressSchema);
