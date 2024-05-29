@@ -29,7 +29,7 @@ const addressSchema = new mongoose.Schema(
 
       validate: {
         validator: function (value) {
-          return /^[a-zA-Z0-9]+$/.test(value);
+          return /^[a-zA-Z0-9 ]+$/.test(value);
         },
         message: "House number must be alphanumeric",
       },
@@ -42,6 +42,9 @@ const addressSchema = new mongoose.Schema(
     },
     state: {
       type: String,
+    },
+    isDefault: {
+      type: Boolean,
     },
   },
   { timestamps: true }

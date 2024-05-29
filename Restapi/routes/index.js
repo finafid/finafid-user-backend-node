@@ -58,7 +58,12 @@ const auth = require("../middlewares/Auth");
 const {
   addAddress,
   getAddressOfUser,
-} = require("../controllers/order/addressControler.js");
+  updateAddressOfUser,
+  deleteAddress,
+  setDefaultAddress,
+} = require("../controllers/order/addressControler");
+const { paymentDetails, verifySignature } =
+  require("../controllers/Payment/paymentController.js");
 
 routs.post("/register", userRegistrationValidation, userRegistration);
 routs.post("/login", userLoginValidation, userLogin);
@@ -126,6 +131,13 @@ routs.post("/updateStatus", auth, updateStatus);
 routs.post("/addAddress", auth, addAddress);
 
 routs.get("/getAddressOfUser", auth, getAddressOfUser);
+routs.post("/updateAddressOfUser", auth, updateAddressOfUser);
+
+routs.post("/deleteAddress", auth, deleteAddress);
+routs.post("/setDefaultAddress", auth, setDefaultAddress);
+//payment
+routs.post("/create-order", paymentDetails);
+routs.post("/verify-payment", verifySignature);
 
 //giftCard
 routs.post("/createGiftCard", auth, createGiftCard);

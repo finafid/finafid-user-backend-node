@@ -5,11 +5,11 @@ const port=process.env.PORT || 8080;
 const routs=require('./routes')
 const cors = require('cors');
 
-const connectdb = require("./config/dbconfig")
+const connectDb = require("./config/dbconfig")
 
 async function startServer() {
     try {
-      await connectdb();
+      await connectDb();
     } catch (error) {
       console.error("Error starting server:", error);
     }
@@ -23,7 +23,7 @@ async function startServer() {
   app.use("/ping",(req,res)=>{
     res.json({
       success:true,
-      message:"Welcom to finafid"
+      message:"Welcome to Finafid"
     })
   })
   

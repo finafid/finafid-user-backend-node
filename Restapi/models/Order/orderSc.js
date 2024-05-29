@@ -1,5 +1,5 @@
-const mongoose = require('mongoose');
-const User=require('../../models/auth/userSchema')
+const mongoose = require("mongoose");
+const User = require("../../models/auth/userSchema");
 
 const orderSchema = new mongoose.Schema(
   {
@@ -21,34 +21,32 @@ const orderSchema = new mongoose.Schema(
       required: false,
     },
     locality: {
-      type: String, // Corrected type definition (String should be capitalized)
-      required: false,
+      type: String,
     },
     city: {
       type: String,
-      required: false,
     },
     street: {
       type: String,
-      required: false,
     },
     houseNumber: {
       type: String,
-      required: false,
+
       validate: {
         validator: function (value) {
-          return /^[a-zA-Z0-9]+$/.test(value);
+          return /^[a-zA-Z0-9 ]+$/.test(value);
         },
         message: "House number must be alphanumeric",
       },
     },
+    pinCode: {
+      type: Number,
+    },
+    landMark: {
+      type: String,
+    },
     state: {
       type: String,
-      required: false,
-    },
-    country: {
-      type: String,
-      required: false,
     },
     totalPrice: {
       type: Number,
@@ -57,11 +55,11 @@ const orderSchema = new mongoose.Schema(
     status: {
       type: String,
       required: true,
-      enum:["Pending","Active"],
-      default:"Pending"
+      enum: ["Pending", "Active"],
+      default: "Pending",
     },
   },
   { timestamps: true }
 );
 
-module.exports = mongoose.model('Order', orderSchema);
+module.exports = mongoose.model("Order", orderSchema);
