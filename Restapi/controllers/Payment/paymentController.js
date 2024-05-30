@@ -7,37 +7,27 @@ const razorpayIntance = new Razorpay({
   key_secret: process.env.ROZERPAY_SECRET_ID,
 });
 const paymentDetails = async (req, res) => {
-  const { amount, currency = "INR", orderId } = req.body;
   try {
-    receiptId = "order_rcptid_" + Math.floor(Math.random() * 1000);
-    const option = {
-      amount: amount * 100,
+    const { amount, currency } = req.body;
+
+    const options = {
+      amount: amount * 100, // amount in the smallest currency unit
       currency: currency,
-      receipt: receiptId,
-      payment_capture: 1,
+      receipt: `receipt_${Math.floor(Math.random() * 1000000)}`,
     };
-    const response = await razorpayIntance.orders.create(option);
-    console.log("Payment Initiated:", response);
-    if (!response) {
-      return res.status(500).json({
-        success: false,
-        message: "No response",
-      });
-    }
-    const newPaymentDetails = new payment({
-      orderId: orderId,
-      paymentId: receiptId,
-      amount: amount,
-      currency: currency,
-      status: response.status,
+
+    const order = await razorpayIntance.orders.create(options);
+    console.log(order);
+    
+    res.status(201).json({
+      success: true,
+      order,
+      message: "Order created successfully",
     });
-    await newPaymentDetails.save();
-    res.send(newPaymentDetails);
   } catch (error) {
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
-      message: "error",
-      err,
+      message: error.message,
     });
   }
 };
@@ -47,11 +37,11 @@ const verifySignature= async (req, res) => {
   try{
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
     req.body;
-
-  const hmac = crypto.createHmac("sha256", "YOUR_RAZORPAY_KEY_SECRET");
+    console.log(req.body);
+  const hmac = crypto.createHmac("sha256", process.env.ROZERPAY_SECRET_ID);
   hmac.update(`${razorpay_order_id}|${razorpay_payment_id}`);
   const generatedSignature = hmac.digest("hex");
-
+    console.log(generatedSignature);
   if (generatedSignature === razorpay_signature) {
     res.status(200).json({
       success: true,
@@ -66,8 +56,7 @@ const verifySignature= async (req, res) => {
 }catch(error){
     return res.status(500).json({
       success: false,
-      message: "error",
-      err,
+      message: error.message,
     });
 }
 };

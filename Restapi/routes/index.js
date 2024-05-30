@@ -65,6 +65,8 @@ const {
 const { paymentDetails, verifySignature } =
   require("../controllers/Payment/paymentController.js");
 
+  const { apiKeyMiddleware } = require("../middlewares/apikey.js");
+
 routs.post("/register", userRegistrationValidation, userRegistration);
 routs.post("/login", userLoginValidation, userLogin);
 routs.post("/refresh_token", auth, getRefreshToken);
@@ -121,7 +123,7 @@ routs.post("/deleteFromCart", auth, deleteFromCart);
 routs.get("/clearCart", auth, clearCart);
 
 //order
-routs.post("/placeOrder", auth, placeOrder);
+routs.post("/placeOrder", auth,apiKeyMiddleware, placeOrder);
 routs.get("/getOrderDetails", auth, getOrderDetails);
 routs.get("/getOrderById/:orderId", auth, getOrderById);
 routs.post("/updateStatus", auth, updateStatus);

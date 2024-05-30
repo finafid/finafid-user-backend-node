@@ -46,6 +46,7 @@ const placeOrder = async (req, res) => {
     console.log(newOrder);
     return res.status(201).json({
       message: "successfully created",
+      newOrder,
       success: true,
     });
   } catch (error) {
