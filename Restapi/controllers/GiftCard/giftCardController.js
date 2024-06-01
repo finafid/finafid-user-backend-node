@@ -60,7 +60,7 @@ const getGiftCardDetails=async(req,res)=>{
 }
 const getGiftCardByUser=async(req,res)=>{
     try{
-        const userDetails=await User.find({
+        const userDetails=await GiftCard.find({
             Issuer_Information:req.user._id
         })
         if(!userDetails){

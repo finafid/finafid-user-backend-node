@@ -66,6 +66,10 @@ const { paymentDetails, verifySignature } =
   require("../controllers/Payment/paymentController.js");
 
   const { apiKeyMiddleware } = require("../middlewares/apikey.js");
+  const {
+    addBalance,
+    showTransactions
+}=require('../controllers/Wallet/walletController.js')
 
 routs.post("/register", userRegistrationValidation, userRegistration);
 routs.post("/login", userLoginValidation, userLogin);
@@ -145,6 +149,10 @@ routs.post("/verify-payment", verifySignature);
 routs.post("/createGiftCard", auth, createGiftCard);
 routs.get("/getGiftCardDetails/:orderId", auth, getGiftCardDetails);
 routs.get("/getGiftCardByUser", auth, getGiftCardByUser);
+
+//wallet
+routs.post("/addBalance", auth, addBalance);
+routs.get("/showTransactions", auth, showTransactions);
 
 //test
 

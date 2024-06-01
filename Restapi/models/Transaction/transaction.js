@@ -17,5 +17,5 @@ const transactionSchema=new mongoose.Schema({
         type: String
     }
 },{timestamps:true})
-const Transaction=mongoose.model('WishList', wishListSchema);
+const Transaction=mongoose.model('Transaction', transactionSchema);
 module.exports=Transaction
