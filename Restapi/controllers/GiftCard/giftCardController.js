@@ -5,28 +5,30 @@ const createGiftCard = async (req, res) => {
     try {
         const customerId = await User.findOne({ _id: req.user._id });
 
-        const { value, Recipient_Information: { name, email, mobile } } = req.body;
+        const { value, Recipient_Information: { name, email, phoneNumber } } = req.body;
 
         const code = req.user._id.toString() + "giftno" + Date.now;
         const Activation_Date = new Date();
-        const Expiration_Date = new Date(currentDate);
+        const Expiration_Date = new Date(Activation_Date);
         Expiration_Date.setDate(Expiration_Date.getDate() + 90);
 
         const newGiftCard = new GiftCard({
-            code: code,
-            value: value,
+            Code: code,
+            Value: value,
             Expiration_Date: Expiration_Date,
             Recipient_Information: {
                 name: name,
                 email: email,
-                mobile: mobile
+                phoneNumber: phoneNumber
             },
             Issuer_Information: customerId,
             Activation_Date: Activation_Date,
             Additional_Metadata: null
         });
         await newGiftCard.save();
-        res.status(200).json(newGiftCard)
+        res.status(200).json(
+            {"message":"Successfully created giftcard",
+            newGiftCard})
         
 
     } catch (error) {

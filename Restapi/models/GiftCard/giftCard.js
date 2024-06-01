@@ -46,7 +46,7 @@ const giftCardSchema=new mongoose.Schema({
     },
     Additional_Metadata:{
         type:String,
-        required:true
+        
     }
 },{ timestamps: true })
 module.exports=mongoose.model('GiftCard',giftCardSchema)
