@@ -3,16 +3,17 @@ const Transaction=require("../../models/Transaction/transaction")
 const addBalance=async(req,res)=>{
     try {
         const userId = req.user._id; // Assuming you have user ID in req.user._id from authentication middleware
-        const { amount,type,description } = req.body;
-
+        const { amount,description } = req.body;
+        const type=(amount>0)?"credit":"debit";
+      
        
-        const newTranscation=new Transaction({
+        const newTransaction=new Transaction({
             type,
             amount ,
             date:Date.now() ,
             description
         })
-        await newTranscation.save();
+        await newTransaction.save();
         let walletDetails = await Wallet.findOne({ userId });
 
         if (!walletDetails) {
@@ -50,7 +51,26 @@ const showTransactions=async(req,res)=>{
         res.status(500).json({ message: error.message + ' Internal Server Error' });
     }
 }
+const getBalance=async(req,res)=>{
+    try {
+        const walletDetails = await Wallet.findOne({
+          userId: req.user._id,
+        }).populate("transactions");
+        if(!walletDetails){
+           return res
+              .status(400)
+              .json({ message:"Cannot find the wallet Details" });
+        }
+        return res.status(200).json({ walletDetails });
+
+    } catch (error) {
+      res
+        .status(500)
+        .json({ message: error.message + " Internal Server Error" });
+    }
+}
 module.exports={
     addBalance,
-    showTransactions
+    showTransactions,
+    getBalance
 }

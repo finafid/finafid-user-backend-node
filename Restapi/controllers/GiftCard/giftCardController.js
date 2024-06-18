@@ -1,5 +1,6 @@
 const GiftCard=require('../../models/GiftCard/giftCard')
 const User=require('../../models/auth/userSchema')
+const Wallet=require('../../models/Wallet/wallet')
 
 const createGiftCard = async (req, res) => {
     try {
@@ -11,7 +12,16 @@ const createGiftCard = async (req, res) => {
         const Activation_Date = new Date();
         const Expiration_Date = new Date(Activation_Date);
         Expiration_Date.setDate(Expiration_Date.getDate() + 90);
-
+        const walletDetails=await Wallet.findOne({
+            userId:req.user._id
+        })
+        if(walletDetails.balance<value){
+           return res
+              .status(400)
+              .json({ message: "Not enough amount in Wallet" });
+        }
+        walletDetails.balance = walletDetails.balance - value;
+        await walletDetails.save();
         const newGiftCard = new GiftCard({
             Code: code,
             Value: value,
@@ -77,9 +87,37 @@ const getGiftCardByUser=async(req,res)=>{
         });
     }
 }
-
-module.exports={
-    createGiftCard,
-    getGiftCardDetails,
-    getGiftCardByUser
+const redeemGiftcard=async(req,res)=>{
+    try {
+        const giftCardDetails=await GiftCard.findOne({
+            code:req.body.code,
+            status:"active"
+        })
+        if(!giftCardDetails){
+            res.status(500).json({
+        success: false,
+        message: " Invalid Giftcard",
+      });
+        }
+        const walletDetails=await Wallet.findOne({
+            userId:req.user._id
+        })
+        walletDetails.balance = walletDetails.balance + giftCardDetails.Value;
+        await walletDetails.save();
+        res.status(500).json({
+        success: true,
+        message: "Giftcard reedemed successfully",})
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message + " Internal Server Error",
+      });
+    }
 }
+
+module.exports = {
+  createGiftCard,
+  getGiftCardDetails,
+  getGiftCardByUser,
+  redeemGiftcard,
+};

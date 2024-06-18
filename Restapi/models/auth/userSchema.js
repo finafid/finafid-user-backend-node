@@ -29,7 +29,13 @@ const UserSchema=new Schema({
         type: Boolean,
         required: false,
         default:false
-    }   
+    } ,
+    status:{
+        type:String ,
+        enum:["Active","Not Active"],
+        default:"Active"
+    }  
+
 });
 const userModel=mongoose.model('user',UserSchema)
 module.exports=userModel;

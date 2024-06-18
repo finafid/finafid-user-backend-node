@@ -29,9 +29,14 @@ const {
   createProduct,
   createBrand,
   productOnId,
-  uploadFiles1,
   getSearchResult,
   getProductBasisOfSubcategory,
+  editCategory,
+  updateProduct,
+  editSubCategory,
+  editProductType,
+  editBrand,
+  deleteProduct,
 } = require("../controllers/product/productCon");
 const {
   addToWishlist,
@@ -62,15 +67,28 @@ const {
   deleteAddress,
   setDefaultAddress,
 } = require("../controllers/order/addressControler");
-const { paymentDetails, verifySignature } =
-  require("../controllers/Payment/paymentController.js");
+const {
+  paymentDetails,
+  verifySignature,
+} = require("../controllers/Payment/paymentController.js");
 
-  const { apiKeyMiddleware } = require("../middlewares/apikey.js");
-  const {
-    addBalance,
-    showTransactions
-}=require('../controllers/Wallet/walletController.js')
+const { apiKeyMiddleware } = require("../middlewares/apikey.js");
+const {
+  addBalance,
+  showTransactions,
+} = require("../controllers/Wallet/walletController.js");
+const {
+  totalIncome,
+  totalOrder,
+  productSold,
+  totalUser,
+  orderAnalysis,
+  incomeAnalysis,
+  getUserOrderCount,
+  topSellingProduct,
+} = require("../controllers/Admin Dashboard/dashBoardController.js");
 
+//user Authentication
 routs.post("/register", userRegistrationValidation, userRegistration);
 routs.post("/login", userLoginValidation, userLogin);
 routs.post("/refresh_token", auth, getRefreshToken);
@@ -105,15 +123,23 @@ routs.post(
 
 routs.get("/allProducts", getAllProduct);
 routs.get("/allCategoryDetails", categoryDetails);
-routs.post("/createCategory", createCategory);
-routs.post("/createSubCategory", createSubCategory);
-routs.post("/createProductType", createProductType);
-routs.post("/createProduct", createProduct);
+routs.post("/createCategory", upload.single("avatar"), createCategory);
+routs.post("/createSubCategory", upload.single("avatar"), createSubCategory);
+routs.post("/createProductType", upload.single("avatar"), createProductType);
+routs.post("/createProduct", upload.single("avatar"), createProduct);
 routs.post("/createBrand", createBrand);
 routs.get("/getProductById/:productId", productOnId);
 routs.get("/getProductBasisOfSubcategory", getProductBasisOfSubcategory);
 routs.get("/getProductsAfterFiltration/:subCategoryId", getSearchResult);
 routs.get("/getProductsAfterFiltration", getSearchResult);
+
+routs.post("/editCategory", editCategory);
+routs.post("/updateProduct", updateProduct);
+routs.post("/editSubCategory", editSubCategory);
+routs.post("/editProductType", editProductType);
+routs.post("/editBrand", editBrand);
+;
+routs.get("/deleteProduct", deleteProduct);
 
 //Wishlist
 routs.post("/addToWishlist", auth, addToWishlist);
@@ -127,7 +153,7 @@ routs.post("/deleteFromCart", auth, deleteFromCart);
 routs.get("/clearCart", auth, clearCart);
 
 //order
-routs.post("/placeOrder", auth,apiKeyMiddleware, placeOrder);
+routs.post("/placeOrder", auth, apiKeyMiddleware, placeOrder);
 routs.get("/getOrderDetails", auth, getOrderDetails);
 routs.get("/getOrderById/:orderId", auth, getOrderById);
 routs.post("/updateStatus", auth, updateStatus);
@@ -154,8 +180,13 @@ routs.get("/getGiftCardByUser", auth, getGiftCardByUser);
 routs.post("/addBalance", auth, addBalance);
 routs.get("/showTransactions", auth, showTransactions);
 
-//test
-
-routs.post("/uploadFiles", upload.single("file"), uploadFiles1);
+//admin dashboard
+routs.get("/getTotalIncome", totalIncome);
+routs.get("/getTotalOrder", totalOrder);
+routs.get("/getProductSold", productSold);
+routs.get("/getTotalUser", totalUser);
+routs.get("/getOrderAnalysis", orderAnalysis);
+routs.get("/getUserOrderCount", getUserOrderCount);
+routs.get("/topSellingProduct", topSellingProduct);
 
 module.exports = routs;

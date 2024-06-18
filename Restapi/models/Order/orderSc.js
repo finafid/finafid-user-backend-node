@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-const User = require("../../models/auth/userSchema");
 
 const orderSchema = new mongoose.Schema(
   {
@@ -55,7 +54,7 @@ const orderSchema = new mongoose.Schema(
     status: {
       type: String,
       required: true,
-      enum: ["Pending", "Active"],
+      enum: ["Pending", "Active", "Complete"],
       default: "Pending",
     },
   },
