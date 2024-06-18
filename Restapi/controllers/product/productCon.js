@@ -102,7 +102,7 @@ const createProduct = async (req, res) => {
     is_utsab_product,
     utsab_discount,
     inventory: { sku, item_code, quantity },
-  } = req.body();
+  } = req.body;
 
   const imgUrl = getImageLink();
 
@@ -538,6 +538,47 @@ const deleteProduct = async (req, res) => {
     res.status(500).json({ message: error.message + " Internal Server Error" });
   }
 };
+const getProductTypeBasedOnSubCategory = async (req, res) => {
+  try {
+    const subCategoryId = req.params.subCategoryId;
+    const productTypeList = await productType.find({
+      subCategory: subCategoryId,
+    });
+    if(!productTypeList){
+      return res.status(500).json({ message: "No list found" });
+    }
+    return res.status(200).json({ productTypeList });
+  } catch (error) {
+    res.status(500).json({ message: error.message + " Internal Server Error" });
+  }
+};
+const getSubcategoryBasedOnCategory = async (req, res) => {
+  try {
+    const categoryId = req.params.categoryId;
+    const subCategoryList = await subCategory.find({
+      mainCategory: categoryId,
+    });
+    if (!subCategoryList) {
+      return res.status(500).json({ message: "No list found" });
+    }
+    return res.status(200).json({ subCategoryList });
+  } catch (error) {
+    res.status(500).json({ message: error.message + " Internal Server Error" });
+  }
+};
+const getCategoryDetails = async (req, res) => {
+  try {
+    const mainCategoryList=await mainCategory.find();
+    if(!mainCategoryList){
+      return res
+        .status(500)
+        .json({ message: "No list found" });
+    }
+    return res.status(200).json({ mainCategoryList });
+  } catch (error) {
+    res.status(500).json({ message: error.message + " Internal Server Error" });
+  }
+};
 module.exports = {
   getAllProduct,
   categoryDetails,
@@ -556,4 +597,7 @@ module.exports = {
   editProductType,
   editBrand,
   deleteProduct,
+  getProductTypeBasedOnSubCategory,
+  getSubcategoryBasedOnCategory,
+  getCategoryDetails,
 };

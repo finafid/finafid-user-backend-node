@@ -185,6 +185,7 @@ const productSold = async (req, res) => {
     return res.status(200).json({
       totalProductSold: totalProductSoldToday,
       percentageChange: percentageChange,
+    
     });
   } catch (error) {
     res.status(500).json({ message: error.message + " Internal Server Error" });

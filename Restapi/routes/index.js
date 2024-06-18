@@ -37,6 +37,9 @@ const {
   editProductType,
   editBrand,
   deleteProduct,
+  getProductTypeBasedOnSubCategory,
+  getSubcategoryBasedOnCategory,
+  getCategoryDetails,
 } = require("../controllers/product/productCon");
 const {
   addToWishlist,
@@ -132,13 +135,21 @@ routs.get("/getProductById/:productId", productOnId);
 routs.get("/getProductBasisOfSubcategory", getProductBasisOfSubcategory);
 routs.get("/getProductsAfterFiltration/:subCategoryId", getSearchResult);
 routs.get("/getProductsAfterFiltration", getSearchResult);
+routs.get("/getAllCategory", getCategoryDetails);
+routs.get(
+  "/getProductTypeBasedOnSubCategory/:subCategoryId",
+  getProductTypeBasedOnSubCategory
+);
+routs.get(
+  "/getSubcategoryBasedOnCategory/:categoryId",
+  getSubcategoryBasedOnCategory
+);
 
 routs.post("/editCategory", editCategory);
 routs.post("/updateProduct", updateProduct);
 routs.post("/editSubCategory", editSubCategory);
 routs.post("/editProductType", editProductType);
 routs.post("/editBrand", editBrand);
-;
 routs.get("/deleteProduct", deleteProduct);
 
 //Wishlist
