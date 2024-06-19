@@ -8,10 +8,12 @@ const {
   generateStringOfImageList,
   compressAndResizeImage,
 } = require("../../utils/fileUpload");
+const Product = require("../../models/product/productSc");
 const getImageLink = async (req, res) => {
   try {
     // Extracting file buffer and extension from the request
-    const inputImagePath = req.file.buffer;
+    const inputImagePath = await req.file.buffer;
+    console.log(inputImagePath);
     const extension = req.file.originalname.split(".").pop();
 
     // Define resizing and compression parameters
@@ -44,7 +46,7 @@ const getImageLink = async (req, res) => {
     return imgUrl;
   } catch (error) {
     console.error("Error in getImageLink:", error);
-    throw new Error("Failed to process image.");
+    
   }
 };
 
@@ -165,12 +167,15 @@ const createProduct = async (req, res) => {
 const createBrand = async (req, res) => {
   try {
     const { name, description } = req.body;
-    const logoUrl = getImageLink();
+    console.log(req.file)
+    const logoUrl =await getImageLink(req);
+    console.log(logoUrl);
     const newBrand = new Brand({
       name,
       description,
       logoUrl,
     });
+    console.log(newBrand);
 
     await newBrand.save();
 
@@ -508,17 +513,33 @@ const editProductType = async (req, res) => {
 };
 const editBrand = async (req, res) => {
   try {
+    const brandId=req.params.brandId
     const brandDetails = await Brand.findOne({
-      _id: req.body.productTypeId,
+      _id: brandId,
     });
     if (!brandDetails) {
       return res.status(500).json({ message: "No such productType found" });
     }
-    const { name, description, subCategoryId } = req.body();
-    brandDetails.name = name;
-    brandDetails.description = description;
-
-    await brandDetails.save();
+    console.log(req.file)
+    
+    if (!req.file) {
+      const logoUrl = req.body.logo;
+      const { name, description, subCategoryId } = req.body;
+      brandDetails.name = name;
+      brandDetails.description = description;
+      brandDetails.subCategoryId = subCategoryId;
+      brandDetails.logoUrl = logoUrl;
+      await brandDetails.save();
+    }else{
+      const logoUrl = await getImageLink(req);
+      const { name, description, subCategoryId } = req.body;
+      brandDetails.name = name;
+      brandDetails.description = description;
+      brandDetails.subCategoryId = subCategoryId;
+      brandDetails.logoUrl = logoUrl;
+      await brandDetails.save();
+    }
+     
     return res.status(200).json({ message: "productType saved successfully" });
   } catch (error) {
     res.status(500).json({ message: error.message + " Internal Server Error" });
@@ -579,6 +600,151 @@ const getCategoryDetails = async (req, res) => {
     res.status(500).json({ message: error.message + " Internal Server Error" });
   }
 };
+const getBrand=async(req,res)=>{
+  try {
+    const brandList=await Brand.find()
+    if(!brandList){
+      return res
+        .status(500)
+        .json({ message: "Brandlist is not present" });
+    }
+    return res.status(200).json({ brandList });
+  } catch (error) {
+    res.status(500).json({ message: error.message + " Internal Server Error" });
+  }
+}
+const totalProductOfBrand=async(req,res)=>{
+  try {
+    const brandId=req.params.brandId;
+    const totalProduct=await Product.find({
+      brand:brandId
+    })
+    if(!totalProduct){
+      return res
+        .status(500)
+        .json({ message: "No product" });
+    }
+    return res.status(200).json({ "No of Product":totalProduct.length });
+  } catch (error) {
+    res.status(500).json({ message: error.message + " Internal Server Error" });
+  }
+}
+const getBrandById=async(req,res)=>{
+  try {
+    const brandId=req.params.brandId
+    const brandDetails=await Brand.findById({
+      _id:brandId
+    })
+    console.log(brandDetails);
+    if (!brandDetails) {
+      return res.status(500).json({ message: "No brand found" });
+    }
+    return res.status(200).json({ brandDetails });
+  } catch (error) {
+    res.status(500).json({ message: error.message + " Internal Server Error" });
+  }
+}
+const deleteBrand=async(req,res)=>{
+  try {
+    const brandId = req.params.brandId;
+    const brandDetails = await Brand.findByIdAndDelete({
+      _id: brandId,
+    });
+    if (!brandDetails) {
+      return res.status(500).json({ message: " Internal Server Error" });
+    }
+    return res.status(200).json({ message: "Deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message + " Internal Server Error" });
+  }
+}
+const deleteCategory=async(req,res)=>{
+  try{
+    const categoryId = req.params.categoryId
+    const categoryDetails = await mainCategory.findById({
+      _id: categoryId,
+    });
+    if(!categoryDetails){
+      return res
+        .status(500)
+        .json({ message: "no details found" });
+    }
+     return res.status(500).json({ message: "Deleted successfully" });
+  }catch (error) {
+    res.status(500).json({ message: error.message + " Internal Server Error" });
+  }
+}
+const deleteSubCategory=async(req,res)=>{
+  try{
+    const subCategoryId = req.params.categoryId;
+    const subCategoryDetails = await subCategory.findById({
+      _id: subCategoryId,
+    });
+    if (!subCategoryDetails) {
+      return res.status(500).json({ message: "no details found" });
+    }
+     return res.status(500).json({ message: "Deleted successfully" });
+  }catch (error) {
+    res.status(500).json({ message: error.message + " Internal Server Error" });
+  }
+}
+const deleteProductType=async(req,res)=>{
+  try{
+    const productTypeId = req.params.categoryId;
+    const productTypeDetails = await productType.findById({
+      _id: productTypeId,
+    });
+    if (!productTypeDetails) {
+      return res.status(500).json({ message: "no details found" });
+    }
+     return res.status(500).json({ message: "Deleted successfully" });
+  }catch (error) {
+    res.status(500).json({ message: error.message + " Internal Server Error" });
+  }
+}
+const getCategoryId = async (req, res) => {
+  try {
+    const productTypeId = req.params.categoryId;
+    const productTypeDetails = await productType.findById({
+      _id: productTypeId,
+    });
+    if (!productTypeDetails) {
+      return res.status(500).json({ message: "no details found" });
+    }
+    return res.status(500).json({ message: "Deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message + " Internal Server Error" });
+  }
+};
+const getProductTypeById = async (req, res) => {
+  try {
+    const productTypeId = req.params.categoryId;
+    const productTypeDetails = await productType.findById({
+      _id: productTypeId,
+    });
+    if (!productTypeDetails) {
+      return res.status(500).json({ message: "no details found" });
+    }
+    return res.status(500).json({ message: "Deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message + " Internal Server Error" });
+  }
+};
+const getSubCategoryId = async (req, res) => {
+  try {
+    const productTypeId = req.params.categoryId;
+    const productTypeDetails = await productType.findById({
+      _id: productTypeId,
+    });
+    if (!productTypeDetails) {
+      return res.status(500).json({ message: "no details found" });
+    }
+    return res.status(500).json({ message: "Deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message + " Internal Server Error" });
+  }
+};
+
 module.exports = {
   getAllProduct,
   categoryDetails,
@@ -600,4 +766,14 @@ module.exports = {
   getProductTypeBasedOnSubCategory,
   getSubcategoryBasedOnCategory,
   getCategoryDetails,
+  getBrand,
+  totalProductOfBrand,
+  getBrandById,
+  deleteBrand,
+  deleteCategory,
+  deleteSubCategory,
+  deleteProductType,
+  getCategoryId,
+  getSubCategoryId,
+  getProductTypeById,
 };

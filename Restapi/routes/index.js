@@ -40,6 +40,16 @@ const {
   getProductTypeBasedOnSubCategory,
   getSubcategoryBasedOnCategory,
   getCategoryDetails,
+  getBrand,
+  totalProductOfBrand,
+  getBrandById,
+  deleteBrand,
+  deleteCategory,
+  deleteSubCategory,
+  deleteProductType,
+  getCategoryId,
+getSubCategoryId,
+getProductTypeById
 } = require("../controllers/product/productCon");
 const {
   addToWishlist,
@@ -130,7 +140,7 @@ routs.post("/createCategory", upload.single("avatar"), createCategory);
 routs.post("/createSubCategory", upload.single("avatar"), createSubCategory);
 routs.post("/createProductType", upload.single("avatar"), createProductType);
 routs.post("/createProduct", upload.single("avatar"), createProduct);
-routs.post("/createBrand", createBrand);
+routs.post("/createBrand",upload.single("logo"), createBrand);
 routs.get("/getProductById/:productId", productOnId);
 routs.get("/getProductBasisOfSubcategory", getProductBasisOfSubcategory);
 routs.get("/getProductsAfterFiltration/:subCategoryId", getSearchResult);
@@ -145,12 +155,22 @@ routs.get(
   getSubcategoryBasedOnCategory
 );
 
-routs.post("/editCategory", editCategory);
+routs.get("/getBrand", getBrand);
+routs.get("/getBrandById/:brandId", getBrandById);
+routs.get("/deleteBrand/:brandId", deleteBrand);
+routs.get("/totalProductOfBrand/:brandId", totalProductOfBrand);
+routs.post("/editCategory/:categoryId", editCategory);
 routs.post("/updateProduct", updateProduct);
-routs.post("/editSubCategory", editSubCategory);
-routs.post("/editProductType", editProductType);
-routs.post("/editBrand", editBrand);
+routs.post("/editSubCategory/:subCategoryId", editSubCategory);
+routs.post("/editProductType/:productTypeId", editProductType);
+routs.post("/editBrand/:brandId",upload.single("logo"), editBrand);
 routs.get("/deleteProduct", deleteProduct);
+routs.get("/deleteCategory", deleteCategory);
+routs.get("/deleteSubCategory", deleteSubCategory);
+routs.get("/deleteProductType", deleteProductType);
+routs.get("/getCategoryId/:categoryId", getCategoryId);
+routs.get("/getSubCategoryId/:subcategoryId", getSubCategoryId);
+routs.get("/getProductTypeById/:productTypeId", getProductTypeById);
 
 //Wishlist
 routs.post("/addToWishlist", auth, addToWishlist);

@@ -10,7 +10,7 @@ const brandSchema = new Schema({
         type: String,
         required: true
     },
-    logo: {
+    logoUrl: {
         type: String,
         required: true
     },
