@@ -1,12 +1,21 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
-const productType = require("../product/productType");
 
 const productSchema = new Schema(
   {
     name: {
       type: String,
       required: true,
+    },
+    categoryId: {
+      type: Schema.Types.ObjectId,
+      ref: "MainCategory",
+      require: true,
+    },
+    subCategoryId: {
+      type: Schema.Types.ObjectId,
+      ref: "SubCategory",
+      require: true,
     },
     productType: {
       type: Schema.Types.ObjectId,
@@ -24,10 +33,6 @@ const productSchema = new Schema(
     },
     item_code: {
       type: String,
-      required: true,
-    },
-    price: {
-      type: Number,
       required: true,
     },
     shipping_cost: {
@@ -50,14 +55,6 @@ const productSchema = new Schema(
       type: Number,
       default: false,
     },
-    Variation_Type: {
-      type: String,
-      required: true,
-      enum: ["Color", "Size", "weight"],
-    },
-    variation: {
-      type: Schema.Types.Mixed,
-    },
     description: {
       type: String,
       required: true,
@@ -70,20 +67,6 @@ const productSchema = new Schema(
     ],
     details: {
       type: Schema.Types.Mixed,
-    },
-    attributes: {
-      color: {
-        type: String,
-        required: true,
-      },
-      size: {
-        type: Number,
-        required: true,
-      },
-      strength: {
-        type: Number,
-        required: true,
-      },
     },
     isCustomizable: {
       type: Boolean,
@@ -110,26 +93,13 @@ const productSchema = new Schema(
       type: Number,
       required: true,
     },
-    inventory: {
-      sku: {
-        type: Number,
-        required: true,
+    variant: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Variant",
+        require: true,
       },
-      item_code: {
-        type: String,
-
-        validate: {
-          validator: function (value) {
-            return /^[a-zA-Z0-9@#$]+$/.test(value);
-          },
-          message: "House number must be alphanumeric",
-        },
-      },
-      quantity: {
-        type: Number,
-        required: true,
-      },
-    },
+    ],
   },
   { timestamps: true }
 );

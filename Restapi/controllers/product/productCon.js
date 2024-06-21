@@ -13,7 +13,7 @@ const getImageLink = async (req, res) => {
   try {
     // Extracting file buffer and extension from the request
     const inputImagePath = await req.file.buffer;
-    console.log(inputImagePath);
+   
     const extension = req.file.originalname.split(".").pop();
 
     // Define resizing and compression parameters
@@ -47,6 +47,42 @@ const getImageLink = async (req, res) => {
   } catch (error) {
     console.error("Error in getImageLink:", error);
     
+  }
+};
+const getImageLinks = async (req) => {
+  try {
+    const imageLinks = [];
+
+    for (const file of req.files) {
+      const inputImagePath = file.buffer;
+      const extension = file.originalname.split(".").pop();
+      const width = 800;
+      const compressionQuality = 5;
+
+      const imageBuffer = await compressAndResizeImage(
+        inputImagePath,
+        extension,
+        width,
+        compressionQuality
+      );
+
+      const newFileName =
+        file.originalname.split(".")[0].split(" ").join("-") +
+        "-" +
+        Date.now() +
+        "." +
+        extension;
+
+      await generateStringOfImageList(imageBuffer, newFileName, res);
+
+      const imgUrl = "https://d2w5oj0jmt3sl6.cloudfront.net/" + newFileName;
+      imageLinks.push(imgUrl);
+    }
+
+    return imageLinks;
+  } catch (error) {
+    console.error("Error in getImageLinks:", error);
+    throw error;
   }
 };
 
@@ -89,15 +125,15 @@ const createProduct = async (req, res) => {
     description,
     price,
     details,
-    attributes,
+    categoryId,
+    subCategoryId,
     isCustomizable,
     shipping_cost,
     is_shipping_cost_need,
     is_cash_on_delivery_avail,
     unit_price,
     purchase_price,
-    Variation_Type,
-    variation,
+    Variation,
     has_expiry,
     is_expiry_expiry_salable,
     unit,
@@ -105,10 +141,21 @@ const createProduct = async (req, res) => {
     utsab_discount,
     inventory: { sku, item_code, quantity },
   } = req.body;
+  let singleImageUrl = "";
+  if (req.files["singleImage"]) {
+    const singleImageFiles = req.files["singleImage"];
+    const singleImageLinks = await getImageLinks(singleImageFiles);
+    singleImageUrl = singleImageLinks[0]; // Assuming only one image is uploaded
+  }
 
-  const imgUrl = getImageLink();
+  // Process multiple images
+  let imageListUrls = [];
+  if (req.files["imageList"]) {
+    const imageListFiles = req.files["imageList"];
+    imageListUrls = await getImageLinks(imageListFiles);
+  }
+ const { Variation_Type, variation, variantImgLink } = Variation;
 
-  const { color, size, strength } = attributes;
   console.log(req.body);
   try {
     const newProduct = new productSc({
@@ -116,20 +163,24 @@ const createProduct = async (req, res) => {
       productType,
       brand,
       quantity,
+      categoryId,
+      subCategoryId,
       item_code,
       price,
       description,
-      imgUrl,
+      imgUrl: imageListFiles,
       details,
-      attributes: { color, size, strength },
       isCustomizable,
       shipping_cost,
       is_shipping_cost_need,
       is_cash_on_delivery_avail,
       unit_price,
       purchase_price,
-      Variation_Type,
-      variation,
+      variation: {
+        Variation_Type,
+        variation,
+        variantImgLink: singleImageUrl,
+      },
       has_expiry,
       is_expiry_expiry_salable,
       unit,
@@ -238,7 +289,8 @@ const categoryDetails = async (req, res) => {
 const createCategory = async (req, res) => {
   try {
     const { name, description } = req.body;
-    const logoUrl = getImageLink();
+    console.log(req.file)
+    const logoUrl = await getImageLink(req);
     const newCategory = new mainCategory({
       name,
       description,
@@ -258,19 +310,23 @@ const createCategory = async (req, res) => {
 };
 const createSubCategory = async (req, res) => {
   try {
+   
+    if (!req.body || Object.keys(req.body).length === 0) {
+      return res.status(400).json({ message: "No details given" });
+    }
     const { name, description, mainCategoryId } = req.body;
-    const mainCategoryDetails = await mainCategory.find({
+    const mainCategoryDetails = await subCategory.find({
       _id: mainCategoryId,
     });
     if (!mainCategoryDetails) {
       return res.status(500).json({ message: "Main category is not present" });
     }
-    const logoUrl = getImageLink();
+    const logoUrl = await getImageLink(req);
     const newSubCategory = new subCategory({
       name,
       description,
       logoUrl,
-      mainCategory: mainCategoryId,
+      mainCategoryId
     });
     if (!newSubCategory) {
       res.status(500).json({ message: "Internal Server Error" });
@@ -286,18 +342,19 @@ const createSubCategory = async (req, res) => {
 };
 const createProductType = async (req, res) => {
   try {
-    const { name, description, subCategoryId } = req.body;
-    const logoUrl = getImageLink();
-    const newSubCategory = new productType({
+    const { name, description, subCategoryId,categoryId } = req.body;
+    const logoUrl = await getImageLink(req);
+    const newProductType = new productType({
       name,
       description,
       logoUrl,
-      subCategory: subCategoryId,
+      subCategoryId,
+      categoryId,
     });
-    if (!newSubCategory) {
+    if (!newProductType) {
       res.status(500).json({ message: "Internal Server Error" });
     }
-    await newSubCategory.save();
+    await newProductType.save();
     res.status(201).json({
       success: true,
       message: "subCategory created successfully",
@@ -354,17 +411,44 @@ const getProductBasisOfSubcategory = async (req, res) => {
 };
 const editCategory = async (req, res) => {
   try {
+    if (!req.body || Object.keys(req.body).length === 0) {
+      return res.status(400).json({ message: "No details given" });
+    }
     const categoryDetails = await mainCategory.findOne({
-      _id: req.body._id,
+      _id: req.params.categoryId,
     });
     if (!categoryDetails) {
       return res.status(500).json({ message: " No such Category" });
     }
+ console.log(categoryDetails);
+     if (!req.file) {
+       const logoUrl = req.body.logo;
+       console.log(req.body);
+       console.log(logoUrl);
+       const { name, description } = req.body;
+       categoryDetails.name = name;
+       categoryDetails.description = description;
+       categoryDetails.logoUrl = logoUrl;
+       await categoryDetails.save();
+      
+     } else {
+       const logoUrl = await getImageLink(req);
+       const { name, description} = req.body;
+       categoryDetails.name = name;
+       categoryDetails.description = description;      
+       categoryDetails.logoUrl = logoUrl;
+       await categoryDetails.save();
+     }
+     return res.status(200).json({ categoryDetails });
   } catch (error) {
     res.status(500).json({ message: error.message + " Internal Server Error" });
+    console.log({message: error.message} )
   }
 };
 const updateProduct = async (req, res) => {
+  if (!req.body || Object.keys(req.body).length === 0) {
+    return res.status(400).json({ message: "No details given" });
+  }
   const {
     name,
     productType,
@@ -478,17 +562,34 @@ const updateProduct = async (req, res) => {
 const editSubCategory = async (req, res) => {
   try {
     const subCategoryDetails = await subCategory.findOne({
-      _id: req.body.subCategoryId,
+      _id: req.params.subCategoryId,
     });
     if (!subCategoryDetails) {
       return res.status(500).json({ message: "No such subcategory found" });
     }
-    const { name, description, mainCategoryId } = req.body();
-    subCategoryDetails.name = name;
-    subCategoryDetails.description = description;
-    subCategoryDetails.categoryId = mainCategoryId;
-    await subCategoryDetails.save();
-    return res.status(200).json({ message: "Subcategory found successfully" });
+    console.log(req.body)
+     if (!req.body || Object.keys(req.body).length === 0) {
+       return res.status(400).json({ message: "No details given" });
+     }
+   
+      if (!req.file) {
+        const logoUrl = req.body.logo;
+         const { name, description, mainCategoryId } = req.body;
+        subCategoryDetails.name = name;
+        subCategoryDetails.description = description;
+        subCategoryDetails.mainCategoryId = mainCategoryId;
+        subCategoryDetails.logoUrl = logoUrl;
+        await subCategoryDetails.save();
+      } else {
+        const logoUrl = await getImageLink(req);
+        const { name, description, mainCategoryId } = req.body;
+        subCategoryDetails.name = name;
+        subCategoryDetails.description = description;
+        subCategoryDetails.mainCategoryId = mainCategoryId;
+        subCategoryDetails.logoUrl = logoUrl;
+        await subCategoryDetails.save();
+      }
+      return res.status(200).json({ subCategoryDetails });
   } catch (error) {
     res.status(500).json({ message: error.message + " Internal Server Error" });
   }
@@ -496,17 +597,30 @@ const editSubCategory = async (req, res) => {
 const editProductType = async (req, res) => {
   try {
     const productTypeDetails = await productType.findOne({
-      _id: req.body.productTypeId,
+      _id: req.params.productTypeId,
     });
     if (!productTypeDetails) {
       return res.status(500).json({ message: "No such productType found" });
     }
-    const { name, description, subCategoryId } = req.body();
-    productTypeDetails.name = name;
-    productTypeDetails.description = description;
-    productTypeDetails.subCategory = subCategoryId;
-    await productTypeDetails.save();
-    return res.status(200).json({ message: "productType saved successfully" });
+    if (!req.file) {
+      const logoUrl = req.body.logo;
+      const { name, description, subCategoryId,categoryId } = req.body;
+      productTypeDetails.name = name;
+      productTypeDetails.description = description;
+      productTypeDetails.subCategoryId = subCategoryId;
+       productTypeDetails.categoryId = categoryId;
+      productTypeDetails.logoUrl = logoUrl;
+      await productTypeDetails.save();
+    } else {
+      const logoUrl = await getImageLink(req);
+      const { name, description, subCategoryId, categoryId } = req.body;
+      productTypeDetails.name = name;
+      productTypeDetails.description = description;
+      productTypeDetails.subCategoryId = subCategoryId;
+      productTypeDetails.logoUrl = logoUrl;
+      await productTypeDetails.save();
+    }
+    return res.status(200).json({ productTypeDetails });
   } catch (error) {
     res.status(500).json({ message: error.message + " Internal Server Error" });
   }
@@ -577,7 +691,7 @@ const getSubcategoryBasedOnCategory = async (req, res) => {
   try {
     const categoryId = req.params.categoryId;
     const subCategoryList = await subCategory.find({
-      mainCategory: categoryId,
+      mainCategoryId: categoryId,
     });
     if (!subCategoryList) {
       return res.status(500).json({ message: "No list found" });
@@ -661,7 +775,7 @@ const deleteBrand=async(req,res)=>{
 const deleteCategory=async(req,res)=>{
   try{
     const categoryId = req.params.categoryId
-    const categoryDetails = await mainCategory.findById({
+    const categoryDetails = await mainCategory.findByIdAndDelete({
       _id: categoryId,
     });
     if(!categoryDetails){
@@ -669,82 +783,106 @@ const deleteCategory=async(req,res)=>{
         .status(500)
         .json({ message: "no details found" });
     }
-     return res.status(500).json({ message: "Deleted successfully" });
+     return res.status(200).json({ message: "Deleted successfully" });
   }catch (error) {
     res.status(500).json({ message: error.message + " Internal Server Error" });
   }
 }
 const deleteSubCategory=async(req,res)=>{
   try{
-    const subCategoryId = req.params.categoryId;
-    const subCategoryDetails = await subCategory.findById({
+    const subCategoryId = req.params.subCategoryId;
+    console.log(subCategoryId);
+    const subCategoryDetails = await subCategory.findByIdAndDelete({
       _id: subCategoryId,
     });
     if (!subCategoryDetails) {
       return res.status(500).json({ message: "no details found" });
     }
-     return res.status(500).json({ message: "Deleted successfully" });
+     return res.status(200).json({ message: "Deleted successfully" });
   }catch (error) {
     res.status(500).json({ message: error.message + " Internal Server Error" });
   }
 }
 const deleteProductType=async(req,res)=>{
   try{
-    const productTypeId = req.params.categoryId;
-    const productTypeDetails = await productType.findById({
+    const productTypeId = req.params.productTypeId;
+    const productTypeDetails = await productType.findByIdAndDelete({
       _id: productTypeId,
     });
     if (!productTypeDetails) {
       return res.status(500).json({ message: "no details found" });
     }
-     return res.status(500).json({ message: "Deleted successfully" });
+     return res.status(200).json({ message: "Deleted successfully" });
   }catch (error) {
     res.status(500).json({ message: error.message + " Internal Server Error" });
   }
 }
 const getCategoryId = async (req, res) => {
   try {
-    const productTypeId = req.params.categoryId;
-    const productTypeDetails = await productType.findById({
-      _id: productTypeId,
-    });
-    if (!productTypeDetails) {
-      return res.status(500).json({ message: "no details found" });
-    }
-    return res.status(500).json({ message: "Deleted successfully" });
+       const categoryId = req.params.categoryId;
+       const categoryDetails = await mainCategory.findById({
+         _id: categoryId,
+       });
+       if (!categoryDetails) {
+         return res.status(500).json({ message: "No details found" });
+       }
+       return res.status(200).json({ categoryDetails });
   } catch (error) {
     res.status(500).json({ message: error.message + " Internal Server Error" });
   }
 };
 const getProductTypeById = async (req, res) => {
   try {
-    const productTypeId = req.params.categoryId;
+    const productTypeId = req.params.productTypeId;
     const productTypeDetails = await productType.findById({
       _id: productTypeId,
     });
     if (!productTypeDetails) {
       return res.status(500).json({ message: "no details found" });
     }
-    return res.status(500).json({ message: "Deleted successfully" });
+    return res.status(200).json({ productTypeDetails });
   } catch (error) {
     res.status(500).json({ message: error.message + " Internal Server Error" });
   }
 };
 const getSubCategoryId = async (req, res) => {
   try {
-    const productTypeId = req.params.categoryId;
-    const productTypeDetails = await productType.findById({
-      _id: productTypeId,
+    const subCategoryId = req.params.subcategoryId;
+    const subCategoryIdDetails = await subCategory.findById({
+      _id: subCategoryId,
     });
-    if (!productTypeDetails) {
+    if (!subCategoryIdDetails) {
       return res.status(500).json({ message: "no details found" });
     }
-    return res.status(500).json({ message: "Deleted successfully" });
+    return res.status(200).json({ subCategoryIdDetails });
   } catch (error) {
     res.status(500).json({ message: error.message + " Internal Server Error" });
   }
 };
-
+const getAllSubCategory=async(req,res)=>{
+  try {
+    const subCategoryList=await subCategory.find({})
+    if(!subCategoryList){
+      return res
+        .status(500)
+        .json({ message: "No subCategory" });
+    }
+    return res.status(200).json({ subCategoryList });
+  } catch (error) {
+    res.status(500).json({ message: error.message + " Internal Server Error" });
+  }
+}
+const getAllProductType=async(req,res)=>{
+  try {
+     const productTypeList = await productType.find({});
+     if (!productTypeList) {
+       return res.status(500).json({ message: "No subCategory" });
+     }
+     return res.status(200).json({ productTypeList });
+  } catch (error) {
+    res.status(500).json({ message: error.message + " Internal Server Error" });
+  }
+}
 module.exports = {
   getAllProduct,
   categoryDetails,
@@ -776,4 +914,6 @@ module.exports = {
   getCategoryId,
   getSubCategoryId,
   getProductTypeById,
+  getAllSubCategory,
+  getAllProductType,
 };

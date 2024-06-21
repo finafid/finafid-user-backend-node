@@ -10,13 +10,13 @@ const subCategorySc = new Schema(
     },
     description: {
       type: String,
-      required: true,
+      
     },
     logoUrl: {
       type: String,
       required: true,
     },
-    mainCategory: {
+    mainCategoryId: {
       type: Schema.Types.ObjectId,
       require: true,
       ref: "mainCategory",

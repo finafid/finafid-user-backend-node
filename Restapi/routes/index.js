@@ -48,8 +48,10 @@ const {
   deleteSubCategory,
   deleteProductType,
   getCategoryId,
-getSubCategoryId,
-getProductTypeById
+  getSubCategoryId,
+  getProductTypeById,
+  getAllSubCategory,
+  getAllProductType,
 } = require("../controllers/product/productCon");
 const {
   addToWishlist,
@@ -66,7 +68,7 @@ const {
   getOrderById,
   updateStatus,
 } = require("../controllers/order/orderController");
-const { upload } = require("../utils/fileUpload");
+const { upload, uploadFiles } = require("../utils/fileUpload");
 const {
   createGiftCard,
   getGiftCardDetails,
@@ -100,6 +102,12 @@ const {
   getUserOrderCount,
   topSellingProduct,
 } = require("../controllers/Admin Dashboard/dashBoardController.js");
+const {
+  deleteVariationType,
+  editVariationType,
+  createVariation,
+  getAllVariation,
+} = require("../controllers/product/variation&UnitController.js");
 
 //user Authentication
 routs.post("/register", userRegistrationValidation, userRegistration);
@@ -136,10 +144,10 @@ routs.post(
 
 routs.get("/allProducts", getAllProduct);
 routs.get("/allCategoryDetails", categoryDetails);
-routs.post("/createCategory", upload.single("avatar"), createCategory);
-routs.post("/createSubCategory", upload.single("avatar"), createSubCategory);
-routs.post("/createProductType", upload.single("avatar"), createProductType);
-routs.post("/createProduct", upload.single("avatar"), createProduct);
+routs.post("/createCategory", upload.single("logo"), createCategory);
+routs.post("/createSubCategory", upload.single("logo"), createSubCategory);
+routs.post("/createProductType", upload.single("logo"), createProductType);
+
 routs.post("/createBrand",upload.single("logo"), createBrand);
 routs.get("/getProductById/:productId", productOnId);
 routs.get("/getProductBasisOfSubcategory", getProductBasisOfSubcategory);
@@ -159,18 +167,29 @@ routs.get("/getBrand", getBrand);
 routs.get("/getBrandById/:brandId", getBrandById);
 routs.get("/deleteBrand/:brandId", deleteBrand);
 routs.get("/totalProductOfBrand/:brandId", totalProductOfBrand);
-routs.post("/editCategory/:categoryId", editCategory);
-routs.post("/updateProduct", updateProduct);
-routs.post("/editSubCategory/:subCategoryId", editSubCategory);
-routs.post("/editProductType/:productTypeId", editProductType);
+routs.post("/editCategory/:categoryId",upload.single("logo"), editCategory);
+routs.post("/updateProduct",upload.single("logo"), updateProduct);
+routs.post("/editSubCategory/:subCategoryId",upload.single("logo"), editSubCategory);
+routs.post("/editProductType/:productTypeId",upload.single("logo"), editProductType);
 routs.post("/editBrand/:brandId",upload.single("logo"), editBrand);
+routs.get("/getProductById/:productId", productOnId);
+routs.post("/updateProduct", uploadFiles, updateProduct);
+routs.post("/createProduct", uploadFiles, createProduct);
 routs.get("/deleteProduct", deleteProduct);
-routs.get("/deleteCategory", deleteCategory);
-routs.get("/deleteSubCategory", deleteSubCategory);
-routs.get("/deleteProductType", deleteProductType);
+routs.get("/deleteCategory/:categoryId", deleteCategory);
+routs.get("/deleteSubCategory/:subCategoryId", deleteSubCategory);
+routs.get("/deleteProductType/:productTypeId", deleteProductType);
 routs.get("/getCategoryId/:categoryId", getCategoryId);
 routs.get("/getSubCategoryId/:subcategoryId", getSubCategoryId);
+routs.post(
+  "/editSubCategory/:subCategoryId",
+  upload.single("logo"),
+  editSubCategory
+);
 routs.get("/getProductTypeById/:productTypeId", getProductTypeById);
+routs.post("/createProductType", upload.single("logo"), createProductType);
+routs.get("/getAllSubCategory", getAllSubCategory);
+routs.get("/getAllProductType", getAllProductType);
 
 //Wishlist
 routs.post("/addToWishlist", auth, addToWishlist);
@@ -219,5 +238,10 @@ routs.get("/getTotalUser", totalUser);
 routs.get("/getOrderAnalysis", orderAnalysis);
 routs.get("/getUserOrderCount", getUserOrderCount);
 routs.get("/topSellingProduct", topSellingProduct);
+//variation
+routs.post("/createVariation", createVariation);
+routs.post("/deleteVariationType", deleteVariationType);
+routs.get("/editVariationType", editVariationType);
+routs.get("/getAllVariation", getAllVariation);
 
-module.exports = routs;
+    (module.exports = routs);

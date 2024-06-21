@@ -48,6 +48,10 @@ const upload = multer({
     fileSize: 10 * 1024 * 1024,
   },
 });
+const uploadFiles = upload.fields([
+  { name: "singleImage", maxCount: 1 }, // Single image field
+  { name: "imageList", maxCount: 10 }, // Multiple images field
+]);
 
 async function generateStringOfImageList(body, key, res) {
   try {
@@ -77,4 +81,5 @@ module.exports = {
   generateStringOfImageList,
   upload,
   compressAndResizeImage,
+  uploadFiles,
 };

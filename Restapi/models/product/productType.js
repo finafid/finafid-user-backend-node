@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
-const subCategory = require("../product/SubCategory");
+
 
 const productTypeSchema = new Schema(
   {
@@ -16,7 +16,12 @@ const productTypeSchema = new Schema(
       type: String,
       required: true,
     },
-    subCategory: {
+    categoryId: {
+      type: Schema.Types.ObjectId,
+      ref: "MainCategory",
+      require: true,
+    },
+    subCategoryId: {
       type: Schema.Types.ObjectId,
       ref: "subCategory",
       require: true,
