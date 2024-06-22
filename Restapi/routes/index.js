@@ -108,12 +108,20 @@ const {
   createVariation,
   getAllVariation,
 } = require("../controllers/product/variation&UnitController.js");
+const {
+  adminRegistration,
+  adminLogin,
+  sendMailVerificationAdmin,
+  verifyOtp,
+  adminDetails,
+  updateAdminDetails,
+} = require("../controllers/auth _admin/authAdmin.js");
+
 
 //user Authentication
 routs.post("/register", userRegistrationValidation, userRegistration);
 routs.post("/login", userLoginValidation, userLogin);
 routs.post("/refresh_token", auth, getRefreshToken);
-// routs.get('/mailVarification',mailVarification);
 routs.post("/send_mail_Varification", emailVarification, sendMailVarification);
 routs.post("/otp_varification", varifyOtp);
 
@@ -148,7 +156,7 @@ routs.post("/createCategory", upload.single("logo"), createCategory);
 routs.post("/createSubCategory", upload.single("logo"), createSubCategory);
 routs.post("/createProductType", upload.single("logo"), createProductType);
 
-routs.post("/createBrand",upload.single("logo"), createBrand);
+routs.post("/createBrand", upload.single("logo"), createBrand);
 routs.get("/getProductById/:productId", productOnId);
 routs.get("/getProductBasisOfSubcategory", getProductBasisOfSubcategory);
 routs.get("/getProductsAfterFiltration/:subCategoryId", getSearchResult);
@@ -167,11 +175,19 @@ routs.get("/getBrand", getBrand);
 routs.get("/getBrandById/:brandId", getBrandById);
 routs.get("/deleteBrand/:brandId", deleteBrand);
 routs.get("/totalProductOfBrand/:brandId", totalProductOfBrand);
-routs.post("/editCategory/:categoryId",upload.single("logo"), editCategory);
-routs.post("/updateProduct",upload.single("logo"), updateProduct);
-routs.post("/editSubCategory/:subCategoryId",upload.single("logo"), editSubCategory);
-routs.post("/editProductType/:productTypeId",upload.single("logo"), editProductType);
-routs.post("/editBrand/:brandId",upload.single("logo"), editBrand);
+routs.post("/editCategory/:categoryId", upload.single("logo"), editCategory);
+routs.post("/updateProduct", upload.single("logo"), updateProduct);
+routs.post(
+  "/editSubCategory/:subCategoryId",
+  upload.single("logo"),
+  editSubCategory
+);
+routs.post(
+  "/editProductType/:productTypeId",
+  upload.single("logo"),
+  editProductType
+);
+routs.post("/editBrand/:brandId", upload.single("logo"), editBrand);
 routs.get("/getProductById/:productId", productOnId);
 routs.post("/updateProduct", uploadFiles, updateProduct);
 routs.post("/createProduct", uploadFiles, createProduct);
@@ -244,4 +260,20 @@ routs.post("/deleteVariationType", deleteVariationType);
 routs.get("/editVariationType", editVariationType);
 routs.get("/getAllVariation", getAllVariation);
 
-    (module.exports = routs);
+//admin auth
+routs.post("/register", userRegistrationValidation, adminRegistration);
+routs.post("/login", userLoginValidation, adminLogin);
+routs.post("/refresh_token", auth, sendMailVerificationAdmin);
+routs.post(
+  "/send_mail_Varification",
+  emailVarification,
+  sendMailVerificationAdmin
+);
+routs.post("/otp_verification", verifyOtp);
+routs.post("/adminDetails", auth, adminDetails);
+routs.post("/updateAdminDetails", auth, updateAdminDetails);
+
+//Forgot password
+
+
+module.exports = routs;

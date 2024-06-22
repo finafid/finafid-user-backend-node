@@ -36,6 +36,14 @@ const variantSchema = new Schema(
       type: Number,
       required: true,
     },
+    unit_price: {
+      type: Number,
+      default: false,
+    },
+    purchase_price: {
+      type: Number,
+      default: false,
+    },
     inventory: {
       sku: {
         type: Number,

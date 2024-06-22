@@ -1,5 +1,5 @@
 const { response } = require("express");
-const User = require("../../models/auth/userSchema"); 
+const Admin = require("../../models/Auth admin/adminSchema"); 
 const { sendMail, oneMinuteExpiry, threeMinuteExpiry } = require("../../utils/mailer")
 const bcrypt = require('bcrypt');
 const jwt = require("jsonwebtoken")
@@ -11,163 +11,133 @@ const WishList=require("../../models/productBag/wishListSc")
 const { genarateStringOfImageList ,compressAndResizeImage} = require('../../utils/fileUpload')
 
 
-const userRegistration = async (req, res) => {
-    const {email,phone}=req.body;
-    const userDetails=await User.findOne({$or:[{email},{phone}]})
-    
-    if(userDetails){
-        return res.status(400).json({
-            message: 'Account is already Register',
-            success:false});
-    }
-    const newUser = new User(req.body); 
+const adminRegistration = async (req, res) => {
+  const { email, phone } = req.body;
+  const adminDetails = await Admin.findOne({ $or: [{ email }, { phone }] });
 
-    newUser.password = await bcrypt.hash(req.body.password, 10);
-    try {
-       
-        await newUser.save()
-        
-        newUser.password = undefined;
-        return res.status(201).json({ message: 'success', data: newUser });
-    } catch (err) {
-        return res.status(500).json({ message: 'error', error: err.message });
-    }
+  if (adminDetails) {
+    return res.status(400).json({
+      message: "Account is already Register",
+      success: false,
+    });
+  }
+  const newAdmin = new Admin(req.body);
+
+  newAdmin.password = await bcrypt.hash(req.body.password, 10);
+  try {
+    await newAdmin.save();
+
+    newAdmin.password = undefined;
+    return res.status(201).json({ message: "success", data: newAdmin });
+  } catch (err) {
+    return res.status(500).json({ message: "error", error: err.message });
+  }
 };
-const userLogin = async (req, res) => {
+const adminLogin = async (req, res) => {
     try {
-        const user = await User.findOne({ email: req.body.email });
-        if (!user) {
-            return res.status(401)
-                .json({ message: 'Authy failed,Invalid Email and Password' })
+        const adminDetails = await Admin.findOne({ email: req.body.email });
+        if (!adminDetails) {
+          return res
+            .status(401)
+            .json({ message: "Auth failed,Invalid Email and Password" });
         }
-        const isPassEqual = await bcrypt.compare(req.body.password, user.password)
+        const isPassEqual = await bcrypt.compare(
+          req.body.password,
+          adminDetails.password
+        );
         if (!isPassEqual) {
             return res.status(401)
-                .json({ message: 'Authy failed,Invalid Email and Password' })
+                .json({ message: 'Auth failed,Invalid Email and Password' })
         }
         const tokenObject = {
-            _id: user._id,
-            fullname: user.fullname,
-            email: user.email,
-           
-        }
+          _id: adminDetails._id,
+          fullname: adminDetails.fullname,
+          email: Admin.email,
+        };
         const jwtToken = jwt.sign(tokenObject, process.env.SECRET, { expiresIn: '10h' });
-        tokenObject.imgUrl= user.imgUrl
+        tokenObject.imgUrl = Admin.imgUrl;
         return res.status(200).json({
             token: jwtToken
         })
     } catch (err) {
         return res.status(500).json({
-            message: 'error', err
+            message: err.message+"Internal server error"
         });
     }
 };
 
-const mailVarification = async (req, res) => {
-    try {
-        if (req.query.id == undefined) {
-            return res.status(500).json({
-                message: 'error', err
-            });
-        }
-        const userData = await User.findOne({ _id: req.query.id });
-        if (userData) {
-            if (userData.email_validation == true) {
-                return res.status(200).json({
-                    message: 'Mail Already varified', err
-                })
-            }
-            User.findByIdAndUpdate({ _id: req.query.id }), {
-                $set: { email_validation: true }
-            }
-            return res.status(200).json({
-                message: 'Mail varified success fully'
-            })
-
-        } else {
-            return res.status(500).json({
-                message: 'User not found', err
-            })
-        }
-
-    } catch (err) {
-        return res.status(500).json({
-            message: 'error', err
-        });
-    }
-}
 const genOtp = async () => {
     return Math.floor(1000 + Math.random() * 9000)
 }
-const sendMailVarification = async (req, res) => {
-    try {
-        const errors = validationResult(req);
-        console.log(errors);
-        if (!errors.isEmpty()) {
-            return res.status(500).json({
-                success: false,
-                message: 'Error in request'
-            });
-        }
+const sendMailVerificationAdmin = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    console.log(errors);
+    if (!errors.isEmpty()) {
+      return res.status(500).json({
+        success: false,
+        message: "Error in request",
+      });
+    }
 
-        const { email } = req.body;
-        const userData = await User.findOne({ email });
-        if (!userData) {
-            return res.status(500).json({
-                success: false,
-                message: 'User is not present'
-            });
-        }
+    const { email } = req.body;
+    const adminData = await Admin.findOne({ email });
+    if (!adminData) {
+      return res.status(500).json({
+        success: false,
+        message: "Admin is not present",
+      });
+    }
 
-        if (userData.email_validation === true) {
-            return res.status(200).json({
-                success: true,
-                message: 'Email is already varified'
-            });
-        }
+    if (adminData.email_validation === true) {
+      return res.status(200).json({
+        success: true,
+        message: "Email is already verified",
+      });
+    }
 
-        const g_otp = await genOtp();
-        console.log(g_otp)
-        const cDate = new Date();
-        const oldOtpData = await Otp.findOne({ email: userData.email });
-       
-        if (oldOtpData) {
-            const sendNextOtp = await oneMinuteExpiry(oldOtpData.timestamp);
-            if (!sendNextOtp) {
-                return res.status(500).json({
-                    success: false,
-                    message: 'Time is less than expected'
-                });
-            }
-        }
+    const g_otp = await genOtp();
+    console.log(g_otp);
+    const cDate = new Date();
+    const oldOtpData = await Otp.findOne({ email: adminData.email });
 
-        await Otp.findOneAndUpdate(
-            { email: userData.email },
-            { otp: g_otp, timestamp: new Date(cDate.getTime()) },
-            { upsert: true, new: true, setDefaultsOnInsert: true }
-        );
+    if (oldOtpData) {
+      const sendNextOtp = await oneMinuteExpiry(oldOtpData.timestamp);
+      if (!sendNextOtp) {
+        return res.status(500).json({
+          success: false,
+          message: "Time is less than expected",
+        });
+      }
+    }
 
-        const msg = `<div style="font-family: Arial, sans-serif; color: #333; background-color: #f9f9f9; padding: 20px;">
-            <p style="margin-bottom: 10px;">Dear ${userData.fullName},</p>
+    await Otp.findOneAndUpdate(
+      { email: adminData.email },
+      { otp: g_otp, timestamp: new Date(cDate.getTime()) },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const msg = `<div style="font-family: Arial, sans-serif; color: #333; background-color: #f9f9f9; padding: 20px;">
+            <p style="margin-bottom: 10px;">Dear ${adminData.fullName},</p>
             <p style="margin-bottom: 10px;">The OTP for your email is ${g_otp}.</p>
             <p style="margin-bottom: 10px;">Best regards,</p>
             <p style="margin-bottom: 0;">The [Your Company] Team</p>
         </div>`;
 
-        await sendMail(userData.email, "Email Verification", msg);
+    await sendMail(adminData.email, "Email Verification", msg);
 
-        return res.status(200).json({
-            success: true,
-            message: 'Otp is send to the email'
-        });
-    } catch (err) {
-        console.error(err);
-        return res.status(500).json({
-            success: false,
-            message: 'Error occurred',
-            error: err.message
-        });
-    }
+    return res.status(200).json({
+      success: true,
+      message: "Otp is send to the email",
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      success: false,
+      message: "Error occurred",
+      error: err.message,
+    });
+  }
 };
 const sendMailVerificationForForgotPassword=async(req,res)=> {
     try {
@@ -181,17 +151,17 @@ const sendMailVerificationForForgotPassword=async(req,res)=> {
         }
 
         const { email } = req.body;
-        const userData = await User.findOne({ email });
-        if (!userData) {
-            return res.status(500).json({
-                success: false,
-                message: 'User is not present'
-            });
+        const adminData = await Admin.findOne({ email });
+        if (!adminData) {
+          return res.status(500).json({
+            success: false,
+            message: "Admin is not present",
+          });
         }
         const g_otp = await genOtp();
         console.log(g_otp)
         const cDate = new Date();
-        const oldOtpData = await Otp.findOne({ email: userData.email });
+        const oldOtpData = await Otp.findOne({ email: adminData.email });
        
         if (oldOtpData) {
             const sendNextOtp = await oneMinuteExpiry(oldOtpData.timestamp);
@@ -204,19 +174,19 @@ const sendMailVerificationForForgotPassword=async(req,res)=> {
         }
 
         await Otp.findOneAndUpdate(
-            { email: userData.email },
-            { otp: g_otp, timestamp: new Date(cDate.getTime()) },
-            { upsert: true, new: true, setDefaultsOnInsert: true }
+          { email: adminData.email },
+          { otp: g_otp, timestamp: new Date(cDate.getTime()) },
+          { upsert: true, new: true, setDefaultsOnInsert: true }
         );
 
         const msg = `<div style="font-family: Arial, sans-serif; color: #333; background-color: #f9f9f9; padding: 20px;">
-            <p style="margin-bottom: 10px;">Dear ${userData.fullName},</p>
+            <p style="margin-bottom: 10px;">Dear ${adminData.fullName},</p>
             <p style="margin-bottom: 10px;">The OTP for your email is ${g_otp}.</p>
             <p style="margin-bottom: 10px;">Best regards,</p>
             <p style="margin-bottom: 0;">The [Your Company] Team</p>
         </div>`;
 
-        await sendMail(userData.email, "Email Verification", msg);
+        await sendMail(adminData.email, "Email Verification", msg);
 
         return res.status(200).json({
             success: true,
@@ -232,7 +202,7 @@ const sendMailVerificationForForgotPassword=async(req,res)=> {
     }
 };
 
-const varifyOtp = async (req, res) => {
+const verifyOtp = async (req, res) => {
     try {
         const errors = validationResult(req)
         if (!errors.isEmpty()) {
@@ -260,7 +230,7 @@ const varifyOtp = async (req, res) => {
                 message: 'Otp is expired', 
             });
         }
-        await User.findOneAndUpdate({
+        await Admin.findOneAndUpdate({
             email:email
         }, {
             $set: {
@@ -269,7 +239,7 @@ const varifyOtp = async (req, res) => {
         },{ new: true });
         return res.status(200).json({
             success: true,
-            message: 'Account varified succesfully'
+            message: 'Account verified successfully'
         });
 
 
@@ -294,19 +264,19 @@ const updatePasswordForResetPassword=async(req,res)=>{
         const  {email,password}=req.body;
         const newPassword = await bcrypt.hash(password, 10);
         console.log(newPassword)
-        const userData=await User.findOneAndUpdate({email:email},{
+        const adminData=await Admin.findOneAndUpdate({email:email},{
             $set:{
                 password:newPassword
             }
         },{ new: true })
-        console.log(userData)
-        if (!userData) {
-            return res.status(500).json({
-                success: false,
-                message: 'User is not present'
-            });
+        console.log(adminData);
+        if (!adminData) {
+          return res.status(500).json({
+            success: false,
+            message: "admin is not present",
+          });
         }
-        await userData.save();
+        await adminData.save();
         return res.status(200).json({
             success: true,
             message:'Password updated successfully', 
@@ -353,68 +323,34 @@ const logout=async(req,res)=>{
     }
 }
 
-const userDetails=async(req,res)=>{
+const adminDetails=async(req,res)=>{
     try{
-        console.log(req.user)
-        const user = await User.findById({_id:req.user._id}).select('-password');
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+      
+        const admin = await Admin.findById({_id:req.Admin._id}).select('-password');
+        if (!admin) {
+          return res.status(404).json({ message: "Admin not found" });
         }
-        // user.password = undefined;
-        const cartDetails=await Cart.findOne({UserId:req.user._id}).lean();
-        // if(!cartDetails){
-        //     return res.status(404).json({ message: 'No cart not found' });
-        // }
-        const wishListDetails=await WishList.findOne({UserId:req.user._id}).lean();
-        // if(!wishListDetails){
-        //     return res.status(404).json({ message: 'No wishList Details not found' });
-        // }
-        user.cartDetails = cartDetails;
-        user.wishListDetails = wishListDetails;
-        user[cartDetails]=cartDetails
-        user[wishListDetails]=wishListDetails
-        res.status(200).json(user);
+       
+        res.status(200).json(admin);
     }catch(error){
         res.status(500).json({ message: error.message +' Internal Server Error' });
     }
 }
-const renewToken=async(req,res)=>{
-    try{
-        
-    }
-    catch(error){
-        res.status(500).json({ message: error.message +' Internal Server Error' });
-    }
-}
-const getRefreshToken=async(req,res)=>{
-    try{
-        const userId=req.body.user._id;
-        const userData=User.findById({
-            _id:userId
-        })
-        if(!userData){
-            res.status(500).json({ message: error.message +' Internal Server Error' });
-        }
 
-    }
-    catch(error){
-        res.status(500).json({ message: error.message +' Internal Server Error' });
-    }
-}
-const updateUserDetails = async (req, res) => {
+const updateAdminDetails = async (req, res) => {
     try {
-        const userDetails = await User.findOne({ _id: req.user._id });
+        const adminDetails = await Admin.findOne({ _id: req.Admin._id });
 
         const { fullName, gender } = req.body;
         
         if (fullName) {
-            userDetails.fullName = fullName;
-            await userDetails.save();
+            adminDetails.fullName = fullName;
+            await adminDetails.save();
         }
 
         if (gender) {
-            userDetails.gender = gender;
-            await userDetails.save();
+            adminDetails.gender = gender;
+            await adminDetails.save();
         }
         console.log(req.file)
         if (req.file) {
@@ -427,27 +363,25 @@ const updateUserDetails = async (req, res) => {
             req.file.originalname = req.file.originalname.split(".")[0].split(" ").join("-") + "-" + Date.now() + "." + extention;
             const imgUrl = "https://d2w5oj0jmt3sl6.cloudfront.net/" + req.file.originalname;
             console.log(imgUrl)
-            userDetails.imgUrl = imgUrl;
-            await userDetails.save()
+            adminDetails.imgUrl = imgUrl;
+            await adminDetails.save();
             genarateStringOfImageList(imageBuffer, req.file.originalname, res);
         }
-        console.log(userDetails)
-        return res.status(200).json(userDetails);
+        console.log(adminDetails);
+        return res.status(200).json(adminDetails);
     } catch (error) {
         return res.status(500).json({ message: error.message + ' Internal Server Error' });
     }
 };
 
 module.exports = {
-    userRegistration,
-    userLogin,
-    mailVarification,
-    sendMailVarification,
-    varifyOtp,
-    updatePasswordForResetPassword,
-    logout,
-    userDetails,
-    getRefreshToken,
-    sendMailVerificationForForgotPassword,
-    updateUserDetails
-}
+  adminRegistration,
+  adminLogin,
+  sendMailVerificationAdmin,
+  verifyOtp,
+  updatePasswordForResetPassword,
+  logout,
+  adminDetails,
+  sendMailVerificationForForgotPassword,
+  updateAdminDetails,
+};

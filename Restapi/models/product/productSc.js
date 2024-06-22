@@ -27,32 +27,12 @@ const productSchema = new Schema(
       ref: "Brand",
       required: true,
     },
-    quantity: {
-      type: Number,
-      required: true,
-    },
-    item_code: {
-      type: String,
-      required: true,
-    },
-    shipping_cost: {
-      type: Number,
-      required: true,
-    },
     is_shipping_cost_need: {
       type: Boolean,
       default: false,
     },
     is_cash_on_delivery_avail: {
       type: Boolean,
-      default: false,
-    },
-    unit_price: {
-      type: Number,
-      default: false,
-    },
-    purchase_price: {
-      type: Number,
       default: false,
     },
     description: {
