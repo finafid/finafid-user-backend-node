@@ -11,6 +11,8 @@ const {
   getRefreshToken,
   sendMailVerificationForForgotPassword,
   updateUserDetails,
+  updateEmail,
+  updateNotification,
 } = require("../controllers/auth");
 const {
   userRegistrationValidation,
@@ -52,6 +54,7 @@ const {
   getProductTypeById,
   getAllSubCategory,
   getAllProductType,
+  getAllVarients,
 } = require("../controllers/product/productCon");
 const {
   addToWishlist,
@@ -116,7 +119,13 @@ const {
   adminDetails,
   updateAdminDetails,
 } = require("../controllers/auth _admin/authAdmin.js");
-
+const {
+  createReview,
+  GetAllReviews,
+  reviewByID,
+  updateReview,
+  deleteReview,
+} = require("../controllers/product/reviewAndRatings.js");
 
 //user Authentication
 routs.post("/register", userRegistrationValidation, userRegistration);
@@ -136,7 +145,8 @@ routs.post(
   passwordVarification,
   updatePasswordForResetPassword
 );
-
+routs.post("/updateEmail", auth, updateEmail);
+routs.post("/updateNotification", auth, updateNotification);
 //Logout api
 routs.get("/logout", auth, logout);
 //user Details
@@ -150,11 +160,13 @@ routs.post(
 
 // Product Details
 
-routs.get("/allProducts", getAllProduct);
+routs.get("/allProducts", getAllVarients);
 routs.get("/allCategoryDetails", categoryDetails);
 routs.post("/createCategory", upload.single("logo"), createCategory);
 routs.post("/createSubCategory", upload.single("logo"), createSubCategory);
 routs.post("/createProductType", upload.single("logo"), createProductType);
+
+//routs.post("/getAllVarients",  getAllVarients);
 
 routs.post("/createBrand", upload.single("logo"), createBrand);
 routs.get("/getProductById/:productId", productOnId);
@@ -195,11 +207,7 @@ routs.get("/getProductById/:productId", productOnId);
 routs.post("/updateProduct", uploadImageToS3, updateProduct);
 routs.post(
   "/createProduct",
-  upload.fields([
-    { name: "thumbnail", maxCount: 1 },
-    { name: "otherImages", maxCount: 10 },
-    { name: "images", maxCount: 10 },
-  ]),
+  upload.any(),
   createProduct
 );
 routs.get("/deleteProduct", deleteProduct);
@@ -286,13 +294,10 @@ routs.post("/updateAdminDetails", auth, updateAdminDetails);
 
 //Forgot password
 //// Create a new review
-routs.post("/createReview", auth, createReview); 
-routs.get("/GetAllReviews/:productId", auth, GetAllReviews); 
-routs.get("/reviewByID/:productId/:reviewId", auth, reviewByID); 
-routs.post("/updateReview/:productId/:reviewId", auth, updateReview); 
-routs.post("/deleteReview", auth, deleteReview); 
-{
-createReview, GetAllReviews, reviewByID, updateReview, deleteReview;
-}
+routs.post("/createReview", auth, createReview);
+routs.get("/GetAllReviews/:productId", auth, GetAllReviews);
+routs.get("/reviewByID/:productId/:reviewId", auth, reviewByID);
+routs.post("/updateReview/:productId/:reviewId", auth, updateReview);
+routs.post("/deleteReview", auth, deleteReview);
 
 module.exports = routs;

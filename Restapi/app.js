@@ -5,7 +5,7 @@ const port=process.env.PORT || 8080;
 const routs=require('./routes')
 const cors = require('cors');
 const passport = require("passport");
-
+const upload=require("../Restapi/utils/fileUpload")
 const connectDb = require("./config/dbconfig")
 
 const session = require("express-session")
@@ -28,7 +28,9 @@ async function startServer() {
       message:"Welcome to Finafid"
     })
   })
+  //app.use(upload.array());
   // Set up session middleware
+
 app.use(
   session({
     secret: "process.env.YOUR_GOOGLE_CLIENT_ID",

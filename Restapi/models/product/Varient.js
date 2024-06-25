@@ -3,7 +3,7 @@ const Schema = mongoose.Schema;
 
 const variantSchema = new Schema(
   {
-    product: {
+    productGroup: {
       type: Schema.Types.ObjectId,
       ref: "Product",
       required: true,
@@ -43,7 +43,7 @@ const variantSchema = new Schema(
     },
     images: [
       {
-        type: String, // URL(s) of the image(s)
+        type: String,
       },
     ],
   },

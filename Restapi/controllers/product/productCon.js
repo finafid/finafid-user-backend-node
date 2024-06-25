@@ -9,6 +9,7 @@ const {
   generateStringOfImageList,
   compressAndResizeImage,
   getImageLinks,
+  uploadFiles,
 } = require("../../utils/fileUpload");
 const Product = require("../../models/product/productSc");
 const getImageLink = async (req, res) => {
@@ -51,14 +52,31 @@ const getImageLink = async (req, res) => {
   }
 };
 
-
 const getAllProduct = async (req, res) => {
   try {
     const product = await productSc
       .find()
       .populate("productTypeId")
-      .populate("brand");
+      .populate("brand")
+      .populate({
+        path: "variants",
+      });
     res.json(product);
+  } catch (err) {
+    return res.status(500).json({ message: "error", error: err.message });
+  }
+};
+const getAllVarients = async (req, res) => {
+  try {
+      const variants = await Variant.find().populate({
+        path: "productGroup",
+        populate: {
+          path: "productTypeId", // Nested population
+        },
+      });
+      
+      
+    res.json(variants);
   } catch (err) {
     return res.status(500).json({ message: "error", error: err.message });
   }
@@ -83,6 +101,7 @@ const productOnId = async (req, res) => {
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
 const createProduct = async (req, res) => {
   const {
     totalQuantity,
@@ -97,25 +116,37 @@ const createProduct = async (req, res) => {
     barCode,
     description,
     variationAttributes,
-   // variation,
     variants,
   } = req.body;
-  console.log(req.body);
-   console.log(req.files);
+  console.log("THE REQUEST.FILES IS:", req.files);
+
   try {
-    let singleImageUrl = "";
-    if (req.files["singleImage"]) {
-      singleImageUrl = await getImageLinks(req.files["singleImage"][0]);
-    }
+    // Initialize an object to store uploaded URLs
+    const uploadedFiles = {};
 
-    let imageListUrls = [];
-    if (req.files["otherImages"]) {
-      for (const file of req.files["otherImages"]) {
-        const imageUrl = await getImageLinks(file);
-        imageListUrls.push(imageUrl);
+    // Process all files and categorize by fieldname
+    for (const file of req.files) {
+      const fieldName = file.fieldname;
+      if (!uploadedFiles[fieldName]) {
+        uploadedFiles[fieldName] = [];
       }
+      uploadedFiles[fieldName].push(file);
     }
 
+    // Upload thumbnail image
+    let singleImageUrl = "";
+    if (uploadedFiles["thumbnail"]) {
+      const [imageLink] = await uploadFiles(uploadedFiles["thumbnail"]);
+      singleImageUrl = imageLink;
+    }
+
+    // Upload other images
+    let imageListUrls = [];
+    if (uploadedFiles["otherImages[]"]) {
+      imageListUrls = await uploadFiles(uploadedFiles["otherImages[]"]);
+    }
+
+    // Create the product
     const newProduct = new Product({
       totalQuantity,
       name,
@@ -123,7 +154,7 @@ const createProduct = async (req, res) => {
       hasExpiry,
       categoryId: category,
       subCategoryId: subCategory,
-      productTypeId:productType,
+      productTypeId: productType,
       brand,
       unit,
       barCode,
@@ -136,17 +167,23 @@ const createProduct = async (req, res) => {
 
     await newProduct.save();
 
-    for (const variantData of variants) {
-      // let variantImageLinks = [];
-      // if (images) {
-      //   for (const file of images) {
-      //     const imageUrl = await getImageLinks(file);
-      //     variantImageLinks.push(imageUrl);
-      //   }
-      // }
+    // Process each variant
+    for (let i = 0; i < variants.length; i++) {
+      const variantData = variants[i];
+      let variantImageLinks = [];
+
+      // Collect variant images
+      let count = 0;
+      while (uploadedFiles[`variants[${i}][images][${count}]`]) {
+        const imageLinks = await uploadFiles(
+          uploadedFiles[`variants[${i}][images][${count}]`]
+        );
+        variantImageLinks = [...variantImageLinks, ...imageLinks];
+        count++;
+      }
 
       const variant = new Variant({
-        product: newProduct._id,
+        productGroup: newProduct._id,
         attributes: variantData.attributes,
         sku: variantData.sku,
         quantity: variantData.quantity,
@@ -155,7 +192,7 @@ const createProduct = async (req, res) => {
         unitPrice: variantData.unitPrice,
         purchasePrice: variantData.purchasePrice,
         cod: variantData.cod || false,
-        //images: variantImageLinks,
+        images: variantImageLinks,
       });
 
       await variant.save();
@@ -176,7 +213,6 @@ const createProduct = async (req, res) => {
       .json({ message: "Internal Server Error", error: error.message });
   }
 };
-
 
 const createBrand = async (req, res) => {
   try {
@@ -867,4 +903,5 @@ module.exports = {
   getProductTypeById,
   getAllSubCategory,
   getAllProductType,
+  getAllVarients,
 };

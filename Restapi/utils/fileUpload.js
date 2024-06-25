@@ -45,7 +45,7 @@ const s3 = new AWS.S3();
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 10 * 1024 * 1024,
+    fileSize: 100 * 1024 * 1024,
   },
 });
 
@@ -89,8 +89,9 @@ const uploadImageToS3 = async (buffer, fileName) => {
 const getImageLinks = async (files) => {
   try {
     const imageLinks = [];
-
-    for (const file of files) {
+    const fileArray = Array.isArray(files) ? files : [files]; // Ensure files is an array
+    console.log(files)
+    for (const file of fileArray) {
       const inputImagePath = file.buffer;
       const extension = file.originalname.split(".").pop();
       const width = 800; // Desired width
@@ -109,7 +110,8 @@ const getImageLinks = async (files) => {
         .join("-")}-${Date.now()}.${extension}`;
 
       const uploadResult = await uploadImageToS3(imageBuffer, newFileName);
-      const imgUrl = uploadResult.Location;
+      const imgUrl =
+        "https://d2w5oj0jmt3sl6.cloudfront.net/" + req.file.originalname;
 
       imageLinks.push(imgUrl);
     }
@@ -120,10 +122,46 @@ const getImageLinks = async (files) => {
     throw error;
   }
 };
+const uploadFiles = async (files) => {
+  try {
+    const imageLinks = [];
+    const fileArray = Array.isArray(files) ? files : [files]; // Ensure files is an array
+    for (const file of fileArray) {
+      const inputImagePath = file.buffer;
+      const extension = file.originalname.split(".").pop();
+      const width = 800; // Desired width
+      const compressionQuality = 5; // Desired compression quality
+
+      const imageBuffer = await compressAndResizeImage(
+        inputImagePath,
+        extension,
+        width,
+        compressionQuality
+      );
+
+      const newFileName = `${file.originalname
+        .split(".")[0]
+        .split(" ")
+        .join("-")}-${Date.now()}.${extension}`;
+
+      await uploadImageToS3(imageBuffer, newFileName);
+      const imgUrl = "https://d2w5oj0jmt3sl6.cloudfront.net/" + newFileName;
+
+      imageLinks.push(imgUrl);
+    }
+
+    return imageLinks;
+  } catch (error) {
+    console.error("Error in uploadFiles:", error);
+    throw error;
+  }
+};
+
 module.exports = {
   generateStringOfImageList,
   upload,
   compressAndResizeImage,
   uploadImageToS3,
   getImageLinks,
+  uploadFiles,
 };

@@ -437,17 +437,56 @@ const updateUserDetails = async (req, res) => {
         return res.status(500).json({ message: error.message + ' Internal Server Error' });
     }
 };
-
-module.exports = {
-    userRegistration,
-    userLogin,
-    mailVarification,
-    sendMailVarification,
-    varifyOtp,
-    updatePasswordForResetPassword,
-    logout,
-    userDetails,
-    getRefreshToken,
-    sendMailVerificationForForgotPassword,
-    updateUserDetails
+const updateEmail=async(req,res)=>{
+    try {
+        const userDetails=await User.findOne({
+            _id:req.user._id
+        })
+        if(!userDetails){
+           return res
+             .status(500)
+             .json({ message: "No user found" }); 
+        }
+        userDetails.email=req.body.email;
+        await userDetails.save();
+        return res
+          .status(200)
+          .json({ message: "User saved successfully" });
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ message: error.message + " Internal Server Error" });
+    }
 }
+const updateNotification=async(req,res)=>{
+    try {
+        const userDetails = await User.findOne({
+          _id: req.user._id,
+        });
+        if (!userDetails) {
+          return res.status(500).json({ message: "No user found" });
+        }
+        userDetails.push_notification = req.body.push_notification;
+        await userDetails.save();
+        return res.status(200).json({ message: "User saved successfully" });
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ message: error.message + " Internal Server Error" });
+    }
+}
+module.exports = {
+  userRegistration,
+  userLogin,
+  mailVarification,
+  sendMailVarification,
+  varifyOtp,
+  updatePasswordForResetPassword,
+  logout,
+  userDetails,
+  getRefreshToken,
+  sendMailVerificationForForgotPassword,
+  updateUserDetails,
+  updateEmail,
+  updateNotification,
+};
