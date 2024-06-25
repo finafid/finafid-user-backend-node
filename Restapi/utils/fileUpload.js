@@ -34,7 +34,7 @@ async function compressAndResizeImage(
   }
 }
 
-console.log(process.env.bucket_name, "access key");
+
 AWS.config.update({
   accessKeyId: process.env.accessKeyId,
   secretAccessKey: process.env.secretAccessKey,
@@ -48,10 +48,7 @@ const upload = multer({
     fileSize: 10 * 1024 * 1024,
   },
 });
-const uploadFiles = upload.fields([
-  { name: "singleImage", maxCount: 1 }, // Single image field
-  { name: "imageList", maxCount: 10 }, // Multiple images field
-]);
+
 
 async function generateStringOfImageList(body, key, res) {
   try {
@@ -76,10 +73,57 @@ async function generateStringOfImageList(body, key, res) {
     throw new Error("Failed to upload image to S3");
   }
 }
+const uploadImageToS3 = async (buffer, fileName) => {
+  const params = {
+    Bucket: process.env.bucket_name,
+    Key: fileName,
+    Body: buffer,
+   // ACL: "public-read",
+    ContentType: "image/jpeg", // Adjust based on your image type
+  };
 
+  return s3.upload(params).promise();
+};
+
+
+const getImageLinks = async (files) => {
+  try {
+    const imageLinks = [];
+
+    for (const file of files) {
+      const inputImagePath = file.buffer;
+      const extension = file.originalname.split(".").pop();
+      const width = 800; // Desired width
+      const compressionQuality = 5; // Desired compression quality
+
+      const imageBuffer = await compressAndResizeImage(
+        inputImagePath,
+        extension,
+        width,
+        compressionQuality
+      );
+
+      const newFileName = `${file.originalname
+        .split(".")[0]
+        .split(" ")
+        .join("-")}-${Date.now()}.${extension}`;
+
+      const uploadResult = await uploadImageToS3(imageBuffer, newFileName);
+      const imgUrl = uploadResult.Location;
+
+      imageLinks.push(imgUrl);
+    }
+
+    return imageLinks;
+  } catch (error) {
+    console.error("Error in getImageLinks:", error);
+    throw error;
+  }
+};
 module.exports = {
   generateStringOfImageList,
   upload,
   compressAndResizeImage,
-  uploadFiles,
+  uploadImageToS3,
+  getImageLinks,
 };

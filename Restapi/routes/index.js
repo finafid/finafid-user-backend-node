@@ -68,7 +68,7 @@ const {
   getOrderById,
   updateStatus,
 } = require("../controllers/order/orderController");
-const { upload, uploadFiles } = require("../utils/fileUpload");
+const { upload, uploadImageToS3 } = require("../utils/fileUpload");
 const {
   createGiftCard,
   getGiftCardDetails,
@@ -158,7 +158,10 @@ routs.post("/createProductType", upload.single("logo"), createProductType);
 
 routs.post("/createBrand", upload.single("logo"), createBrand);
 routs.get("/getProductById/:productId", productOnId);
-routs.get("/getProductBasisOfSubcategory", getProductBasisOfSubcategory);
+routs.get(
+  "/getProductBasisOfSubcategory/:subCategoryId",
+  getProductBasisOfSubcategory
+);
 routs.get("/getProductsAfterFiltration/:subCategoryId", getSearchResult);
 routs.get("/getProductsAfterFiltration", getSearchResult);
 routs.get("/getAllCategory", getCategoryDetails);
@@ -189,8 +192,16 @@ routs.post(
 );
 routs.post("/editBrand/:brandId", upload.single("logo"), editBrand);
 routs.get("/getProductById/:productId", productOnId);
-routs.post("/updateProduct", uploadFiles, updateProduct);
-routs.post("/createProduct", uploadFiles, createProduct);
+routs.post("/updateProduct", uploadImageToS3, updateProduct);
+routs.post(
+  "/createProduct",
+  upload.fields([
+    { name: "thumbnail", maxCount: 1 },
+    { name: "otherImages", maxCount: 10 },
+    { name: "images", maxCount: 10 },
+  ]),
+  createProduct
+);
 routs.get("/deleteProduct", deleteProduct);
 routs.get("/deleteCategory/:categoryId", deleteCategory);
 routs.get("/deleteSubCategory/:subCategoryId", deleteSubCategory);
@@ -274,6 +285,14 @@ routs.post("/adminDetails", auth, adminDetails);
 routs.post("/updateAdminDetails", auth, updateAdminDetails);
 
 //Forgot password
-
+//// Create a new review
+routs.post("/createReview", auth, createReview); 
+routs.get("/GetAllReviews/:productId", auth, GetAllReviews); 
+routs.get("/reviewByID/:productId/:reviewId", auth, reviewByID); 
+routs.post("/updateReview/:productId/:reviewId", auth, updateReview); 
+routs.post("/deleteReview", auth, deleteReview); 
+{
+createReview, GetAllReviews, reviewByID, updateReview, deleteReview;
+}
 
 module.exports = routs;

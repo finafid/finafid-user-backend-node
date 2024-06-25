@@ -4,9 +4,11 @@ const app = express()
 const port=process.env.PORT || 8080;
 const routs=require('./routes')
 const cors = require('cors');
+const passport = require("passport");
 
 const connectDb = require("./config/dbconfig")
 
+const session = require("express-session")
 async function startServer() {
     try {
       await connectDb();
@@ -26,6 +28,20 @@ async function startServer() {
       message:"Welcome to Finafid"
     })
   })
+  // Set up session middleware
+app.use(
+  session({
+    secret: "process.env.YOUR_GOOGLE_CLIENT_ID",
+    resave: false,
+    saveUninitialized: true,
+  })
+);
+
+// Initialize passport
+app.use(passport.initialize());
+app.use(passport.session());
+
+
   
   app.use('/api/v1',routs)
 

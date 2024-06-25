@@ -9,81 +9,82 @@ const productSchema = new Schema(
     },
     categoryId: {
       type: Schema.Types.ObjectId,
-      ref: "MainCategory",
-      require: true,
+      ref: "Category",
+      required: true,
     },
     subCategoryId: {
       type: Schema.Types.ObjectId,
       ref: "SubCategory",
-      require: true,
+      required: true,
     },
-    productType: {
+    productTypeId: {
       type: Schema.Types.ObjectId,
       ref: "ProductType",
-      require: true,
+      required: true,
     },
     brand: {
       type: Schema.Types.ObjectId,
       ref: "Brand",
       required: true,
     },
-    is_shipping_cost_need: {
-      type: Boolean,
-      default: false,
-    },
-    is_cash_on_delivery_avail: {
-      type: Boolean,
-      default: false,
-    },
-    description: {
-      type: String,
-      required: true,
-    },
-    imgUrl: [
-      {
-        type: String,
-        required: true,
-      },
-    ],
-    details: {
-      type: Schema.Types.Mixed,
-    },
     isCustomizable: {
       type: Boolean,
       default: false,
     },
-    has_expiry: {
-      type: Boolean,
-      default: false,
-    },
-    is_expiry_expiry_salable: {
+    hasExpiry: {
       type: Boolean,
       default: false,
     },
     unit: {
       type: String,
-      default: false,
-      enum: ["kg", "li", "piece"],
+      required: true,
     },
-    is_utsab_product: {
-      type: Boolean,
-      default: false,
+    barCode: {
+      type: String,
+      required: true,
     },
-    utsab_discount: {
+    description: {
+      type: String,
+      required: true,
+    },
+    variationAttributes: [
+      {
+        type: String,
+        required: true,
+      },
+    ],
+    thumbnail: {
+      type: [String], // URL(s) of the image(s)
+      required: true,
+    },
+    otherImages: [
+      {
+        type: String, // URL(s) of the image(s)
+      },
+    ],
+    totalQuantity: {
       type: Number,
       required: true,
     },
-    variant: [
+    variants: [
       {
         type: Schema.Types.ObjectId,
         ref: "Variant",
-        require: true,
       },
     ],
+    is_featured: {
+      type: Boolean,
+      default: false,
+      required: false,
+    },
+    is_active: {
+      type: Boolean,
+      default: true,
+      required: false,
+    },
   },
   { timestamps: true }
 );
 
 const Product = mongoose.model("Product", productSchema);
-
 module.exports = Product;

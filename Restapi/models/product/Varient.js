@@ -8,65 +8,47 @@ const variantSchema = new Schema(
       ref: "Product",
       required: true,
     },
-    variationType: {
-      type: String,
+    attributes: {
+      type: Schema.Types.Mixed, // Use Mixed type for flexibility
       required: true,
     },
-    variation: {
+    sku: {
       type: String,
-      required: true,
-    },
-    variantImgLink: {
-      type: String,
-      required: true,
-    },
-    price: {
-      type: Number,
       required: true,
     },
     quantity: {
       type: Number,
       required: true,
     },
-    item_code: {
+    taxModel: {
       type: String,
+      enum: ["include", "exclude"],
       required: true,
     },
-    shipping_cost: {
+    isUtsav: {
+      type: Boolean,
+      default: false,
+    },
+    unitPrice: {
       type: Number,
       required: true,
     },
-    unit_price: {
+    purchasePrice: {
       type: Number,
+      required: true,
+    },
+    cod: {
+      type: Boolean,
       default: false,
     },
-    purchase_price: {
-      type: Number,
-      default: false,
-    },
-    inventory: {
-      sku: {
-        type: Number,
-        required: true,
+    images: [
+      {
+        type: String, // URL(s) of the image(s)
       },
-      item_code: {
-        type: String,
-        validate: {
-          validator: function (value) {
-            return /^[a-zA-Z0-9@#$]+$/.test(value);
-          },
-          message: "House number must be alphanumeric",
-        },
-      },
-      quantity: {
-        type: Number,
-        required: true,
-      },
-    },
+    ],
   },
   { timestamps: true }
 );
 
 const Variant = mongoose.model("Variant", variantSchema);
-
 module.exports = Variant;
