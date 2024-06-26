@@ -82,6 +82,7 @@ const sendMailVerificationAdmin = async (req, res) => {
 
     const { email } = req.body;
     const adminData = await Admin.findOne({ email });
+    console.log(adminData);
     if (!adminData) {
       return res.status(500).json({
         success: false,
@@ -326,7 +327,7 @@ const logout=async(req,res)=>{
 const adminDetails=async(req,res)=>{
     try{
       
-        const admin = await Admin.findById({_id:req.Admin._id}).select('-password');
+        const admin = await Admin.findById({_id:req.user._id}).select('-password');
         if (!admin) {
           return res.status(404).json({ message: "Admin not found" });
         }
@@ -339,7 +340,7 @@ const adminDetails=async(req,res)=>{
 
 const updateAdminDetails = async (req, res) => {
     try {
-        const adminDetails = await Admin.findOne({ _id: req.Admin._id });
+        const adminDetails = await Admin.findOne({ _id: req.user._id });
 
         const { fullName, gender } = req.body;
         

@@ -68,15 +68,14 @@ const getAllProduct = async (req, res) => {
 };
 const getAllVarients = async (req, res) => {
   try {
-      const variants = await Variant.find().populate({
-        path: "productGroup",
-        populate: {
-          path: "productTypeId", // Nested population
-        },
-      });
-      
-      
-    res.json(variants);
+    const variants = await Variant.find().populate({
+      path: "productGroup",
+      populate: {
+        path: "productTypeId", // Nested population
+      },
+    });
+    
+    return res.status(200).json({ variants });
   } catch (err) {
     return res.status(500).json({ message: "error", error: err.message });
   }
@@ -89,14 +88,15 @@ const productOnId = async (req, res) => {
       .findOne({
         _id: productId,
       })
-      .populate("productType")
-      .populate("brand");
+      // .populate("productTypeId")
+      // .populate("brand")
+      .populate("variants");
 
     console.log(product);
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
-    res.status(200).json(product);
+    res.status(200).json( product);
   } catch (err) {
     return res.status(500).json({ message: "Internal Server Error" });
   }
@@ -110,12 +110,14 @@ const createProduct = async (req, res) => {
     hasExpiry,
     category,
     subCategory,
+    isExpirySaleable,
     productType,
     brand,
     unit,
     barCode,
     description,
     variationAttributes,
+    variation,
     variants,
   } = req.body;
   console.log("THE REQUEST.FILES IS:", req.files);
@@ -152,6 +154,7 @@ const createProduct = async (req, res) => {
       name,
       isCustomizable,
       hasExpiry,
+      isExpirySaleable,
       categoryId: category,
       subCategoryId: subCategory,
       productTypeId: productType,
@@ -159,6 +162,7 @@ const createProduct = async (req, res) => {
       unit,
       barCode,
       description,
+      variation,
       variationAttributes,
       thumbnail: singleImageUrl,
       otherImages: imageListUrls,
@@ -193,6 +197,13 @@ const createProduct = async (req, res) => {
         purchasePrice: variantData.purchasePrice,
         cod: variantData.cod || false,
         images: variantImageLinks,
+        discount: variantData.discount,
+        shippingCost: variantData.shippingCost,
+        utsavDiscount: variantData.utsavDiscount,
+        minOrderQuantity: variantData.minOrderQuantity,
+        discountType: variantData.discountType,
+        hasShippingCost: variantData.hasShippingCost,
+        taxPercent: variantData.taxPercent,
       });
 
       await variant.save();
@@ -213,7 +224,125 @@ const createProduct = async (req, res) => {
       .json({ message: "Internal Server Error", error: error.message });
   }
 };
+const updateVariants = async (req, res) => {
+  try {
+    const variantId = req.params.variantId;
+    const variantDetails = await Variant.findById({
+      _id: variantId,
+    });
+    if (!variantDetails) {
+      return res
+        .status(500)
+        .json({ message: "Internal Server Error", error: error.message });
+    }
+    const variantImageLinks=await getImageLinks(req.files);
+    variantImageLinks.push()
+    const variant = new Variant({
+      productGroup: variantDetails.productGroup,
+      attributes: variantData.attributes,
+      sku: variantData.sku,
+      quantity: variantData.quantity,
+      taxModel: variantData.taxModel,
+      isUtsav: variantData.isUtsav || false,
+      unitPrice: variantData.unitPrice,
+      purchasePrice: variantData.purchasePrice,
+      cod: variantData.cod || false,
+      images: variantImageLinks,
+    });
 
+  } catch (error) {
+    console.error("Error saving product:", error);
+    res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
+  }
+};
+const addVariants = async (req, res) => {
+  try {
+
+   
+    const variantDetails = new Variant({
+      productGroup: req.body.productGroup,
+      attributes: req.body.attributes,
+      sku: req.body.sku,
+      quantity: req.body.quantity,
+      taxModel: req.body.taxModel,
+      isUtsav: req.body.isUtsav || false,
+      unitPrice: req.body.unitPrice,
+      purchasePrice: req.body.purchasePrice,
+      cod: req.body.cod || false,
+      images: variantImageLinks,
+    });
+
+   
+    return res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
+  } catch (error) {
+    console.error("Error saving product:", error);
+    res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
+  }
+};
+const deleteVariants = async (req, res) => {
+  try {
+
+    const variantId = req.params.variantId;
+    const variantDetails = await Variant.findByIdDelete({
+      _id: variantId,
+    });
+    if (!variantDetails) {
+      return res
+        .status(500)
+        .json({ message: "Internal Server Error", error: error.message });
+    }
+    const productDetails = await Product.findById({
+      _id: variantDetails.productGroup
+    });
+    if (productDetails.variants.length==0){
+      await Product.findByIdAndDelete({
+        _id: variantDetails.productGroup,
+      });
+
+    }
+      return res
+        .status(200)
+        .json({ message: "Delete successfully"});
+  } catch (error) {
+    console.error("Error saving product:", error);
+    res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
+  }
+};
+const getVariantById=async (req, res) => {
+  try {
+
+    const variantId = req.params.variantId;
+    const variantDetails = await Variant.findByIdDelete({
+      _id: variantId,
+    });
+    if (!variantDetails) {
+      return res
+        .status(500)
+        .json({ message: "Internal Server Error", error: error.message });
+    }
+     return res.status(200).json({
+      success: true,
+     variantDetails
+    });
+  }catch (error) {
+    console.error("Error creating brand:", error);
+
+    const errorMessage = error.message || "Internal Server Error";
+
+    return res.status(500).json({
+      success: false,
+      message: errorMessage,
+    });
+  }
+}
 const createBrand = async (req, res) => {
   try {
     const { name, description } = req.body;
@@ -245,8 +374,6 @@ const createBrand = async (req, res) => {
     });
   }
 };
-
-module.exports = createBrand;
 
 const categoryDetails = async (req, res) => {
   try {
@@ -904,4 +1031,8 @@ module.exports = {
   getAllSubCategory,
   getAllProductType,
   getAllVarients,
+  updateVariants,
+  addVariants,
+  deleteVariants,
+  getVariantById,
 };

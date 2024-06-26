@@ -25,9 +25,21 @@ const variantSchema = new Schema(
       enum: ["include", "exclude"],
       required: true,
     },
+    taxPercent: {
+      type: Number,
+      required: true,
+    },
     isUtsav: {
       type: Boolean,
       default: false,
+    },
+    discount: {
+      type: Number,
+      required: true,
+    },
+    discountType: {
+      type: String,
+      required: true,
     },
     unitPrice: {
       type: Number,
@@ -41,6 +53,23 @@ const variantSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    utsavDiscount: {
+      type: Number,
+      required: true,
+    },
+    hasShippingCost: {
+      type: Boolean,
+      required: true,
+    },
+    shippingCost: {
+      type: Number,
+      required: true,
+    },
+    utsavDiscount: {
+      type: Number,
+      required: true,
+    },
+
     images: [
       {
         type: String,

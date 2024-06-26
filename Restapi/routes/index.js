@@ -55,6 +55,10 @@ const {
   getAllSubCategory,
   getAllProductType,
   getAllVarients,
+  updateVariants,
+  addVariants,
+  deleteVariants,
+  getVariantById,
 } = require("../controllers/product/productCon");
 const {
   addToWishlist,
@@ -160,16 +164,14 @@ routs.post(
 
 // Product Details
 
-routs.get("/allProducts", getAllVarients);
+routs.get("/allProducts", getAllProduct);
 routs.get("/allCategoryDetails", categoryDetails);
 routs.post("/createCategory", upload.single("logo"), createCategory);
 routs.post("/createSubCategory", upload.single("logo"), createSubCategory);
 routs.post("/createProductType", upload.single("logo"), createProductType);
-
-//routs.post("/getAllVarients",  getAllVarients);
-
+routs.get("/getAllVariants",  getAllVarients);
 routs.post("/createBrand", upload.single("logo"), createBrand);
-routs.get("/getProductById/:productId", productOnId);
+routs.get("/getProductGroupById/:productId", productOnId);
 routs.get(
   "/getProductBasisOfSubcategory/:subCategoryId",
   getProductBasisOfSubcategory
@@ -185,7 +187,6 @@ routs.get(
   "/getSubcategoryBasedOnCategory/:categoryId",
   getSubcategoryBasedOnCategory
 );
-
 routs.get("/getBrand", getBrand);
 routs.get("/getBrandById/:brandId", getBrandById);
 routs.get("/deleteBrand/:brandId", deleteBrand);
@@ -225,9 +226,21 @@ routs.get("/getProductTypeById/:productTypeId", getProductTypeById);
 routs.post("/createProductType", upload.single("logo"), createProductType);
 routs.get("/getAllSubCategory", getAllSubCategory);
 routs.get("/getAllProductType", getAllProductType);
-
-//Wishlist
-routs.post("/addToWishlist", auth, addToWishlist);
+routs.get("/getVariantById/:variantId", getVariantById);
+   routs.post(
+     "/updateVariants/variantId",
+     upload.single("logo"),
+     updateVariants
+   );
+   routs.post("/createVariant", upload.single("logo"), addVariants);
+   routs.post(
+     "/deleteVariants/variantId",
+     upload.single("logo"),
+     deleteVariants
+   );
+   routs.post("/updateProduct", upload.single("logo"), updateProduct);
+   //Wishlist
+   routs.post("/addToWishlist", auth, addToWishlist);
 routs.get("/getWishlistItems", auth, getTheWishlist);
 routs.post("/deleteFromWishlist", auth, deleteFromWishlist);
 
@@ -244,12 +257,9 @@ routs.get("/getOrderById/:orderId", auth, getOrderById);
 routs.post("/updateStatus", auth, updateStatus);
 
 //Address
-
 routs.post("/addAddress", auth, addAddress);
-
 routs.get("/getAddressOfUser", auth, getAddressOfUser);
 routs.post("/updateAddressOfUser", auth, updateAddressOfUser);
-
 routs.post("/deleteAddress", auth, deleteAddress);
 routs.post("/setDefaultAddress", auth, setDefaultAddress);
 //payment
@@ -280,20 +290,20 @@ routs.get("/editVariationType", editVariationType);
 routs.get("/getAllVariation", getAllVariation);
 
 //admin auth
-routs.post("/register", userRegistrationValidation, adminRegistration);
-routs.post("/login", userLoginValidation, adminLogin);
+routs.post("/register_admin", userRegistrationValidation, adminRegistration);
+routs.post("/login_admin", userLoginValidation, adminLogin);
 routs.post("/refresh_token", auth, sendMailVerificationAdmin);
 routs.post(
-  "/send_mail_Varification",
+  "/send_mail_Varification_for_admin",
   emailVarification,
   sendMailVerificationAdmin
 );
-routs.post("/otp_verification", verifyOtp);
-routs.post("/adminDetails", auth, adminDetails);
+routs.post("/otp_verification_admin", verifyOtp);
+routs.get("/adminDetails", auth, adminDetails);
 routs.post("/updateAdminDetails", auth, updateAdminDetails);
 
 //Forgot password
-//// Create a new review
+
 routs.post("/createReview", auth, createReview);
 routs.get("/GetAllReviews/:productId", auth, GetAllReviews);
 routs.get("/reviewByID/:productId/:reviewId", auth, reviewByID);

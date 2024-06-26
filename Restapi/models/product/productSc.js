@@ -35,6 +35,10 @@ const productSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    isExpirySaleable: {
+      type: Boolean,
+      default: false,
+    },
     unit: {
       type: String,
       required: true,
@@ -64,6 +68,10 @@ const productSchema = new Schema(
     ],
     totalQuantity: {
       type: Number,
+      required: true,
+    },
+    variation: {
+      type: Schema.Types.Mixed,
       required: true,
     },
     variants: [
