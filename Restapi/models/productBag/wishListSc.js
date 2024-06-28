@@ -1,14 +1,12 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
-const Product = require("../../models/product/productSc");
-const User = require("../../models/auth/userSchema");
 
 const wishListSchema = new Schema(
   {
     productIdList: [
       {
         type: Schema.Types.ObjectId,
-        ref: "Product",
+        ref: "Variant",
         required: true,
       },
     ],

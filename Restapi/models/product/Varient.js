@@ -45,6 +45,10 @@ const variantSchema = new Schema(
       type: Number,
       required: true,
     },
+    sellingPrice: {
+      type: Number,
+      required: true,
+    },
     purchasePrice: {
       type: Number,
       required: true,
@@ -65,7 +69,7 @@ const variantSchema = new Schema(
       type: Number,
       required: true,
     },
-    utsavDiscount: {
+    minOrderQuantity: {
       type: Number,
       required: true,
     },

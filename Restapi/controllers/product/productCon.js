@@ -74,7 +74,7 @@ const getAllVarients = async (req, res) => {
         path: "productTypeId", // Nested population
       },
     });
-    
+
     return res.status(200).json({ variants });
   } catch (err) {
     return res.status(500).json({ message: "error", error: err.message });
@@ -96,7 +96,7 @@ const productOnId = async (req, res) => {
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
-    res.status(200).json( product);
+    res.status(200).json(product);
   } catch (err) {
     return res.status(500).json({ message: "Internal Server Error" });
   }
@@ -204,6 +204,7 @@ const createProduct = async (req, res) => {
         discountType: variantData.discountType,
         hasShippingCost: variantData.hasShippingCost,
         taxPercent: variantData.taxPercent,
+        sellingPrice: variantData.sellingPrice,
       });
 
       await variant.save();
@@ -227,57 +228,117 @@ const createProduct = async (req, res) => {
 const updateVariants = async (req, res) => {
   try {
     const variantId = req.params.variantId;
-    const variantDetails = await Variant.findById({
-      _id: variantId,
-    });
+    const variantDetails = await Variant.findById(variantId);
     if (!variantDetails) {
-      return res
-        .status(500)
-        .json({ message: "Internal Server Error", error: error.message });
+      return res.status(500).json({ message: "Variant not found" });
     }
-    const variantImageLinks=await getImageLinks(req.files);
-    variantImageLinks.push()
-    const variant = new Variant({
-      productGroup: variantDetails.productGroup,
-      attributes: variantData.attributes,
-      sku: variantData.sku,
-      quantity: variantData.quantity,
-      taxModel: variantData.taxModel,
-      isUtsav: variantData.isUtsav || false,
-      unitPrice: variantData.unitPrice,
-      purchasePrice: variantData.purchasePrice,
-      cod: variantData.cod || false,
-      images: variantImageLinks,
-    });
 
+    // Get the old quantity before updating the variant
+    const oldQuantity = parseInt(variantDetails.quantity, 10);
+
+    let newList = [];
+    if (req.body.images) {
+      newList = req.body.images;
+      if (req.files && req.files["images[]"]) {
+        const variantImageLinks = await getImageLinks(req.files["images[]"]);
+        newList = req.body.images.concat(variantImageLinks);
+      }
+    } else if (req.files && req.files["images[]"]) {
+      newList = await getImageLinks(req.files["images[]"]);
+    }
+
+    console.log(req.body.images);
+    console.log(req.body);
+
+    variantDetails.productGroup = req.body.productId;
+    variantDetails.attributes = req.body.attributes;
+    variantDetails.sku = req.body.sku;
+    variantDetails.quantity = parseInt(req.body.quantity, 10);
+    variantDetails.taxModel = req.body.taxModel;
+    variantDetails.isUtsav = req.body.isUtsav || false;
+    variantDetails.unitPrice = parseFloat(req.body.unitPrice);
+    variantDetails.purchasePrice = parseFloat(req.body.purchasePrice);
+    variantDetails.cod = req.body.cod || false;
+    variantDetails.images = newList;
+    variantDetails.discount = parseFloat(req.body.discount);
+    variantDetails.shippingCost = parseFloat(req.body.shippingCost);
+    variantDetails.utsavDiscount = parseFloat(req.body.utsavDiscount);
+    variantDetails.minOrderQuantity = parseInt(req.body.minOrderQuantity, 10);
+    variantDetails.discountType = req.body.discountType;
+    variantDetails.hasShippingCost = req.body.hasShippingCost;
+    variantDetails.taxPercent = parseFloat(req.body.taxPercent);
+    variantDetails.sellingPrice = parseFloat(req.body.sellingPrice);
+    // Save variant details
+    await variantDetails.save();
+
+    const productDetails = await Product.findById(req.body.productId);
+    if (!productDetails) {
+      return res.status(500).json({ message: "Product not found" });
+    }
+
+    // Update product total quantity
+    const newQuantity = parseInt(req.body.quantity, 10);
+    productDetails.totalQuantity =
+      parseInt(productDetails.totalQuantity, 10) + (newQuantity - oldQuantity);
+
+    console.log(productDetails.totalQuantity);
+
+    await productDetails.save();
+
+    return res.status(200).json({ message: "Updated successfully" });
   } catch (error) {
-    console.error("Error saving product:", error);
+    console.error("Error updating variant:", error);
     res
       .status(500)
       .json({ message: "Internal Server Error", error: error.message });
   }
 };
+
+module.exports = updateVariants;
+
 const addVariants = async (req, res) => {
   try {
-
-   
-    const variantDetails = new Variant({
-      productGroup: req.body.productGroup,
+    const variantImageLinks = await getImageLinks(req.files["images[]"]);
+    const variant = new Variant({
+      productGroup: req.body.productId,
       attributes: req.body.attributes,
       sku: req.body.sku,
-      quantity: req.body.quantity,
+      quantity: parseInt(req.body.quantity),
       taxModel: req.body.taxModel,
       isUtsav: req.body.isUtsav || false,
       unitPrice: req.body.unitPrice,
       purchasePrice: req.body.purchasePrice,
       cod: req.body.cod || false,
       images: variantImageLinks,
+      discount: req.body.discount,
+      shippingCost: req.body.shippingCost,
+      utsavDiscount: req.body.utsavDiscount,
+      minOrderQuantity: req.body.minOrderQuantity,
+      discountType: req.body.discountType,
+      hasShippingCost: req.body.hasShippingCost,
+      taxPercent: req.body.taxPercent,
+      sellingPrice: parseFloat(req.body.sellingPrice),
     });
+    if (!variant) {
+      return res
+        .status(500)
+        .json({ message: "Internal Server Error", error: error.message });
+    }
+    const productDetails = await Product.findById({
+      _id: req.body.productId,
+    });
+    if (!productDetails) {
+      return res.status(500).json({ message: "No such product" });
+    }
+    productDetails.variants.push(variant._id);
+    productDetails.variation = req.body.variation;
+    productDetails.totalQuantity =
+      parseInt(productDetails.totalQuantity) + parseInt(req.body.quantity);
+    console.log(productDetails.totalQuantity);
+    await productDetails.save();
 
-   
-    return res
-      .status(500)
-      .json({ message: "Internal Server Error", error: error.message });
+    await variant.save();
+    return res.status(200).json({ message: "Saved successfully" });
   } catch (error) {
     console.error("Error saving product:", error);
     res
@@ -287,9 +348,11 @@ const addVariants = async (req, res) => {
 };
 const deleteVariants = async (req, res) => {
   try {
-
     const variantId = req.params.variantId;
-    const variantDetails = await Variant.findByIdDelete({
+    const variantDetail = await Variant.findById({
+      _id: variantId,
+    });
+    const variantDetails = await Variant.findByIdAndDelete({
       _id: variantId,
     });
     if (!variantDetails) {
@@ -298,17 +361,14 @@ const deleteVariants = async (req, res) => {
         .json({ message: "Internal Server Error", error: error.message });
     }
     const productDetails = await Product.findById({
-      _id: variantDetails.productGroup
+      _id: variantDetail.productGroup,
     });
-    if (productDetails.variants.length==0){
+    if (productDetails.variants.length == 0) {
       await Product.findByIdAndDelete({
-        _id: variantDetails.productGroup,
+        _id: variantDetail.productGroup,
       });
-
     }
-      return res
-        .status(200)
-        .json({ message: "Delete successfully"});
+    return res.status(200).json({ message: "Delete successfully" });
   } catch (error) {
     console.error("Error saving product:", error);
     res
@@ -316,23 +376,22 @@ const deleteVariants = async (req, res) => {
       .json({ message: "Internal Server Error", error: error.message });
   }
 };
-const getVariantById=async (req, res) => {
+const getVariantById = async (req, res) => {
   try {
-
     const variantId = req.params.variantId;
-    const variantDetails = await Variant.findByIdDelete({
+    const variantDetails = await Variant.findById({
       _id: variantId,
-    });
+    }).populate("productGroup");
     if (!variantDetails) {
       return res
         .status(500)
         .json({ message: "Internal Server Error", error: error.message });
     }
-     return res.status(200).json({
+    return res.status(200).json({
       success: true,
-     variantDetails
+      variantDetails,
     });
-  }catch (error) {
+  } catch (error) {
     console.error("Error creating brand:", error);
 
     const errorMessage = error.message || "Internal Server Error";
@@ -342,7 +401,7 @@ const getVariantById=async (req, res) => {
       message: errorMessage,
     });
   }
-}
+};
 const createBrand = async (req, res) => {
   try {
     const { name, description } = req.body;
@@ -573,107 +632,98 @@ const updateProduct = async (req, res) => {
   if (!req.body || Object.keys(req.body).length === 0) {
     return res.status(400).json({ message: "No details given" });
   }
-  const {
-    name,
-    productType,
-    brand,
-    description,
-    price,
-    details,
-    attributes,
-    isCustomizable,
-    shipping_cost,
-    is_shipping_cost_need,
-    is_cash_on_delivery_avail,
-    unit_price,
-    purchase_price,
-    Variation_Type,
-    variation,
-    has_expiry,
-    is_expiry_expiry_salable,
-    unit,
-    is_utsab_product,
-    utsab_discount,
-    inventory: { sku, item_code, quantity },
-  } = req.body;
-
-  const productId = req.params.id;
 
   try {
-    const existingProduct = await productSc.findById(productId);
+    const {
+      productId,
+      totalQuantity,
+      name,
+      isCustomizable,
+      hasExpiry,
+      category,
+      subCategory,
+      isExpirySaleable,
+      productType,
+      brand,
+      unit,
+      barCode,
+      description,
+      variationAttributes,
+      variation,
+      variants,
+    } = req.body;
 
+    const existingProduct = await Product.findById(req.params.productId);
     if (!existingProduct) {
-      return res.status(404).json({
-        success: false,
-        message: "Product not found",
-      });
+      return res.status(404).json({ message: "Product not found" });
     }
 
-    const imgUrl = req.file
-      ? await getImageLink(req, res)
-      : existingProduct.imgUrl;
+    // Initialize an object to store uploaded URLs
+    const uploadedFiles = {};
 
-    const { color, size, strength } = attributes;
+    // Process all files and categorize by fieldname
+    for (const file of req.files) {
+      const fieldName = file.fieldname;
+      if (!uploadedFiles[fieldName]) {
+        uploadedFiles[fieldName] = [];
+      }
+      uploadedFiles[fieldName].push(file);
+    }
 
-    existingProduct.name = name || existingProduct.name;
-    existingProduct.productType = productType || existingProduct.productType;
-    existingProduct.brand = brand || existingProduct.brand;
-    existingProduct.quantity = quantity || existingProduct.quantity;
-    existingProduct.item_code = item_code || existingProduct.item_code;
-    existingProduct.price = price || existingProduct.price;
-    existingProduct.description = description || existingProduct.description;
-    existingProduct.imgUrl = imgUrl;
-    existingProduct.details = details || existingProduct.details;
-    existingProduct.attributes = {
-      color: color || existingProduct.attributes.color,
-      size: size || existingProduct.attributes.size,
-      strength: strength || existingProduct.attributes.strength,
-    };
-    existingProduct.isCustomizable =
-      isCustomizable !== undefined
-        ? isCustomizable
-        : existingProduct.isCustomizable;
-    existingProduct.shipping_cost =
-      shipping_cost || existingProduct.shipping_cost;
-    existingProduct.is_shipping_cost_need =
-      is_shipping_cost_need !== undefined
-        ? is_shipping_cost_need
-        : existingProduct.is_shipping_cost_need;
-    existingProduct.is_cash_on_delivery_avail =
-      is_cash_on_delivery_avail !== undefined
-        ? is_cash_on_delivery_avail
-        : existingProduct.is_cash_on_delivery_avail;
-    existingProduct.unit_price = unit_price || existingProduct.unit_price;
-    existingProduct.purchase_price =
-      purchase_price || existingProduct.purchase_price;
-    existingProduct.Variation_Type =
-      Variation_Type || existingProduct.Variation_Type;
-    existingProduct.variation = variation || existingProduct.variation;
-    existingProduct.has_expiry =
-      has_expiry !== undefined ? has_expiry : existingProduct.has_expiry;
-    existingProduct.is_expiry_expiry_salable =
-      is_expiry_expiry_salable !== undefined
-        ? is_expiry_expiry_salable
-        : existingProduct.is_expiry_expiry_salable;
-    existingProduct.unit = unit || existingProduct.unit;
-    existingProduct.is_utsab_product =
-      is_utsab_product !== undefined
-        ? is_utsab_product
-        : existingProduct.is_utsab_product;
-    existingProduct.utsab_discount =
-      utsab_discount || existingProduct.utsab_discount;
-    existingProduct.inventory = {
-      sku: sku || existingProduct.inventory.sku,
-      item_code: item_code || existingProduct.inventory.item_code,
-      quantity: quantity || existingProduct.inventory.quantity,
-    };
+    // Upload thumbnail image
+    let singleImageUrl = existingProduct.thumbnail;
+    if (uploadedFiles["thumbnail"]) {
+      const [imageLink] = await uploadFiles(uploadedFiles["thumbnail"]);
+      singleImageUrl = imageLink;
+    }
 
-    const updatedProduct = await existingProduct.save();
+    let newList = [];
+    let imageListUrls = req.body.otherImages;
+    if (uploadedFiles["otherImages[]"]) {
+      newList = await uploadFiles(uploadedFiles["otherImages[]"]);
+      if (imageListUrls) {
+        newList = newList.concat(imageListUrls);
+      }
+    } else {
+      newList = imageListUrls;
+    }
+    console.log(existingProduct.otherImages);
+    //  let newList = [];
+    //  if (req.body.otherImages) {
+    //    newList = req.body.otherImages;
+    //    if (uploadedFiles["otherImages[]"]) {
+    //      imageListUrls = await uploadFiles(uploadedFiles["otherImages[]"]);
+    //      newList = req.body.images.concat(imageListUrls);
+    //    }
+    //  } else {
+    //    newList = await uploadFiles(uploadedFiles["otherImages[]"]);
+    //  }
+
+    // Update the product details
+    existingProduct.totalQuantity = totalQuantity;
+    existingProduct.name = name;
+    existingProduct.isCustomizable = isCustomizable;
+    existingProduct.hasExpiry = hasExpiry;
+    existingProduct.isExpirySaleable = isExpirySaleable;
+    existingProduct.categoryId = category;
+    existingProduct.subCategoryId = subCategory;
+    existingProduct.productTypeId = productType;
+    existingProduct.brand = brand;
+    existingProduct.unit = unit;
+    existingProduct.barCode = barCode;
+    existingProduct.description = description;
+    existingProduct.variation = variation;
+    existingProduct.variationAttributes = variationAttributes;
+    existingProduct.thumbnail = singleImageUrl;
+    existingProduct.otherImages = newList;
+    existingProduct.variants = variants;
+
+    await existingProduct.save();
 
     res.status(200).json({
       success: true,
       message: "Product updated successfully",
-      product: updatedProduct,
+      product: existingProduct,
     });
   } catch (error) {
     console.error("Error updating product:", error);

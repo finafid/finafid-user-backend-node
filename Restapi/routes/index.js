@@ -130,6 +130,10 @@ const {
   updateReview,
   deleteReview,
 } = require("../controllers/product/reviewAndRatings.js");
+const {
+  authenticate,
+  createOrder,
+} = require("../controllers/order/socket.js");
 
 //user Authentication
 routs.post("/register", userRegistrationValidation, userRegistration);
@@ -205,7 +209,7 @@ routs.post(
 );
 routs.post("/editBrand/:brandId", upload.single("logo"), editBrand);
 routs.get("/getProductById/:productId", productOnId);
-routs.post("/updateProduct", uploadImageToS3, updateProduct);
+routs.post("/updateProduct/:productId", upload.any(), updateProduct);
 routs.post(
   "/createProduct",
   upload.any(),
@@ -228,13 +232,17 @@ routs.get("/getAllSubCategory", getAllSubCategory);
 routs.get("/getAllProductType", getAllProductType);
 routs.get("/getVariantById/:variantId", getVariantById);
    routs.post(
-     "/updateVariants/variantId",
-     upload.single("logo"),
+     "/updateVariant/:variantId",
+     upload.fields([{ name: "images[]", maxCount: 10 }]),
      updateVariants
    );
-   routs.post("/createVariant", upload.single("logo"), addVariants);
    routs.post(
-     "/deleteVariants/variantId",
+     "/createVariant",
+     upload.fields([{ name: "images[]", maxCount: 10 }]),
+     addVariants
+   );
+   routs.get(
+     "/deleteVariant/:variantId",
      upload.single("logo"),
      deleteVariants
    );
@@ -309,5 +317,11 @@ routs.get("/GetAllReviews/:productId", auth, GetAllReviews);
 routs.get("/reviewByID/:productId/:reviewId", auth, reviewByID);
 routs.post("/updateReview/:productId/:reviewId", auth, updateReview);
 routs.post("/deleteReview", auth, deleteReview);
+
+//
+
+routs.post("/authenticate", auth, authenticate);
+routs.get("/createOrder", auth, createOrder);
+
 
 module.exports = routs;

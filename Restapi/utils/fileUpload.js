@@ -89,6 +89,7 @@ const uploadImageToS3 = async (buffer, fileName) => {
 const getImageLinks = async (files) => {
   try {
     const imageLinks = [];
+ 
     const fileArray = Array.isArray(files) ? files : [files]; // Ensure files is an array
     console.log(files)
     for (const file of fileArray) {
@@ -110,8 +111,7 @@ const getImageLinks = async (files) => {
         .join("-")}-${Date.now()}.${extension}`;
 
       const uploadResult = await uploadImageToS3(imageBuffer, newFileName);
-      const imgUrl =
-        "https://d2w5oj0jmt3sl6.cloudfront.net/" + req.file.originalname;
+      const imgUrl = "https://d2w5oj0jmt3sl6.cloudfront.net/" + newFileName;
 
       imageLinks.push(imgUrl);
     }

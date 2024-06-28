@@ -53,7 +53,14 @@ const getTheWishlist = async (req, res) => {
     const userDetails = await wishList
       .findOne({
         UserId: userData._id,
-      }).populate('productIdList')
+      })
+      .populate({
+        path: "productIdList",
+        populate: {
+          path: "productGroup",
+          model: "Product", 
+        },
+      });
      
     return res.status(200).json(userDetails);
   } catch (error) {
@@ -177,7 +184,18 @@ const getTheCart = async (req, res) => {
   try {
     const userData = req.user;
     const userCartDetails = await cart
-      .findOne({ UserId: userData._id }).populate('cartItems.productId');
+      .findOne({ UserId: userData._id })
+      .populate({
+        path: "cartItems",
+        populate: {
+          path: "productId",
+          populate: {
+            path: "productGroup",
+            model: "Product",
+          },
+        },
+      });
+     ;
       
 
     if (!userCartDetails) {
