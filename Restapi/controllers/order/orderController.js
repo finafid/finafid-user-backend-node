@@ -17,19 +17,54 @@ const placeOrder = async (req, res) => {
       newOrderItems.push(newOrderItem);
     });
 
-    const totalPrices = await Promise.all(
-      newOrderItems.map(async (orderItem) => {
-        const priceOfItemDetails = await Variant.findOne({
-          _id: orderItem.productId,
-        });
+    // const totalPrices = await Promise.all(
+    //   newOrderItems.map(async (orderItem) => {
+    //     const priceOfItemDetails = await Variant.findOne({
+    //       _id: orderItem.productId,
+    //     });
 
-        const totalPrice =
-          priceOfItemDetails.unitPrice * orderItem.itemQuantity;
-        return totalPrice;
-      })
-    );
+    //     const totalPrice =
+    //       priceOfItemDetails.unitPrice * orderItem.itemQuantity;
+    //     return totalPrice;
+    //   })
+    // );
 
-    const grandTotal = totalPrices.reduce((acc, price) => acc + price, 0);
+    // const grandTotal = totalPrices.reduce((acc, price) => acc + price, 0);
+
+    // const totalDiscount = await Promise.all(
+    //   newOrderItems.map(async (orderItem) => {
+    //     const priceOfItemDetails = await Variant.findOne({
+    //       _id: orderItem.productId,
+    //     });
+
+    //     const totalDiscount =
+    //       (priceOfItemDetails.unitPrice - priceOfItemDetails.sellingPrice) *
+    //       orderItem.itemQuantity;
+    //     return totalDiscount;
+    //   })
+    // );
+
+    // const grandDiscount = totalDiscount.reduce((acc, price) => acc + price, 0);
+    //   const totalUtsabDiscount = await Promise.all(
+    //     newOrderItems.map(async (orderItem) => {
+    //       const priceOfItemDetails = await Variant.findOne({
+    //         _id: orderItem.productId,
+    //       });
+
+    //       let totalUtsabDiscount=0; 
+    //       if(priceOfItemDetails.isUtsav===true)
+    //         {totalUtsabDiscount =
+    //           (priceOfItemDetails.sellingPrice -
+    //             priceOfItemDetails.utsabPrice) *
+    //           orderItem.itemQuantity;}
+    //       return totalUtsabDiscount;
+    //     })
+    //   );
+
+    //   const grandUtsabDiscount = totalUtsabDiscount.reduce(
+    //     (acc, price) => acc + price,
+    //     0
+    //   );
 
     const newOrder = new order({
       orderItem: newOrderItems,
@@ -42,7 +77,11 @@ const placeOrder = async (req, res) => {
       landMark: req.body.address.landMark,
       state: req.body.address.state,
       status: req.body.status,
-      totalPrice: grandTotal,
+      totalPrice: req.body.total,
+      discount: req.body.discount,
+      subtotal: req.body.subtotal,
+      tax: req.body.tax,
+      payment_method: req.body.payment_method,
     });
     await newOrder.save();
     console.log(newOrder);
@@ -192,10 +231,72 @@ const updateStatus = async (req, res) => {
     });
   }
 };
+const getOrderByStatus=async(req,res)=>{
+  try {
+    const orderDetails=await order.find({
+      status:req.body.status
+    })
+    if(!orderDetails){
+      return res.status(500).json({
+        success: false,
+        message: "No order",        
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      orderDetails,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "error",
+      err,
+    });
+  }
+}
+const getAllOrder = async (req, res) => {
+  try {
+    // Get query parameters for filtering and pagination
+    const { status,  page = 1, limit = 10 } = req.query;
+
+    // Create a filter object based on query parameters
+    let filter = {};
+    if (status) {
+      filter.status = status;
+    }
+
+
+    // Calculate pagination values
+    const skip = (page - 1) * limit;
+
+    // Find and count documents based on the filter and pagination values
+    const orderDetails = await order
+      .find(filter)
+      .skip(skip)
+      .limit(parseInt(limit));
+    const totalOrders = await order.countDocuments(filter);
+
+    return res.status(200).json({
+      success: true,
+      orderDetails,
+      totalOrders,
+      totalPages: Math.ceil(totalOrders / limit),
+      currentPage: page,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: "error",
+      err,
+    });
+  }
+};
 
 module.exports = {
   placeOrder,
   getOrderDetails,
   getOrderById,
   updateStatus,
+  getOrderByStatus,
+  getAllOrder,
 };

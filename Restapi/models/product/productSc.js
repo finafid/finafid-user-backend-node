@@ -43,10 +43,6 @@ const productSchema = new Schema(
       type: String,
       required: true,
     },
-    barCode: {
-      type: String,
-      required: true,
-    },
     description: {
       type: String,
       required: true,
@@ -84,6 +80,10 @@ const productSchema = new Schema(
       type: Boolean,
       default: false,
       required: false,
+    },
+    productCode:{
+        type: String,
+        required: true,
     },
     is_active: {
       type: Boolean,

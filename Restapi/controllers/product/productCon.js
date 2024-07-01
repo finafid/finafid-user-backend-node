@@ -114,7 +114,7 @@ const createProduct = async (req, res) => {
     productType,
     brand,
     unit,
-    barCode,
+    productCode,
     description,
     variationAttributes,
     variation,
@@ -160,7 +160,7 @@ const createProduct = async (req, res) => {
       productTypeId: productType,
       brand,
       unit,
-      barCode,
+      productCode,
       description,
       variation,
       variationAttributes,
@@ -205,6 +205,8 @@ const createProduct = async (req, res) => {
         hasShippingCost: variantData.hasShippingCost,
         taxPercent: variantData.taxPercent,
         sellingPrice: variantData.sellingPrice,
+        utsavPrice: variantData.utsavPrice,
+        barCode: variantData.barCode,
       });
 
       await variant.save();
@@ -268,8 +270,10 @@ const updateVariants = async (req, res) => {
     variantDetails.hasShippingCost = req.body.hasShippingCost;
     variantDetails.taxPercent = parseFloat(req.body.taxPercent);
     variantDetails.sellingPrice = parseFloat(req.body.sellingPrice);
-    // Save variant details
-    await variantDetails.save();
+    variantDetails.utsavPrice = parseFloat(req.body.utsavPrice);
+    variantDetails.barCode = parseFloat(req.body.barCode);
+       // Save variant details
+       await variantDetails.save();
 
     const productDetails = await Product.findById(req.body.productId);
     if (!productDetails) {
@@ -318,6 +322,8 @@ const addVariants = async (req, res) => {
       hasShippingCost: req.body.hasShippingCost,
       taxPercent: req.body.taxPercent,
       sellingPrice: parseFloat(req.body.sellingPrice),
+      utsabPrice: parseFloat(req.body.utsavPrice),
+      barCode: parseFloat(req.body.barCode),
     });
     if (!variant) {
       return res

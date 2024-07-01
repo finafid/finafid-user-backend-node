@@ -74,6 +74,8 @@ const {
   getOrderDetails,
   getOrderById,
   updateStatus,
+  getOrderByStatus,
+  getAllOrder,
 } = require("../controllers/order/orderController");
 const { upload, uploadImageToS3 } = require("../utils/fileUpload");
 const {
@@ -263,6 +265,10 @@ routs.post("/placeOrder", auth, apiKeyMiddleware, placeOrder);
 routs.get("/getOrderDetails", auth, getOrderDetails);
 routs.get("/getOrderById/:orderId", auth, getOrderById);
 routs.post("/updateStatus", auth, updateStatus);
+getOrderByStatus;
+routs.post("/getOrderByStatus", auth, getOrderByStatus);
+
+routs.post("/getAllOrder", auth, getAllOrder);
 
 //Address
 routs.post("/addAddress", auth, addAddress);
@@ -312,11 +318,16 @@ routs.post("/updateAdminDetails", auth, updateAdminDetails);
 
 //Forgot password
 
-routs.post("/createReview", auth, createReview);
+routs.post(
+  "/createReview/:productId",
+  auth,
+  upload.fields([{ name: "images[]", maxCount: 10 }]),
+  createReview
+);
 routs.get("/GetAllReviews/:productId", auth, GetAllReviews);
 routs.get("/reviewByID/:productId/:reviewId", auth, reviewByID);
 routs.post("/updateReview/:productId/:reviewId", auth, updateReview);
-routs.post("/deleteReview", auth, deleteReview);
+routs.get("/deleteReview/:reviewId", auth, deleteReview);
 
 //
 

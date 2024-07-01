@@ -69,7 +69,15 @@ const variantSchema = new Schema(
       type: Number,
       required: true,
     },
+    utsavPrice: {
+      type: Number,
+      required: false,
+    },
     minOrderQuantity: {
+      type: Number,
+      required: true,
+    },
+    barCode: {
       type: Number,
       required: true,
     },

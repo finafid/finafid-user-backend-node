@@ -102,13 +102,31 @@ const updateAddressOfUser = async (req, res) => {
 const deleteAddress = async (req, res) => {
   try {
     const { addressId } = req.body;
-    const addressDetails = await Address.findByIdAndDelete({
+    const addressDetails = await Address.findById({
       _id: addressId,
     });
-    return res.status(200).json({
-      success: true,
-      message: "Deleted successfully",
-    });
+    if (!addressDetails){
+      return res.status(500).json({
+        success: false,
+        message:  "No address",
+      });
+      if(addressDetails.isDefault===false){
+        await addressDetails.remove();
+        return res.status(200).json({
+          success: true,
+          message: "Deleted successfully",
+        });
+      }else{
+        return res.status(200).json({
+          success: false,
+          message: "Deleted unsuccessful",
+        });
+      }
+    }
+      // return res.status(200).json({
+      //   success: true,
+      //   message: "Deleted successfully",
+      // });
   } catch (error) {
     return res.status(500).json({
       success: false,

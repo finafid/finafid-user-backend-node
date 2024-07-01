@@ -1,10 +1,14 @@
 const Review = require("../../models/product/Review&Ratings");
+const {getImageLinks}=require("../../utils/fileUpload")
 const createReview = async (req, res) => {
+  const imgLink = await getImageLinks(req.files["images[]"])
   const review = new Review({
-    productId: req.body.productId,
+    productId: req.params.productId,
     userId: req.body.userId,
     rating: req.body.rating,
     comment: req.body.comment,
+    title: req.body.title,
+    imgLink
   });
 
   try {
