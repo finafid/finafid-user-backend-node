@@ -51,28 +51,39 @@ const orderSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
-     discount:  {
+    discount: {
       type: Number,
       required: true,
     },
-      subtotal:  {
+    subtotal: {
       type: Number,
       required: true,
     },
-      tax:  {
+    tax: {
       type: Number,
       required: true,
     },
-      payment_method:  {
+    payment_method: {
       type: String,
-      required: true,
-      enum:["Prepaid","Postpaid"]
+      required: false,
+      enum: ["Razorpay", "COD", "Wallet"],
+    },
+    payment_complete: {
+      type: Boolean,
+      default: false,
     },
     status: {
       type: String,
       required: true,
-      enum: ["Pending", "Confirmed","Shipping", "Out For delivery","Delivered",
-        "Returned","Canceled","Completed"
+      enum: [
+        "Pending",
+        "Confirmed",
+        "Shipping",
+        "Out For delivery",
+        "Delivered",
+        "Returned",
+        "Canceled",
+        "Completed",
       ],
       default: "Pending",
     },

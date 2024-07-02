@@ -2,8 +2,6 @@ const Address = require("../../models/Order/address");
 
 const addAddress = async (req, res) => {
   try {
-    console.log(req.body.addressType);
-
     const newAddress = new Address({
       userId: req.user._id,
       addressType: req.body.addressType,
@@ -19,7 +17,10 @@ const addAddress = async (req, res) => {
       country: req.body.country,
       isDefault: false,
     });
-    console.log(newAddress);
+    const userDetails = await Address.findOne({ userId: req.user._id });
+    if (!userDetails){
+      newAddress.isDefault=true;
+    } console.log(newAddress);
     await newAddress.save();
     res.status(200).json({
       success: true,
@@ -101,32 +102,30 @@ const updateAddressOfUser = async (req, res) => {
 
 const deleteAddress = async (req, res) => {
   try {
-    const { addressId } = req.body;
-    const addressDetails = await Address.findById({
-      _id: addressId,
-    });
-    if (!addressDetails){
+    const { addressId } = req.params;
+   
+    const addressDetails = await Address.findOne({_id:addressId});
+      console.log(addressDetails);
+    if (!addressDetails) {
       return res.status(500).json({
         success: false,
-        message:  "No address",
+        message: "No address found",
       });
-      if(addressDetails.isDefault===false){
-        await addressDetails.remove();
-        return res.status(200).json({
-          success: true,
-          message: "Deleted successfully",
-        });
-      }else{
-        return res.status(200).json({
-          success: false,
-          message: "Deleted unsuccessful",
-        });
-      }
     }
-      // return res.status(200).json({
-      //   success: true,
-      //   message: "Deleted successfully",
-      // });
+    console.log(addressDetails);
+    console.log(addressDetails.isDefault);
+    if (addressDetails.isDefault===false) {
+      await Address.deleteOne({ _id: addressId });
+      return res.status(200).json({
+        success: true,
+        message: "Deleted successfully",
+      });
+    } else {
+      return res.status(200).json({
+        success: false,
+        message: "Cannot delete default address",
+      });
+    }
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -134,6 +133,7 @@ const deleteAddress = async (req, res) => {
     });
   }
 };
+
 const setDefaultAddress=async(req,res)=>{
   try {
     const {addressId}=req.body;

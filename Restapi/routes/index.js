@@ -76,6 +76,7 @@ const {
   updateStatus,
   getOrderByStatus,
   getAllOrder,
+  editOrder,
 } = require("../controllers/order/orderController");
 const { upload, uploadImageToS3 } = require("../utils/fileUpload");
 const {
@@ -269,12 +270,14 @@ getOrderByStatus;
 routs.post("/getOrderByStatus", auth, getOrderByStatus);
 
 routs.post("/getAllOrder", auth, getAllOrder);
+;
+routs.post("/editOrder", auth, editOrder);
 
 //Address
 routs.post("/addAddress", auth, addAddress);
 routs.get("/getAddressOfUser", auth, getAddressOfUser);
 routs.post("/updateAddressOfUser", auth, updateAddressOfUser);
-routs.post("/deleteAddress", auth, deleteAddress);
+routs.get("/deleteAddress/:addressId", auth, deleteAddress);
 routs.post("/setDefaultAddress", auth, setDefaultAddress);
 //payment
 routs.post("/create-order", paymentDetails);

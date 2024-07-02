@@ -82,6 +82,7 @@ const placeOrder = async (req, res) => {
       subtotal: req.body.subtotal,
       tax: req.body.tax,
       payment_method: req.body.payment_method,
+      
     });
     await newOrder.save();
     console.log(newOrder);
@@ -291,7 +292,38 @@ const getAllOrder = async (req, res) => {
     });
   }
 };
-
+const editOrder=async(req,res)=>{
+  try {
+    const orderDetails=await order.findOne({
+      _id:req.params.orderId
+    })
+    (orderDetails.locality = req.body.locality);
+    (orderDetails.city = req.body.address.city);
+    (orderDetails.street = req.body.address.street);
+    (orderDetails.houseNumber = req.body.address.houseNumber);
+    (orderDetails.pinCode = req.body.address.pinCode);
+    (orderDetails.landMark = req.body.address.landMark);
+    (orderDetails.state = req.body.address.state);
+    (orderDetails.status = req.body.status);
+    (orderDetails.totalPrice = req.body.total);
+    (orderDetails.discount = req.body.discount);
+    (orderDetails.subtotal = req.body.subtotal);
+    (orderDetails.tax = req.body.tax);
+    (orderDetails.payment_method = req.body.payment_method);
+    (orderDetails.payment_complete=req.body.payment_complete);
+    await orderDetails.save()
+     return res.status(500).json({
+       success: true,
+       message: "updated succesfully"
+     });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: "error",
+      err,
+    });
+  }
+}
 module.exports = {
   placeOrder,
   getOrderDetails,
@@ -299,4 +331,5 @@ module.exports = {
   updateStatus,
   getOrderByStatus,
   getAllOrder,
+  editOrder
 };
