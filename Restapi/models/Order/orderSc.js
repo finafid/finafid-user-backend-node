@@ -15,37 +15,41 @@ const orderSchema = new mongoose.Schema(
       },
     ],
     userId: {
-      type: mongoose.Schema.Types.ObjectId, // Corrected type definition
-      ref: "User",
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "user",
       required: false,
     },
-    locality: {
-      type: String,
-    },
-    city: {
-      type: String,
-    },
-    street: {
-      type: String,
-    },
-    houseNumber: {
-      type: String,
+    address: {
+      // locality: {
+      //   type: String,
+      // },
+      // city: {
+      //   type: String,
+      // },
+      // street: {
+      //   type: String,
+      // },
+      // houseNumber: {
+      //   type: String,
 
-      validate: {
-        validator: function (value) {
-          return /^[a-zA-Z0-9 ]+$/.test(value);
-        },
-        message: "House number must be alphanumeric",
-      },
-    },
-    pinCode: {
-      type: Number,
-    },
-    landMark: {
-      type: String,
-    },
-    state: {
-      type: String,
+      //   validate: {
+      //     validator: function (value) {
+      //       return /^[a-zA-Z0-9 ]+$/.test(value);
+      //     },
+      //     message: "House number must be alphanumeric",
+      //   },
+      // },
+      // pinCode: {
+      //   type: Number,
+      // },
+      // landMark: {
+      //   type: String,
+      // },
+      // state: {
+      //   type: String,
+      // },
+      type: mongoose.Schema.Types.Mixed,
+      required: true,
     },
     totalPrice: {
       type: Number,
@@ -70,6 +74,14 @@ const orderSchema = new mongoose.Schema(
     },
     payment_complete: {
       type: Boolean,
+      default: false,
+    },
+    recipient_name: {
+      type: String,
+      default: false,
+    },
+    recipient_mobileNumber: {
+      type: Number,
       default: false,
     },
     status: {

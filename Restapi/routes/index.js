@@ -77,6 +77,7 @@ const {
   getOrderByStatus,
   getAllOrder,
   editOrder,
+  orderStatusDetails,
 } = require("../controllers/order/orderController");
 const { upload, uploadImageToS3 } = require("../utils/fileUpload");
 const {
@@ -137,6 +138,12 @@ const {
   authenticate,
   createOrder,
 } = require("../controllers/order/socket.js");
+const {
+  createBanner,
+  editBanner,
+  getAllBanners,
+  deleteBanner
+}=require("../controllers/BannerController/bannerCon")
 
 //user Authentication
 routs.post("/register", userRegistrationValidation, userRegistration);
@@ -265,13 +272,14 @@ routs.get("/clearCart", auth, clearCart);
 routs.post("/placeOrder", auth, apiKeyMiddleware, placeOrder);
 routs.get("/getOrderDetails", auth, getOrderDetails);
 routs.get("/getOrderById/:orderId", auth, getOrderById);
-routs.post("/updateStatus", auth, updateStatus);
-getOrderByStatus;
+routs.post("/updateStatus/:orderId", auth, updateStatus);
+routs.get("/getOrderByIdAdmin/:orderId", getOrderById);
+routs.post("/updateStatusAdmin/:orderId",  updateStatus);
 routs.post("/getOrderByStatus", auth, getOrderByStatus);
-
-routs.post("/getAllOrder", auth, getAllOrder);
-;
+routs.get("/getAllOrder",  getAllOrder);
 routs.post("/editOrder", auth, editOrder);
+;
+routs.get("/orderStatusDetails/:orderId", auth, orderStatusDetails);
 
 //Address
 routs.post("/addAddress", auth, addAddress);
@@ -336,6 +344,13 @@ routs.get("/deleteReview/:reviewId", auth, deleteReview);
 
 routs.post("/authenticate", auth, authenticate);
 routs.get("/createOrder", auth, createOrder);
+
+//banner
+
+routs.post("/createBanner",  createBanner);
+routs.get("/editBanner/:bannerId",editBanner);
+routs.post("/getAllBanners", getAllBanners);
+routs.get("/deleteBanner/:bannerId", createOrder);
 
 
 module.exports = routs;

@@ -447,7 +447,7 @@ const categoryDetails = async (req, res) => {
     const detailCategories = await Promise.all(
       categories.map(async (category) => {
         const subCategories = await subCategory
-          .find({ id: category.id })
+          .find({ mainCategoryId: category._id })
           .lean()
           .exec();
 

@@ -1,7 +1,5 @@
 const order = require("../../models/Order/orderSc");
-const orderItems = require("../../models/Order/orderItem");
-const user = require("../../models/auth/userSchema");
-const Variant = require("../../models/product/Varient");
+const orderStatus=require("../../models/Order/OrderStatus")
 
 const { authenticate, createOrder } = require("../../controllers/order/socket"); // Adjust the path to your Shiprocket module
 
@@ -51,7 +49,7 @@ const placeOrder = async (req, res) => {
     //         _id: orderItem.productId,
     //       });
 
-    //       let totalUtsabDiscount=0; 
+    //       let totalUtsabDiscount=0;
     //       if(priceOfItemDetails.isUtsav===true)
     //         {totalUtsabDiscount =
     //           (priceOfItemDetails.sellingPrice -
@@ -65,24 +63,28 @@ const placeOrder = async (req, res) => {
     //     (acc, price) => acc + price,
     //     0
     //   );
-
+      // const address = {
+      //   locality: req.body.locality,
+      //   city: req.body.address.city,
+      //   street: req.body.address.street,
+      //   houseNumber: req.body.address.houseNumber,
+      //   pinCode: req.body.address.pinCode,
+      //   landMark: req.body.address.landMark,
+      //state: req.body.address.state,
+      //   recipient_name:req.body.recipient_name,
+      //  recipient_mobileNumber:req.body.recipient_mobileNumber
+      // };
     const newOrder = new order({
       orderItem: newOrderItems,
       userId: req.user._id,
-      locality: req.body.locality,
-      city: req.body.address.city,
-      street: req.body.address.street,
-      houseNumber: req.body.address.houseNumber,
-      pinCode: req.body.address.pinCode,
-      landMark: req.body.address.landMark,
-      state: req.body.address.state,
+      address:req.body.address,
       status: req.body.status,
       totalPrice: req.body.total,
       discount: req.body.discount,
       subtotal: req.body.subtotal,
       tax: req.body.tax,
       payment_method: req.body.payment_method,
-      
+    
     });
     await newOrder.save();
     console.log(newOrder);
@@ -131,7 +133,7 @@ const placeOrder = async (req, res) => {
     return res.status(201).json({
       message: "Successfully created order and Shiprocket order",
       newOrder,
-      shiprocketResponse,
+      //shiprocketResponse,
       success: true,
     });
   } catch (error) {
@@ -145,7 +147,6 @@ const placeOrder = async (req, res) => {
 
 module.exports = placeOrder;
 
-
 const getOrderDetails = async (req, res) => {
   try {
     const orderDetail = await order
@@ -157,12 +158,12 @@ const getOrderDetails = async (req, res) => {
         populate: {
           path: "productId",
           model: "Variant",
-        populate: {
-          path: "productGroup",
-          model: "Product",
-        }},
+          populate: {
+            path: "productGroup",
+            model: "Product",
+          },
+        },
       });
-
 
     if (!orderDetail) {
       return res.status(500).json({
@@ -188,7 +189,11 @@ const getOrderById = async (req, res) => {
       .populate({
         path: "orderItem.productId",
         model: "Variant",
-      });
+        populate: {
+          path: "productGroup",
+          model: "Product",
+        },
+      }).populate("userId")
     if (!orderDetail) {
       return res.status(500).json({
         success: false,
@@ -209,13 +214,13 @@ const updateStatus = async (req, res) => {
     const orderDetail = await order
       .findByIdAndUpdate(
         {
-          _id: req.param._id,
+          _id: req.params.orderId,
         },
         {
           status: req.body.status,
         }
       )
-      .populate("user", "name");
+      .populate("userId");
 
     if (!orderDetail) {
       return res.status(500).json({
@@ -223,24 +228,46 @@ const updateStatus = async (req, res) => {
         message: "No order till now",
       });
     }
-    res.send(orderDetail);
+    const statusDetails = await orderStatus.findOne({
+      orderId: req.params.orderId,
+    });
+    const newStatusDetails =  {
+      status: req.body.status,
+      date: Date.now(),
+    };
+    if(!statusDetails){
+      const newStatus = new orderStatus({
+        orderStatusDetails: [newStatusDetails],
+        orderId: req.params.orderId,
+      });
+      await newStatus.save();
+       return res.status(200).json({
+         success: true,
+         orderDetail,
+       });
+    }
+    statusDetails.orderStatusDetails.push(newStatusDetails);
+    await statusDetails.save();
+    return res.status(200).json({
+      success: true,
+      orderDetail,
+    });
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: "error",
-      err,
+      message: error.message + "internal server error",
     });
   }
 };
-const getOrderByStatus=async(req,res)=>{
+const getOrderByStatus = async (req, res) => {
   try {
-    const orderDetails=await order.find({
-      status:req.body.status
-    })
-    if(!orderDetails){
+    const orderDetails = await order.find({
+      status: req.body.status,
+    });
+    if (!orderDetails) {
       return res.status(500).json({
         success: false,
-        message: "No order",        
+        message: "No order",
       });
     }
     return res.status(200).json({
@@ -250,80 +277,151 @@ const getOrderByStatus=async(req,res)=>{
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: "error",
-      err,
-    });
-  }
-}
-const getAllOrder = async (req, res) => {
-  try {
-    // Get query parameters for filtering and pagination
-    const { status,  page = 1, limit = 10 } = req.query;
-
-    // Create a filter object based on query parameters
-    let filter = {};
-    if (status) {
-      filter.status = status;
-    }
-
-
-    // Calculate pagination values
-    const skip = (page - 1) * limit;
-
-    // Find and count documents based on the filter and pagination values
-    const orderDetails = await order
-      .find(filter)
-      .skip(skip)
-      .limit(parseInt(limit));
-    const totalOrders = await order.countDocuments(filter);
-
-    return res.status(200).json({
-      success: true,
-      orderDetails,
-      totalOrders,
-      totalPages: Math.ceil(totalOrders / limit),
-      currentPage: page,
-    });
-  } catch (err) {
-    return res.status(500).json({
-      success: false,
-      message: "error",
-      err,
+      message: error.message + "internal server error",
     });
   }
 };
-const editOrder=async(req,res)=>{
+const getAllOrder = async (req, res) => {
   try {
-    const orderDetails=await order.findOne({
-      _id:req.params.orderId
-    })
-    (orderDetails.locality = req.body.locality);
-    (orderDetails.city = req.body.address.city);
-    (orderDetails.street = req.body.address.street);
-    (orderDetails.houseNumber = req.body.address.houseNumber);
-    (orderDetails.pinCode = req.body.address.pinCode);
-    (orderDetails.landMark = req.body.address.landMark);
-    (orderDetails.state = req.body.address.state);
-    (orderDetails.status = req.body.status);
-    (orderDetails.totalPrice = req.body.total);
-    (orderDetails.discount = req.body.discount);
-    (orderDetails.subtotal = req.body.subtotal);
-    (orderDetails.tax = req.body.tax);
-    (orderDetails.payment_method = req.body.payment_method);
-    (orderDetails.payment_complete=req.body.payment_complete);
-    await orderDetails.save()
-     return res.status(500).json({
-       success: true,
-       message: "updated succesfully"
-     });
+    // Get query parameters for filtering and pagination
+    const { status, page = 1, limit = 10, startDate, endDate } = req.query;
+
+    // Create a date filter object if startDate and endDate are provided
+    let dateFilter = {};
+    if (startDate || endDate) {
+      dateFilter.createdAt = {};
+      if (startDate) {
+        dateFilter.createdAt.$gte = new Date(startDate);
+      }
+      if (endDate) {
+        // Add 1 day to the endDate to include the entire day
+        const end = new Date(endDate);
+        end.setDate(end.getDate() + 1);
+        dateFilter.createdAt.$lte = end;
+      }
+    }
+
+    // Fetch all orders first with the date filter applied
+    const allOrders = await order
+      .find(dateFilter)
+      .populate("userId")
+      .populate({
+        path: "orderItem.productId",
+        model: "Variant",
+        populate: {
+          path: "productGroup",
+          model: "Product",
+        },
+      });
+
+    // Calculate status counts
+    const statusCount = {};
+    const statusList = [
+      "Pending",
+      "Confirmed",
+      "Shipping",
+      "Out For delivery",
+      "Delivered",
+      "Returned",
+      "Canceled",
+      "Completed",
+    ];
+
+    statusList.forEach((status) => {
+      const filteredOrderList = allOrders.filter(
+        (order) => order.status === status
+      );
+      statusCount[status] = filteredOrderList.length;
+    });
+
+    console.log(statusCount);
+
+    // Apply status filter
+    let filteredOrders = allOrders;
+    if (status) {
+      filteredOrders = allOrders.filter((order) => order.status === status);
+    }
+
+    // Calculate pagination values
+    const skip = (page - 1) * limit;
+    const paginatedOrders = filteredOrders.slice(skip, skip + parseInt(limit));
+
+    // Calculate total pages
+    const totalOrders = filteredOrders.length;
+    const totalPages = Math.ceil(totalOrders / limit);
+
+    return res.status(200).json({
+      success: true,
+      orderDetails: paginatedOrders,
+      totalOrders,
+      totalPages,
+      currentPage: page,
+      statusCount,
+    });
   } catch (err) {
     return res.status(500).json({
       success: false,
-      message: "error",
-      err,
+      message: err.message + " internal server error",
     });
   }
+};
+
+
+
+const editOrder = async (req, res) => {
+  try {
+    const orderDetails = await order.findOne({
+      _id: req.params.orderId,
+    })((orderDetails.locality = req.body.locality));
+    orderDetails.city = req.body.address.city;
+    orderDetails.street = req.body.address.street;
+    orderDetails.houseNumber = req.body.address.houseNumber;
+    orderDetails.pinCode = req.body.address.pinCode;
+    orderDetails.landMark = req.body.address.landMark;
+    orderDetails.state = req.body.address.state;
+    orderDetails.status = req.body.status;
+    orderDetails.totalPrice = req.body.total;
+    orderDetails.discount = req.body.discount;
+    orderDetails.subtotal = req.body.subtotal;
+    orderDetails.tax = req.body.tax;
+    orderDetails.payment_method = req.body.payment_method;
+    orderDetails.payment_complete = req.body.payment_complete;
+    await orderDetails.save();
+    return res.status(500).json({
+      success: true,
+      message: "updated succesfully",
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: error.message + "internal server error",
+    });
+  }
+};
+const orderStatusDetails=async(req,res)=>{
+  try {
+    const statusDetails = await orderStatus.findOne(
+      {orderId:req.params.orderId}
+    )
+    if(!statusDetails){
+       return res.status(500).json({
+         success: false,
+         message: "internal server error",
+       });
+    }
+     return res.status(200).json({
+       success: true,
+       statusDetails,
+     });
+
+  } catch (err) {
+   return res.status(500).json({
+     success: false,
+     message: err.message + "internal server error",
+   });
+  }
 }
+
 module.exports = {
   placeOrder,
   getOrderDetails,
@@ -331,5 +429,6 @@ module.exports = {
   updateStatus,
   getOrderByStatus,
   getAllOrder,
-  editOrder
+  editOrder,
+  orderStatusDetails,
 };
