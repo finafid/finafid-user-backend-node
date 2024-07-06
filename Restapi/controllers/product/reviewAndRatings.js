@@ -1,10 +1,13 @@
 const Review = require("../../models/product/Review&Ratings");
 const {getImageLinks}=require("../../utils/fileUpload")
 const createReview = async (req, res) => {
-  const imgLink = await getImageLinks(req.files["images[]"])
+  let imgLink = "";
+  if (req.files && req.files.length > 0) {
+    imgLink = await getImageLinks(req.files);
+  }
   const review = new Review({
     productId: req.params.productId,
-    userId: req.body.userId,
+    userId: req.user._id,
     rating: req.body.rating,
     comment: req.body.comment,
     title: req.body.title,
@@ -22,7 +25,13 @@ const createReview = async (req, res) => {
 // Get all reviews for a product
 const GetAllReviews = async (req, res) => {
   try {
-    const reviews = await Review.find({ productId: req.params.productId });
+    const reviews = await Review.find({
+      productId: req.params.productId,
+    }).populate({path:"userId",
+      model:"user"
+    }
+
+    );
     res.json(reviews);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -77,6 +86,34 @@ const deleteReview = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+const getAvgRating = async (req, res) => {
+  try {
+    const productId = req.params.productId;
+
+    const result = await Review.aggregate([
+      { $match: { productId: productId } },
+      {
+        $group: {
+          _id: "$productId",
+          averageRating: { $avg: "$rating" },
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    if (result.length > 0) {
+      return res
+        .status(200)
+        .json({ rating: result[0].averageRating, count: result[0].count });
+    } else {
+      return res.status(200).json({ rating: 0, count: 0 });
+    }
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+module.exports = getAvgRating;
 
 module.exports = {
   createReview,
@@ -84,4 +121,5 @@ module.exports = {
   reviewByID,
   updateReview,
   deleteReview,
+  getAvgRating,
 };

@@ -52,6 +52,11 @@ const userLogin = async (req, res) => {
            
         }
         const jwtToken = jwt.sign(tokenObject, process.env.SECRET, { expiresIn: '10h' });
+          const { fcmToken } = req.body;
+          if (fcmToken) {
+            user.fcmToken = fcmToken;
+            await user.save();
+          }
         tokenObject.imgUrl= user.imgUrl
         return res.status(200).json({
             token: jwtToken

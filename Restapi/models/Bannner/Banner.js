@@ -2,23 +2,31 @@ const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
 const bannerSchema = new Schema({
-  bannerType: {
+  position: {
     type: String,
     required: true,
-    enum: ["Main Banner", "Footer Banner", "Popup Banner"],
+    enum: ["Top", "Bottom ", "Middle"],
   },
   details: {
-    type: Schema.Types.Mixed,
+    resourceType: {
+      type: String,
+      required: true,
+      enum: ["Brand", "Category ", "Subcategory","ProductType","Home","About","Contact"],
+    },
+    valueId: {
+      type: String,
     required: true,
+    },
   },
   linkUrl: {
-    type: String,
-    required: true,
-  },
-  logoUrl: {
-    type: String,
-    required: true,
-  },
+      type: String,
+      required: true,
+    },
+  bannerUrl: {
+      type: String,
+      required: true,
+    },
+  
 });
 
 const Banner = mongoose.model("Banner", bannerSchema);

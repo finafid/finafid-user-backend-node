@@ -133,6 +133,7 @@ const {
   reviewByID,
   updateReview,
   deleteReview,
+  getAvgRating,
 } = require("../controllers/product/reviewAndRatings.js");
 const {
   authenticate,
@@ -141,9 +142,9 @@ const {
 const {
   createBanner,
   editBanner,
-  getAllBanners,
-  deleteBanner
-}=require("../controllers/BannerController/bannerCon")
+  getBannersByBannerTypeAndDetails,
+  deleteBanner,
+} = require("../controllers/BannerController/bannerCon");
 
 //user Authentication
 routs.post("/register", userRegistrationValidation, userRegistration);
@@ -279,7 +280,7 @@ routs.post("/getOrderByStatus", auth, getOrderByStatus);
 routs.get("/getAllOrder",  getAllOrder);
 routs.post("/editOrder", auth, editOrder);
 ;
-routs.get("/orderStatusDetails/:orderId", auth, orderStatusDetails);
+routs.get("/orderStatusDetails/:orderId", orderStatusDetails);
 
 //Address
 routs.post("/addAddress", auth, addAddress);
@@ -327,7 +328,7 @@ routs.post("/otp_verification_admin", verifyOtp);
 routs.get("/adminDetails", auth, adminDetails);
 routs.post("/updateAdminDetails", auth, updateAdminDetails);
 
-//Forgot password
+
 
 routs.post(
   "/createReview/:productId",
@@ -335,10 +336,12 @@ routs.post(
   upload.fields([{ name: "images[]", maxCount: 10 }]),
   createReview
 );
-routs.get("/GetAllReviews/:productId", auth, GetAllReviews);
+routs.get("/GetAllReviews/:productId", GetAllReviews);
 routs.get("/reviewByID/:productId/:reviewId", auth, reviewByID);
 routs.post("/updateReview/:productId/:reviewId", auth, updateReview);
 routs.get("/deleteReview/:reviewId", auth, deleteReview);
+;
+routs.get("/getAvgRating/:productId", getAvgRating);
 
 //
 
@@ -349,7 +352,7 @@ routs.get("/createOrder", auth, createOrder);
 
 routs.post("/createBanner",  createBanner);
 routs.get("/editBanner/:bannerId",editBanner);
-routs.post("/getAllBanners", getAllBanners);
+routs.post("/getAllBanners", getBannersByBannerTypeAndDetails);
 routs.get("/deleteBanner/:bannerId", createOrder);
 
 

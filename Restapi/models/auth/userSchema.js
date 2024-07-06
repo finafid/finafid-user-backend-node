@@ -35,9 +35,12 @@ const UserSchema = new Schema({
   },
   push_notification: {
     type: Boolean,
-    default:true,
+    default: true,
     required: false,
   },
+  fcmToken:{
+    type:String
+  }
 });
 const userModel=mongoose.model('user',UserSchema)
 module.exports=userModel;

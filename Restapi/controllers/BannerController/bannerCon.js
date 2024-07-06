@@ -1,9 +1,52 @@
 const Banner=require("../../models/Bannner/Banner");
 const {getImageLinks}=require("../../utils/fileUpload")
+const getImageLink = async (req, res) => {
+  try {
+    // Extracting file buffer and extension from the request
+    const inputImagePath = await req.file.buffer;
+
+    const extension = req.file.originalname.split(".").pop();
+
+    // Define resizing and compression parameters
+    const width = 800;
+    const compressionQuality = 5;
+
+    // Compress and resize the image
+    const imageBuffer = await compressAndResizeImage(
+      inputImagePath,
+      extension,
+      width,
+      compressionQuality
+    );
+
+    // Generate a new file name
+    req.file.originalname =
+      req.file.originalname.split(".")[0].split(" ").join("-") +
+      "-" +
+      Date.now() +
+      "." +
+      extension;
+
+    // Assuming generateStringOfImageList is a function that uploads the image and generates a link
+    await generateStringOfImageList(imageBuffer, req.file.originalname, res);
+
+    // Generate the image URL
+    const imgUrl =
+      "https://d2w5oj0jmt3sl6.cloudfront.net/" + req.file.originalname;
+
+    return imgUrl;
+  } catch (error) {
+    console.error("Error in getImageLink:", error);
+  }
+};
 const createBanner=async(req,res)=>{
     try{
-        const imgUrl = await getImageLinks(req.files["images[]"])
-        const { bannerType, details, linkUrl } = req.body;
+        const imgUrl = await getImageLink(req.files)
+        const { bannerType, linkUrl, resourceType, valueId } =req.body
+        const details = {
+          resourceType,
+          valueId,
+        };
         const newBanner = new Banner({
           bannerType,
           details,
@@ -62,22 +105,25 @@ const editBanner=async(req,res)=>{
       });
     }
 }
-const getAllBanners = async (req, res) => {
+const getBannersByBannerTypeAndDetails = async (req, res) => {
   try {
-    const { bannerType, details } = req.query;
+    const { bannerType, resourceType, valueId } = req.query;
 
-    const query = {};
-    if (bannerType) {
-      query.bannerType = bannerType;
-    }
-    if (details) {
-      query.details = new RegExp(details, "i"); // Case-insensitive search for details
+    const banners = await Banner.find({
+      bannerType,
+      "details.resourceType": resourceType,
+      "details.valueId": valueId,
+    });
+
+    if (!banners || banners.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No banners found",
+      });
     }
 
-    const banners = await Banner.find(query);
     return res.status(200).json({
       success: true,
-      message: "Banners retrieved successfully",
       data: banners,
     });
   } catch (error) {
@@ -112,6 +158,6 @@ const deleteBanner=async(req,res)=>{
 module.exports = {
   createBanner,
   editBanner,
-  getAllBanners,
-  deleteBanner
+  getBannersByBannerTypeAndDetails,
+  deleteBanner,
 };

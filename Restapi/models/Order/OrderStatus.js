@@ -11,15 +11,16 @@ const orderStatusSchema = new Schema({
         enum: [
           "Pending",
           "Confirmed",
+          "Shipping",
           "Out For delivery",
           "Delivered",
           "Returned",
-          "Failed to Delivered",
+          "Canceled",
           "Completed",
         ],
       },
       date: {
-        type: Date, 
+        type: Date,
         required: true,
       },
     },
