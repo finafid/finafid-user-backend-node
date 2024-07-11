@@ -14,16 +14,11 @@ const {
 const Product = require("../../models/product/productSc");
 const getImageLink = async (req, res) => {
   try {
-    // Extracting file buffer and extension from the request
     const inputImagePath = await req.file.buffer;
-
     const extension = req.file.originalname.split(".").pop();
-
-    // Define resizing and compression parameters
     const width = 800;
     const compressionQuality = 5;
 
-    // Compress and resize the image
     const imageBuffer = await compressAndResizeImage(
       inputImagePath,
       extension,

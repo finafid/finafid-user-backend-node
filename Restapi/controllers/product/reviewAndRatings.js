@@ -93,27 +93,54 @@ const getAvgRating = async (req, res) => {
     const result = await Review.aggregate([
       { $match: { productId: productId } },
       {
-        $group: {
-          _id: "$productId",
-          averageRating: { $avg: "$rating" },
-          count: { $sum: 1 },
+        $facet: {
+          averageRating: [
+            {
+              $group: {
+                _id: "$productId",
+                averageRating: { $avg: "$rating" },
+                count: { $sum: 1 },
+              },
+            },
+          ],
+          ratingCounts: [
+            {
+              $group: {
+                _id: "$rating",
+                count: { $sum: 1 },
+              },
+            },
+            { $sort: { _id: 1 } },
+          ],
         },
       },
     ]);
 
-    if (result.length > 0) {
-      return res
-        .status(200)
-        .json({ rating: result[0].averageRating, count: result[0].count });
-    } else {
-      return res.status(200).json({ rating: 0, count: 0 });
-    }
+    const averageRating =
+      result[0].averageRating.length > 0
+        ? result[0].averageRating[0]
+        : { averageRating: 0, count: 0 };
+
+    // Initialize counts for ratings 1 to 5
+    const ratingCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+
+    // Populate actual counts
+    result[0].ratingCounts.forEach((rc) => {
+      ratingCounts[rc._id] = rc.count;
+    });
+
+    return res.status(200).json({
+      averageRating: averageRating.averageRating,
+      totalCount: averageRating.count,
+      ratingCounts: ratingCounts,
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
-module.exports = getAvgRating;
+
+
 
 module.exports = {
   createReview,

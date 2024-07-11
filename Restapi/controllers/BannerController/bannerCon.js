@@ -155,9 +155,34 @@ const deleteBanner=async(req,res)=>{
     });
   }
 }
+const publishBanner=async(req,res)=>{
+  try {
+    const bannerDetails=await Banner.findById(req.params.bannerId)
+    if(!bannerDetails){
+       return res.status(500).json({
+         success: false,
+         message: "No banner found",
+       });
+    }
+    if(req.body){
+      bannerDetails.is_published=req.body.is_published
+    }
+    await bannerDetails.save();
+     return res.status(200).json({
+       success: true,
+       message: "Published",
+     });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message + " Internal server error",
+    });
+  }
+}
 module.exports = {
   createBanner,
   editBanner,
   getBannersByBannerTypeAndDetails,
   deleteBanner,
+  publishBanner,
 };

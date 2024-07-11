@@ -1,52 +1,61 @@
 const mongoose=require('mongoose');
 const User=require('../../models/auth/userSchema')
-const giftCardSchema=new mongoose.Schema({
+const giftCardSchema = new mongoose.Schema(
+  {
+    Code: {
+      type: String,
+      required: true,
+    },
 
-    Code:{
-        type:String,
-        required:true
-    } ,
-
-    Value:{
-        type:Number,
-        required:true
-    } , 
-    Expiration_Date:{
-        type:Date,
-        required:true
+    Value: {
+      type: Number,
+      required: true,
     },
-    Status:{
-        type:String,
-        required:true,
-        enum: ['active', 'redeemed', 'expired'],
-        default:'active'
+    Expiration_Date: {
+      type: Date,
+      required: true,
     },
-    Recipient_Information:{
-        name:{
-            type:String,
-            required:true
-        },
-        email:{
-            type:String,
-            required:true
-        },
-        phoneNumber:{
-            type:Number,
-            required:true
-        }
+    Status: {
+      type: String,
+      required: true,
+      enum: ["active", "redeemed", "expired"],
+      default: "active",
     },
-    Issuer_Information:{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User' ,
-        require:true,
+    Recipient_Information: {
+      name: {
+        type: String,
+        required: true,
+      },
+      email: {
+        type: String,
+        required: true,
+      },
+      phoneNumber: {
+        type: Number,
+        required: true,
+      },
     },
-    Activation_Date:{
-        type:String,
-        required:true
+    Issuer_Information: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "user",
+      require: true,
     },
-    Additional_Metadata:{
-        type:String,
-        
-    }
-},{ timestamps: true })
+    Activation_Date: {
+      type: String,
+      required: true,
+    },
+    Additional_Metadata: {
+      type: String,
+    },
+    message: {
+      type: String,
+      required: false,
+    },
+    templateId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "GiftCardTemplate",
+    },
+  },
+  { timestamps: true }
+);
 module.exports=mongoose.model('GiftCard',giftCardSchema)

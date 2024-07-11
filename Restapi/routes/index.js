@@ -84,6 +84,12 @@ const {
   createGiftCard,
   getGiftCardDetails,
   getGiftCardByUser,
+  createGiftCardTemplate,
+  getAllTemplates,
+  deleteTemplate,
+  editTemplateId,
+  getTemplateId,
+  getAllGiftCard,
 } = require("../controllers/GiftCard/giftCardController");
 const auth = require("../middlewares/Auth");
 const {
@@ -102,6 +108,7 @@ const { apiKeyMiddleware } = require("../middlewares/apikey.js");
 const {
   addBalance,
   showTransactions,
+  getBalance,
 } = require("../controllers/Wallet/walletController.js");
 const {
   totalIncome,
@@ -135,16 +142,49 @@ const {
   deleteReview,
   getAvgRating,
 } = require("../controllers/product/reviewAndRatings.js");
-const {
-  authenticate,
-  createOrder,
-} = require("../controllers/order/socket.js");
+const { authenticate, createOrder } = require("../controllers/order/socket.js");
 const {
   createBanner,
   editBanner,
   getBannersByBannerTypeAndDetails,
   deleteBanner,
+  publishBanner,
 } = require("../controllers/BannerController/bannerCon");
+
+const {
+  createFlashDeal,
+  createFeaturedDeal,
+  createDealOfTheDay,
+  getAllFlashDeal,
+  getAllFeaturedDeals,
+  getDealOfTheDay,
+  getFlashDealById,
+  getFeaturedDealById,
+  getDEalOfTheDayById,
+  deleteDealOfTheDay,
+  deleteFeaturedDeal,
+  deleteFlashDeal,
+  editDEalOfTheDayById,
+  editFeaturedDealById,
+  editFlashDealById,
+  addProductFlashDeal,
+  addProductFeaturedDeal,
+  updateStatusFlashDeal,
+  updateStatusFeaturedDeal,
+  updateStatusDealOfTheDay,
+  deleteProductFlashDeal,
+  deleteProductFeaturedDeal,
+} = require("../controllers/CouponsAndDeal/DealsControllers.js");
+
+const {
+  createCoupons,
+  getTheCoupon,
+  applyCoupon,
+  updateCoupons,
+  deleteCoupons,
+  getAllCoupons,
+  updateStatusCoupons,
+} = require("../controllers/CouponsAndDeal/CouponsController.js");
 
 //user Authentication
 routs.post("/register", userRegistrationValidation, userRegistration);
@@ -184,7 +224,7 @@ routs.get("/allCategoryDetails", categoryDetails);
 routs.post("/createCategory", upload.single("logo"), createCategory);
 routs.post("/createSubCategory", upload.single("logo"), createSubCategory);
 routs.post("/createProductType", upload.single("logo"), createProductType);
-routs.get("/getAllVariants",  getAllVarients);
+routs.get("/getAllVariants", getAllVarients);
 routs.post("/createBrand", upload.single("logo"), createBrand);
 routs.get("/getProductGroupById/:productId", productOnId);
 routs.get(
@@ -221,11 +261,7 @@ routs.post(
 routs.post("/editBrand/:brandId", upload.single("logo"), editBrand);
 routs.get("/getProductById/:productId", productOnId);
 routs.post("/updateProduct/:productId", upload.any(), updateProduct);
-routs.post(
-  "/createProduct",
-  upload.any(),
-  createProduct
-);
+routs.post("/createProduct", upload.any(), createProduct);
 routs.get("/deleteProduct", deleteProduct);
 routs.get("/deleteCategory/:categoryId", deleteCategory);
 routs.get("/deleteSubCategory/:subCategoryId", deleteSubCategory);
@@ -242,24 +278,20 @@ routs.post("/createProductType", upload.single("logo"), createProductType);
 routs.get("/getAllSubCategory", getAllSubCategory);
 routs.get("/getAllProductType", getAllProductType);
 routs.get("/getVariantById/:variantId", getVariantById);
-   routs.post(
-     "/updateVariant/:variantId",
-     upload.fields([{ name: "images[]", maxCount: 10 }]),
-     updateVariants
-   );
-   routs.post(
-     "/createVariant",
-     upload.fields([{ name: "images[]", maxCount: 10 }]),
-     addVariants
-   );
-   routs.get(
-     "/deleteVariant/:variantId",
-     upload.single("logo"),
-     deleteVariants
-   );
-   routs.post("/updateProduct", upload.single("logo"), updateProduct);
-   //Wishlist
-   routs.post("/addToWishlist", auth, addToWishlist);
+routs.post(
+  "/updateVariant/:variantId",
+  upload.fields([{ name: "images[]", maxCount: 10 }]),
+  updateVariants
+);
+routs.post(
+  "/createVariant",
+  upload.fields([{ name: "images[]", maxCount: 10 }]),
+  addVariants
+);
+routs.get("/deleteVariant/:variantId", upload.single("logo"), deleteVariants);
+routs.post("/updateProduct", upload.single("logo"), updateProduct);
+//Wishlist
+routs.post("/addToWishlist", auth, addToWishlist);
 routs.get("/getWishlistItems", auth, getTheWishlist);
 routs.post("/deleteFromWishlist", auth, deleteFromWishlist);
 
@@ -275,11 +307,10 @@ routs.get("/getOrderDetails", auth, getOrderDetails);
 routs.get("/getOrderById/:orderId", auth, getOrderById);
 routs.post("/updateStatus/:orderId", auth, updateStatus);
 routs.get("/getOrderByIdAdmin/:orderId", getOrderById);
-routs.post("/updateStatusAdmin/:orderId",  updateStatus);
+routs.post("/updateStatusAdmin/:orderId", updateStatus);
 routs.post("/getOrderByStatus", auth, getOrderByStatus);
-routs.get("/getAllOrder",  getAllOrder);
+routs.get("/getAllOrder", getAllOrder);
 routs.post("/editOrder", auth, editOrder);
-;
 routs.get("/orderStatusDetails/:orderId", orderStatusDetails);
 
 //Address
@@ -293,13 +324,28 @@ routs.post("/create-order", paymentDetails);
 routs.post("/verify-payment", verifySignature);
 
 //giftCard
-routs.post("/createGiftCard", auth, createGiftCard);
-routs.get("/getGiftCardDetails/:orderId", auth, getGiftCardDetails);
-routs.get("/getGiftCardByUser", auth, getGiftCardByUser);
 
+routs.post("/createGiftCard", auth, createGiftCard);
+routs.get("/getGiftCardDetails/:giftCardId", auth, getGiftCardDetails);
+routs.get("/getGiftCardByUser", auth, getGiftCardByUser);
+routs.post(
+  "/createGiftCardTemplate",
+  upload.single("template"),
+  createGiftCardTemplate
+);
+routs.get("/getAllGiftCard", getAllGiftCard);
+routs.get("/getAllTemplates", getAllTemplates);
+routs.delete("/deleteTemplate/:templateId", deleteTemplate);
+routs.get("/getTemplateId/:templateId", getTemplateId);
+routs.post(
+  "/editTemplateId/:templateId",
+  upload.single("template"),
+  editTemplateId
+);  
 //wallet
 routs.post("/addBalance", auth, addBalance);
 routs.get("/showTransactions", auth, showTransactions);
+routs.get("/getBalance", auth, getBalance);
 
 //admin dashboard
 routs.get("/getTotalIncome", totalIncome);
@@ -328,8 +374,6 @@ routs.post("/otp_verification_admin", verifyOtp);
 routs.get("/adminDetails", auth, adminDetails);
 routs.post("/updateAdminDetails", auth, updateAdminDetails);
 
-
-
 routs.post(
   "/createReview/:productId",
   auth,
@@ -340,7 +384,6 @@ routs.get("/GetAllReviews/:productId", GetAllReviews);
 routs.get("/reviewByID/:productId/:reviewId", auth, reviewByID);
 routs.post("/updateReview/:productId/:reviewId", auth, updateReview);
 routs.get("/deleteReview/:reviewId", auth, deleteReview);
-;
 routs.get("/getAvgRating/:productId", getAvgRating);
 
 //
@@ -350,10 +393,55 @@ routs.get("/createOrder", auth, createOrder);
 
 //banner
 
-routs.post("/createBanner",  createBanner);
-routs.get("/editBanner/:bannerId",editBanner);
+routs.post("/createBanner", createBanner);
+routs.get("/editBanner/:bannerId", editBanner);
 routs.post("/getAllBanners", getBannersByBannerTypeAndDetails);
-routs.get("/deleteBanner/:bannerId", createOrder);
+routs.delete("/deleteBanner/:bannerId", createOrder);
 
+routs.post("/publishBanner/:bannerId", publishBanner); 
+  //Deals
+  routs.post("/createFlashDeal", upload.single("banner"), createFlashDeal);
+routs.post("/createFeaturedDeal", upload.single("banner"), createFeaturedDeal);
+routs.post("/createDealOfTheDay", upload.single("banner"), createDealOfTheDay);
+routs.get("/getAllFlashDeal", getAllFlashDeal);
+routs.get("/getAllFeaturedDeals", getAllFeaturedDeals);
+routs.get("/getDealOfTheDay", getDealOfTheDay);
+routs.get("/getFlashDealById/:dealId", getFlashDealById);
+routs.get("/getFeaturedDealById/:dealId", getFeaturedDealById);
+routs.get("/getDEalOfTheDayById/:dealId", getDEalOfTheDayById);
+routs.delete("/deleteDealOfTheDay/:dealId", deleteDealOfTheDay);
+routs.delete("/deleteFeaturedDeal/:dealId", deleteFeaturedDeal);
+routs.delete("/deleteFlashDeal/:dealId", deleteFlashDeal);
+routs.post(
+  "/editFlashDealById/:dealId",
+  upload.single("banner"),
+  editFlashDealById
+);
+routs.post(
+  "/editFeaturedDealById/:dealId",
+  upload.single("banner"),
+  editFeaturedDealById
+);
+routs.post(
+  "/editDEalOfTheDayById/:dealId",
+  upload.single("banner"),
+  editDEalOfTheDayById
+);
+routs.post("/addProductFlashDeal/:dealId", addProductFlashDeal);
+routs.post("/addProductFeaturedDeal/:dealId", addProductFeaturedDeal);
+routs.post("/updateStatusFlashDeal/:dealId", updateStatusFlashDeal);
+routs.post("/updateStatusFeaturedDeal/:dealId", updateStatusFeaturedDeal);
+routs.post("/updateStatusDealOfTheDay/:dealId", updateStatusDealOfTheDay);
+routs.post("/deleteProductFeaturedDeal/:dealId", deleteProductFeaturedDeal);
+routs.post("/deleteProductFlashDeal/:dealId", deleteProductFlashDeal);
+;
+//coupons
 
+routs.post("/createCoupons", createCoupons);
+routs.post("/applyCoupon", applyCoupon);
+routs.get("/getTheCoupon/:couponId", getTheCoupon);
+routs.post("/updateCoupons/:couponsId", updateCoupons);
+routs.delete("/deleteCoupons/:couponId", deleteCoupons);
+routs.get("/getAllCoupons", getAllCoupons);
+routs.post("/updateStatusCoupons/:couponId", updateStatusCoupons);
 module.exports = routs;

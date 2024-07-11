@@ -1,6 +1,6 @@
 const order = require("../../models/Order/orderSc");
 const orderStatus=require("../../models/Order/OrderStatus")
-
+const Wallet = require("../../models/Wallet/wallet");
 const { authenticate, createOrder } = require("../../controllers/order/socket"); // Adjust the path to your Shiprocket module
 
 const placeOrder = async (req, res) => {
@@ -221,7 +221,13 @@ const updateStatus = async (req, res) => {
         }
       )
       .populate("userId");
-
+      if (req.body.status == "Completed") {
+        const walletDetails=await Wallet.findOne({
+          userId:req.body.userId
+        })
+        walletDetails.balance = walletDetails.balance + (orderDetail.totalPrice+(orderDetail.totalPrice*.01))
+        await walletDetails.save();
+      }
     if (!orderDetail) {
       return res.status(500).json({
         success: false,

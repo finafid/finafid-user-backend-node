@@ -480,6 +480,14 @@ const updateNotification=async(req,res)=>{
         .json({ message: error.message + " Internal Server Error" });
     }
 }
+const getAllCustomer=async(req,res)=>{
+    try {
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ message: error.message + " Internal Server Error" });
+    }
+}
 module.exports = {
   userRegistration,
   userLogin,
