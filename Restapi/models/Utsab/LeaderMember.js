@@ -5,17 +5,12 @@ const leaderSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "user",
     },
-    borrowMemberLIst: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "user",
-      },
-    ],
-    status:{
-        type:Boolean,
-        required:false,
-        default:true
-    }
+    admin_approval: {
+      type: String,
+      required: false,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
+    },
   },
   { timestamps: true }
 );

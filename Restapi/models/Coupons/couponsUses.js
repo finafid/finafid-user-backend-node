@@ -1,21 +1,24 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
-const userCouponUsageSchema = new Schema({
-  userId: {
-    type: String,
-    required: true,
+const userCouponUsageSchema = new Schema(
+  {
+    userId: {
+      type: String,
+      required: true,
+    },
+    couponCode: {
+      type: String,
+      required: true,
+    },
+    usageCount: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
   },
-  couponCode: {
-    type: String,
-    required: true,
-  },
-  usageCount: {
-    type: Number,
-    required: true,
-    default: 0,
-  },
-});
+  { timestamps: true }
+);
 
 const UserCouponUsage = mongoose.model(
   "UserCouponUsage",

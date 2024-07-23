@@ -10,8 +10,12 @@ const borrowMemberShipSchema = new mongoose.Schema(
       required: true,
     },
     status: {
-      type: Boolean,
+      type: String,
       required: true,
+      enum: ["On", "Off"],
+    },
+    instruction:{
+       type: String,
     },
     identity: {
       type: String,

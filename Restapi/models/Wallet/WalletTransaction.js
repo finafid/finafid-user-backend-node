@@ -3,18 +3,18 @@ const walletTransactionSchema = new mongoose.Schema(
   {
     userId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: "user",
       required: true,
     },
     type: {
       type: String,
-      enum: ["Credit", "Debit"],
+      enum: ["credit", "debit"],
     },
     amount: {
       type: Number,
       required: true,
     },
-    Date: {
+    date: {
       type: Date,
       required: true,
     },

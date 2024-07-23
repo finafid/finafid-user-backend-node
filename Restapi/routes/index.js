@@ -229,6 +229,10 @@ const {
   getMemberShipPlan,
   getBorrowMemberShipPlan,
   getMemberById,
+  getAllWalletTransaction,
+  approveBorrowRequest,
+  approveLeaderRequest,
+  getAllApprovedLeader,
 } = require("../controllers/Utsab/UtsabController.js");
 //user Authentication
 routs.post("/register", userRegistrationValidation, userRegistration);
@@ -518,8 +522,8 @@ routs.get("/getMemberShipPlan", getMemberShipPlan);
 routs.get("/isUtsabApplicable", auth, isUtsabApplicable);
 routs.get("/totalOrderOfUtsav", totalOrderOfUtsav);
 routs.get("/totalSpendOfMember/:userId", totalSpendOfMemberSingle);
-routs.post("/addBorrowMember", addBorrowMember);
-routs.post("/addLeader", addLeader);
+routs.post("/addBorrowMember",auth, addBorrowMember);
+routs.get("/addLeader",auth, addLeader);
 routs.get("/getAllBorrowLIst", getAllBorrowLIst);
 routs.get("/getAllLeader", getAllLeader);
 routs.get("/getAllMemberList", getAllMemberList);
@@ -527,4 +531,8 @@ routs.post("/addBorrowMembershipPlan", addBorrowMembershipPlan);
 routs.get("/getReferralDetails/:userId", getReferralDetailsSingle);
 routs.get("/getMemberById/:userId", getMemberById);
 routs.get("/getBorrowMemberShipPlan", getBorrowMemberShipPlan);
+routs.get("/getAllWalletTransaction", getAllWalletTransaction);
+routs.post("/approveBorrowRequest/:requestId", approveBorrowRequest);
+routs.post("/approveLeaderRequest/:requestId", approveLeaderRequest);
+routs.get("/getAllApprovedLeader", getAllApprovedLeader);
 module.exports = routs;

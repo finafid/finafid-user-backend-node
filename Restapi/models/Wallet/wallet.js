@@ -2,7 +2,7 @@ const mongoose=require('mongoose')
 const walletSchema=new mongoose.Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
+        ref: 'user',
         required: true
     },
     balance: {
@@ -11,7 +11,7 @@ const walletSchema=new mongoose.Schema({
     },
     transactions:[{
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Transaction',
+        ref: 'WalletTransaction',
         required: true
     }]
 

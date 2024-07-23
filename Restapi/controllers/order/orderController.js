@@ -70,8 +70,7 @@ const placeOrder = async (req, res) => {
       payment_method: req.body.payment_method,
       utsavReward: totalUtsavReward,
       basicReward: totalBasicReward,
-
-      // is_utsab: userData.is_utsab
+      is_utsab: userData.is_utsav,
     });
     await newOrder.save();
     console.log(newOrder);
@@ -211,71 +210,75 @@ const updateStatus = async (req, res) => {
       const walletDetails = await Wallet.findOne({
         userId: orderDetail.userId,
       });
-  
+
       const userData = await User.findById(orderDetail.userId);
-       console.log({ userData: userData });
+      console.log({ userData: userData });
       const referralDetails = await referral.findOne({
         userId: orderDetail.userId,
       });
       console.log({ referralDetails: referralDetails });
       const planDetails = await MemberShipPlan.findOne({
-          identity: "PLAN_IDENTITY",
+        identity: "PLAN_IDENTITY",
+      });
+
+      const referredUserData = await User.findById(referralDetails.referred_by);
+      console.log({ referredUserData: referredUserData });
+      if (
+        referralDetails &&
+        referralDetails.referred_user &&
+        referredUserData.is_utsav == true
+      ) {
+        const walletDetailsOfReferredUser = await Wallet.findOneAndUpdate({
+          userId: referralDetails.referred_by,
         });
-      
-        const referredUserData=await User.findById(referralDetails.referred_by);
-        console.log({ referredUserData: referredUserData });
-        if (referralDetails && referralDetails.referred_user &&referredUserData.is_utsav==true) {
-          const walletDetailsOfReferredUser = await Wallet.findOneAndUpdate({
-            userId: referralDetails.referred_by,
-          });
-       if (userData.is_utsav == false) {
-         walletDetailsOfReferredUser.balance =
-           walletDetailsOfReferredUser.balance + planDetails.reward;
-         await walletDetailsOfReferredUser.save();
-         userData.firstOrderComplete = true;
-         await userData.save();
-       }}
-          if (userData.is_utsav == true) {
+        if (userData.is_utsav == false) {
           walletDetailsOfReferredUser.balance =
-            walletDetailsOfReferredUser.balance + orderDetail.utsavReward;
+            walletDetailsOfReferredUser.balance + planDetails.reward;
           await walletDetailsOfReferredUser.save();
+          userData.firstOrderComplete = true;
+          await userData.save();
         }
-     
-        walletDetails.balance = walletDetails.balance + orderDetail.basicReward;
-        await walletDetails.save();
       }
-      if (!orderDetail) {
-        return res.status(500).json({
-          success: false,
-          message: "No order till now",
-        });
+      if (userData.is_utsav == true) {
+        walletDetailsOfReferredUser.balance =
+          walletDetailsOfReferredUser.balance + orderDetail.utsavReward;
+        await walletDetailsOfReferredUser.save();
       }
-      const statusDetails = await orderStatus.findOne({
+
+      walletDetails.balance = walletDetails.balance + orderDetail.basicReward;
+      await walletDetails.save();
+    }
+    if (!orderDetail) {
+      return res.status(500).json({
+        success: false,
+        message: "No order till now",
+      });
+    }
+    const statusDetails = await orderStatus.findOne({
+      orderId: req.params.orderId,
+    });
+    const newStatusDetails = {
+      status: req.body.status,
+      date: Date.now(),
+    };
+    if (!statusDetails) {
+      const newStatus = new orderStatus({
+        orderStatusDetails: [newStatusDetails],
         orderId: req.params.orderId,
       });
-      const newStatusDetails = {
-        status: req.body.status,
-        date: Date.now(),
-      };
-      if (!statusDetails) {
-        const newStatus = new orderStatus({
-          orderStatusDetails: [newStatusDetails],
-          orderId: req.params.orderId,
-        });
-        await newStatus.save();
-        return res.status(200).json({
-          success: true,
-          orderDetail,
-        });
-      }
-      statusDetails.orderStatusDetails.push(newStatusDetails);
-      await statusDetails.save();
+      await newStatus.save();
       return res.status(200).json({
         success: true,
         orderDetail,
       });
     }
-   catch (error) {
+    statusDetails.orderStatusDetails.push(newStatusDetails);
+    await statusDetails.save();
+    return res.status(200).json({
+      success: true,
+      orderDetail,
+    });
+  } catch (error) {
     return res.status(500).json({
       success: false,
       message: error.message + "internal server error",
@@ -357,7 +360,7 @@ const getAllOrder = async (req, res) => {
       statusCount[status] = filteredOrderList.length;
     });
 
-    console.log(statusCount);
+
 
     // Apply status filter
     let filteredOrders = allOrders;

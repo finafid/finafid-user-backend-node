@@ -9,15 +9,16 @@ const borrowMemberSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Leader",
     },
-    due_amount:{
-        type:Number,
-        required:true
+    due_amount: {
+      type: Number,
+      required: true,
     },
-    admin_approval:{
-      type:Boolean,
-      required:false,
-      default:false
-    }
+    admin_approval: {
+      type: String,
+      required: false,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
+    },
   },
   { timestamps: true }
 );

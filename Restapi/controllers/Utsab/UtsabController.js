@@ -7,8 +7,8 @@ const borrowMember = require("../../models/Utsab/borrowMember");
 const BorrowMemberShipPlan = require("../../models/Utsab/BorrowMemberShipPlan");
 const Referral = require("../../models/auth/referral");
 const Wallet = require("../../models/Wallet/wallet");
-const Address=require("../../models/Order/address")
-const walletTransaction=require("../../models/Wallet/WalletTransaction")
+const Address = require("../../models/Order/address");
+const walletTransaction = require("../../models/Wallet/WalletTransaction");
 const isUtsabApplicable = async (req, res) => {
   try {
     const planDetails = await MemberShipPlan.findOne({
@@ -42,7 +42,7 @@ const isUtsabApplicable = async (req, res) => {
 };
 const addBorrowMembershipPlan = async (req, res) => {
   try {
-    const { amount, due, status } = req.body;
+    const { amount, due, status, instruction } = req.body;
     const memberShipDetails = await BorrowMemberShipPlan.findOne({
       identity: "BORROW_IDENTITY",
     });
@@ -52,13 +52,14 @@ const addBorrowMembershipPlan = async (req, res) => {
         amount,
         due,
         status,
-        identity: "PLAN_IDENTITY",
+        instruction,
+        identity: "BORROW_IDENTITY",
       });
 
       await newDetails.save();
     }
     memberShipDetails.amount = amount;
-    memberShipDetails.reward = reward;
+    memberShipDetails.due = due;
     memberShipDetails.status = status;
     await memberShipDetails.save();
     return res.status(200).json({ message: "Successfully done" });
@@ -74,7 +75,7 @@ const addMembershipPlan = async (req, res) => {
     const memberShipDetails = await MemberShipPlan.findOne({
       identity: "PLAN_IDENTITY",
     });
-    console.log(req.body)
+    console.log(req.body);
     if (!memberShipDetails) {
       const newDetails = new MemberShipPlan({
         amount,
@@ -100,14 +101,79 @@ const addMembershipPlan = async (req, res) => {
 };
 const totalOrderOfUtsav = async (req, res) => {
   try {
-    const orderDetails = await order.find({
-      is_utsab: true,
+    const { status, page = 1, limit = 10, startDate, endDate } = req.query;
+
+    // Create a date filter object if startDate and endDate are provided
+    let dateFilter = { is_utsab: true };
+    if (startDate || endDate) {
+      dateFilter.createdAt = {};
+      if (startDate) {
+        dateFilter.createdAt.$gte = new Date(startDate);
+      }
+      if (endDate) {
+        // Add 1 day to the endDate to include the entire day
+        const end = new Date(endDate);
+        end.setDate(end.getDate() + 1);
+        dateFilter.createdAt.$lte = end;
+      }
+    }
+
+    // Fetch all orders first with the date filter applied
+    const orderDetails = await order
+      .find(dateFilter)
+      .populate("userId")
+      .populate({
+        path: "orderItem.productId",
+        model: "Variant",
+        populate: {
+          path: "productGroup",
+          model: "Product",
+        },
+      });
+    const statusCount = {};
+    const statusList = [
+      "Pending",
+      "Confirmed",
+      "Shipping",
+      "Out For delivery",
+      "Delivered",
+      "Returned",
+      "Canceled",
+      "Completed",
+    ];
+
+    statusList.forEach((status) => {
+      const filteredOrderList = orderDetails.filter(
+        (order) => order.status === status
+      );
+      statusCount[status] = filteredOrderList.length;
     });
+
     if (!orderDetails) {
       return res.status(500).json({ message: " Internal Server Error" });
     }
 
-    return res.status(200).json(orderDetails);
+    let filteredOrders = orderDetails;
+    if (status) {
+      filteredOrders = orderDetails.filter((order) => order.status === status);
+    }
+
+    // Calculate pagination values
+    const skip = (page - 1) * limit;
+    const paginatedOrders = filteredOrders.slice(skip, skip + parseInt(limit));
+
+    // Calculate total pages
+    const totalOrders = filteredOrders.length;
+    const totalPages = Math.ceil(totalOrders / limit);
+
+    return res.status(200).json({
+      success: true,
+      orderDetails: paginatedOrders,
+      totalOrders,
+      totalPages,
+      currentPage: page,
+      statusCount,
+    });
   } catch (error) {
     return res
       .status(500)
@@ -116,11 +182,15 @@ const totalOrderOfUtsav = async (req, res) => {
 };
 const addLeader = async (req, res) => {
   try {
+    console.log(req.user);
+    const leaderDetails = await Leader.findOne({ userId: req.user._id });
+    if (leaderDetails) {
+      return res.status(200).json({ message: "Already a leader" });
+    }
     const newLeader = new Leader({
       userId: req.user._id,
     });
     await newLeader.save();
-
     return res.status(200).json({ newLeader });
   } catch (error) {
     return res
@@ -134,20 +204,21 @@ const addBorrowMember = async (req, res) => {
     const walletDetails = await Wallet.findOne({
       userId: req.user._id,
     });
+
     const memberShipDetails = await BorrowMemberShipPlan.findOne({
       identity: "BORROW_IDENTITY",
     });
-    const leaderDetails = await Referral.findOne({ referral_code: code });
-    if (!leaderDetails){
-      return res
-        .status(500)
-        .json({ message: "No leader found" });
+    const leaderDetails = await Referral.findOne({ code: code });
+
+    if (!leaderDetails) {
+      return res.status(500).json({ message: "No leader found" });
     }
-      if (walletDetails.balance < memberShipDetails.amount) {
-        return res.status(500).json({
-          message: "Sorry but cannot process because of your wallet Balance",
-        });
-      }
+    console.log(walletDetails.balance);
+    if (walletDetails.balance < memberShipDetails.amount) {
+      return res.status(500).json({
+        message: "Sorry but cannot process because of your wallet Balance",
+      });
+    }
     const newBorrowMember = new borrowMember({
       userId: req.user._id,
       leader: leaderDetails.userId,
@@ -161,13 +232,79 @@ const addBorrowMember = async (req, res) => {
       .json({ message: error.message + " Internal Server Error" });
   }
 };
+
 const getAllLeader = async (req, res) => {
   try {
-    const leaderDetails = await Leader.find();
+    const leaderDetails = await Leader.find({
+      admin_approval: "pending",
+    }).populate("userId");
     if (!leaderDetails) {
       return res.status(500).json({ message: " No member" });
     }
-    return res.status(200).json(leaderDetails);
+    const membersWithDetails = await Promise.all(
+      leaderDetails.map(async (member) => {
+        const userId = member.userId;
+        try {
+          const totalSpendData = await totalSpendOfMember(userId);
+          const referralDetailsData = await getReferralDetails(userId);
+          return {
+            ...member._doc,
+            totalSpend: totalSpendData.totalSpend,
+            referralDetails: referralDetailsData.referralDetails,
+          };
+        } catch (error) {
+          console.error(`Error fetching details for userId ${userId}:`, error);
+          return {
+            ...member._doc,
+            totalSpend: 0,
+            referralDetails: null,
+          };
+        }
+      })
+    );
+    return res
+      .status(200)
+      .json({
+        membersWithDetails: membersWithDetails,
+      });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: error.message + " Internal Server Error" });
+  }
+};
+const getAllApprovedLeader = async (req, res) => {
+  try {
+    const leaderDetails = await Leader.find({
+      admin_approval: "approved",
+    }).populate("userId");
+    if (!leaderDetails) {
+      return res.status(500).json({ message: " No member" });
+    }
+    const membersWithDetails = await Promise.all(
+      leaderDetails.map(async (member) => {
+        const userId = member.userId;
+        try {
+          const totalSpendData = await totalSpendOfMember(userId);
+          const referralDetailsData = await getReferralDetails(userId);
+          return {
+            ...member._doc,
+            totalSpend: totalSpendData.totalSpend,
+            referralDetails: referralDetailsData.referralDetails,
+          };
+        } catch (error) {
+          console.error(`Error fetching details for userId ${userId}:`, error);
+          return {
+            ...member._doc,
+            totalSpend: 0,
+            referralDetails: null,
+          };
+        }
+      })
+    );
+    return res.status(200).json({
+      membersWithDetails: membersWithDetails,
+    });
   } catch (error) {
     return res
       .status(500)
@@ -176,10 +313,15 @@ const getAllLeader = async (req, res) => {
 };
 const getAllBorrowLIst = async (req, res) => {
   try {
-    const borrowMemberDetails = await borrowMember.find();
+    const borrowMemberDetails = await borrowMember
+      .find({
+        admin_approval: "pending",
+      })
+      .populate("userId");
     if (!borrowMemberDetails) {
       return res.status(500).json({ message: " No member" });
     }
+
     return res.status(200).json(borrowMemberDetails);
   } catch (error) {
     return res
@@ -212,14 +354,15 @@ const totalSpendOfMember = async (userId) => {
 
 const getReferralDetails = async (userId) => {
   try {
-    const referralDetails = await Referral.findOne({
+    let referralDetails = await Referral.findOne({
       userId: userId,
-    }).populate("referred_by")
-    // .populate({
-    //   path:referred_user,
-    //   model:"user"
-    // })
-
+    }).populate("referred_by");
+    if (referralDetails && referralDetails.referred_user.length > 0) {
+      referralDetails = await referralDetails.populate({
+        path: "referred_user",
+        model: "user",
+      });
+    }
     if (!referralDetails) {
       return { referralDetails: null };
     }
@@ -273,7 +416,6 @@ const getAllMemberList = async (req, res) => {
   }
 };
 
-
 const getMemberShipPlan = async (req, res) => {
   try {
     const planDetails = await MemberShipPlan.findOne({
@@ -286,39 +428,83 @@ const getMemberShipPlan = async (req, res) => {
       .json({ message: error.message + " Internal Server Error" });
   }
 };
-const getBorrowMemberShipPlan=async(req,res)=>{
+const getBorrowMemberShipPlan = async (req, res) => {
   try {
-     const memberShipDetails = await BorrowMemberShipPlan.findOne({
-       identity: "BORROW_IDENTITY",
-     });
+    const memberShipDetails = await BorrowMemberShipPlan.findOne({
+      identity: "BORROW_IDENTITY",
+    });
     return res.status(200).json({ memberShipDetails: memberShipDetails });
   } catch (error) {
     return res
       .status(500)
       .json({ message: error.message + " Internal Server Error" });
   }
-}
-const getMemberById=async(req,res)=>{
+};
+const getMemberById = async (req, res) => {
   try {
-    const userData=await User.findById(req.params.userId)
-    const address = await Address.findOne({ userId: req.params.userId, isDefault:true });
-    const walletTransactionDetails = await walletTransaction.find({
+    const userData = await User.findById(req.params.userId);
+    const address = await Address.findOne({
       userId: req.params.userId,
+      isDefault: true,
     });
-    return res
-      .status(200)
-      .json({
-        userData: userData,
-        address: address,
-        walletTransactionDetails: walletTransactionDetails,
+    const walletTransactionDetails = await walletTransaction
+      .find({
+        userId: req.params.userId,
+      })
+      .populate("userId");
+    const referralDetails = await Referral.findOne({
+      userId: req.params.userId,
+    })
+      .populate("referred_by")
+      .populate({
+        path: "referred_user",
+        model: "user",
       });
+
+    let membersWithDetails = [];
+
+    if (referralDetails && referralDetails.referred_user) {
+      membersWithDetails = await Promise.all(
+        referralDetails.referred_user.map(async (member) => {
+          const userId = member._id;
+          try {
+            const totalSpendData = await totalSpendOfMember(userId);
+
+            return {
+              ...member._doc,
+              totalSpend: totalSpendData.totalSpend,
+            };
+          } catch (error) {
+            console.error(
+              `Error fetching details for userId ${userId}:`,
+              error
+            );
+            return {
+              ...member._doc,
+              totalSpend: 0,
+            };
+          }
+        })
+      );
+    }
+
+    return res.status(200).json({
+      userData: userData,
+      address: address,
+      walletTransactionDetails: walletTransactionDetails,
+      referralDetails: {
+        ...referralDetails._doc,
+        referred_user: membersWithDetails,
+      },
+    });
   } catch (error) {
     return res
       .status(500)
       .json({ message: error.message + " Internal Server Error" });
   }
-}
-const totalSpendOfMemberSingle= async (req,res) => {
+};
+
+const totalSpendOfMemberSingle = async (req, res) => {
   try {
     const orderDetails = await order.find({
       status: "Completed",
@@ -334,14 +520,15 @@ const totalSpendOfMemberSingle= async (req,res) => {
       0
     );
 
-    return { totalSpend: totalSpend };
+    return res.status(500).json({ totalSpend: totalSpend });
   } catch (error) {
-    console.error(`Error in totalSpendOfMember for userId ${userId}:`, error);
-    throw new Error(error.message + " Internal Server Error");
+    return res
+      .status(500)
+      .json({ message: error.message + " Internal Server Error" });
   }
 };
 
-const getReferralDetailsSingle = async (req,res) => {
+const getReferralDetailsSingle = async (req, res) => {
   try {
     const referralDetails = await Referral.findOne({
       userId: req.params.userId,
@@ -355,10 +542,57 @@ const getReferralDetailsSingle = async (req,res) => {
       return { referralDetails: null };
     }
 
-    return { referralDetails: referralDetails };
+    return res.status(200).json({ referralDetails: referralDetails });
   } catch (error) {
-    console.error(`Error in getReferralDetails for userId ${userId}:`, error);
-    throw new Error(error.message + " Internal Server Error");
+    return res
+      .status(500)
+      .json({ message: error.message + " Internal Server Error" });
+  }
+};
+const getAllWalletTransaction = async (req, res) => {
+  try {
+    const detailsTransaction = await walletTransaction
+      .find({
+        type: "debit",
+      })
+      .populate("userId");
+    return res.status(200).json({ detailsTransaction: detailsTransaction });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: error.message + " Internal Server Error" });
+  }
+};
+const approveBorrowRequest = async (req, res) => {
+  try {
+    const borrowMemberDetails = await borrowMember.findById(
+      req.params.requestId
+    );
+    if (!borrowMemberDetails) {
+      return res.status(500).json({ message: " No member" });
+    }
+    borrowMemberDetails.admin_approval = req.body.approval;
+    return res.status(200).json(borrowMemberDetails);
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: error.message + " Internal Server Error" });
+  }
+};
+
+const approveLeaderRequest = async (req, res) => {
+  try {
+    const memberDetails = await Leader.findById(req.params.requestId);
+    if (!memberDetails) {
+      return res.status(500).json({ message: " No member" });
+    }
+    memberDetails.admin_approval = req.body.approval;
+    await memberDetails.save();
+    return res.status(200).json(memberDetails);
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: error.message + " Internal Server Error" });
   }
 };
 
@@ -377,4 +611,8 @@ module.exports = {
   getMemberShipPlan,
   getBorrowMemberShipPlan,
   getMemberById,
+  getAllWalletTransaction,
+  approveBorrowRequest,
+  approveLeaderRequest,
+  getAllApprovedLeader,
 };
