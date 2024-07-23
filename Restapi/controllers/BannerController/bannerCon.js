@@ -1,5 +1,9 @@
-const Banner=require("../../models/Bannner/Banner");
-const {getImageLinks}=require("../../utils/fileUpload")
+const Banner = require("../../models/Bannner/Banner");
+const {
+  generateStringOfImageList,
+  compressAndResizeImage,
+} = require("../../utils/fileUpload");
+
 const getImageLink = async (req, res) => {
   try {
     // Extracting file buffer and extension from the request
@@ -39,80 +43,117 @@ const getImageLink = async (req, res) => {
     console.error("Error in getImageLink:", error);
   }
 };
-const createBanner=async(req,res)=>{
-    try{
-        const imgUrl = await getImageLink(req.files)
-        const { bannerType, linkUrl, resourceType, valueId } =req.body
-        const details = {
-          resourceType,
-          valueId,
-        };
-        const newBanner = new Banner({
-          bannerType,
-          details,
-          linkUrl,
-          imgUrl,
-        });
-        if (!imgUrl){
-            return res.status(500).json({
-              success: false,
-              message: "Cannot create",
-            });
-        }
-         await newBanner.save();
-         return res.status(500).json({
-           success: true,
-           message: " Created successfully",
-         });
-    }catch{
-        return res.status(500).json({
-          success: false,
-          message: error.message + " Internal server error",
-        });
+const createBanner = async (req, res) => {
+  try {
+    let bannerImg = "";
+    if (req.file) {
+      bannerImg = await getImageLink(req);
     }
-}
-const editBanner=async(req,res)=>{
-    try {
-        const {bannerId}=req.params;
-        const bannerDetails=await Banner.findOne({_id:bannerId})
-        if(!bannerDetails){
-           return res.status(500).json({
-             success: false,
-             message: "No banner found",
-           }); 
-        }
-        const newImgLinks=[]
-        if(req.files){
-           newImgLinks=await getImageLinks(req.files["images[]"])
-        }
-        if(req.body.imgLinks){
-          newImgLinks.concat(req.body.imgLinks);
-        }
-        bannerDetails.getImageLinks = newImgLinks;
-        bannerDetails.getImageLinks = req.body.bannerType;
-        bannerDetails.getImageLinks = req.body.details;
-        bannerDetails.getImageLinks = req.body.linkUrl;
-        await bannerDetails.save();
-        return res.status(200).json({
-          success: true,
-          message: "Updated successfully",
-        });
-        
-    } catch {
-      return res.status(500).json({
+
+    const {
+      bannerType,
+      position,
+      linkUrl,
+      resourceType,
+      valueId,
+      description,
+      bannerTitle,
+    } = req.body;
+
+    if (!bannerImg) {
+      return res.status(400).json({
         success: false,
-        message: error.message + " Internal server error",
+        message: "Banner image is required",
       });
     }
-}
+
+    // Construct the details object, only including valueId if it exists
+    const details = {
+      resourceType,
+    };
+    if (valueId) {
+      details.valueId = valueId;
+    }
+
+    const newBanner = new Banner({
+      position,
+      bannerType,
+      details,
+      linkUrl,
+      bannerImg,
+      description,
+      bannerTitle,
+    });
+
+    await newBanner.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Banner created successfully",
+    });
+  } catch (error) {
+    console.error("Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error: " + error.message,
+    });
+  }
+};
+
+const editBanner = async (req, res) => {
+  try {
+    const { bannerId } = req.params;
+    const bannerDetails = await Banner.findOne({ _id: bannerId });
+    if (!bannerDetails) {
+      return res.status(500).json({
+        success: false,
+        message: "No banner found",
+      });
+    }
+    let newImgLinks = [];
+    if (req.file) {
+      newImgLinks = await getImageLink(req);
+      bannerDetails.bannerImg = newImgLinks;
+      await bannerDetails.save();
+    }
+
+    if (req.body) {
+      bannerDetails.bannerType=req.body.bannerType
+      bannerDetails.position = req.body.position;
+      bannerDetails.details.resourceType = req.body.resourceType;
+      bannerDetails.details.valueId = req.body.valueId;
+      bannerDetails.linkUrl = req.body.linkUrl;
+      bannerDetails.description = req.body.description;
+      bannerDetails.bannerTitle = req.body.bannerTitle;
+      await bannerDetails.save();
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Updated successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message + " Internal server error",
+    });
+  }
+};
 const getBannersByBannerTypeAndDetails = async (req, res) => {
   try {
-    const { bannerType, resourceType, valueId } = req.query;
+    const { position, resourceType, bannerType } = req.body;
+    const { valueId } = req.body;
 
+    let details = { resourceType: resourceType };
+    if (valueId) {
+      details.valueId = valueId;
+    }
+    console.log(details);
     const banners = await Banner.find({
+      position,
       bannerType,
-      "details.resourceType": resourceType,
-      "details.valueId": valueId,
+      details,
+      is_published:true
     });
 
     if (!banners || banners.length === 0) {
@@ -133,12 +174,11 @@ const getBannersByBannerTypeAndDetails = async (req, res) => {
     });
   }
 };
-const deleteBanner=async(req,res)=>{
+
+const deleteBanner = async (req, res) => {
   try {
-    const bannerDetails=await Banner.findByIdAndDelete({
-      _id:req.params.bannerId
-    })
-    if(!bannerDetails){
+    const bannerDetails = await Banner.findByIdAndDelete(req.params.bannerId);
+    if (!bannerDetails) {
       return res.status(500).json({
         success: false,
         message: "No banner found",
@@ -146,7 +186,7 @@ const deleteBanner=async(req,res)=>{
     }
     return res.status(200).json({
       success: true,
-      message:"Deleted successfully",
+      message: "Deleted successfully",
     });
   } catch (error) {
     return res.status(500).json({
@@ -154,35 +194,75 @@ const deleteBanner=async(req,res)=>{
       message: error.message + " Internal server error",
     });
   }
-}
-const publishBanner=async(req,res)=>{
+};
+const publishBanner = async (req, res) => {
   try {
-    const bannerDetails=await Banner.findById(req.params.bannerId)
-    if(!bannerDetails){
-       return res.status(500).json({
-         success: false,
-         message: "No banner found",
-       });
+    const bannerDetails = await Banner.findById(req.params.bannerId);
+    if (!bannerDetails) {
+      return res.status(500).json({
+        success: false,
+        message: "No banner found",
+      });
     }
-    if(req.body){
-      bannerDetails.is_published=req.body.is_published
+    if (req.body) {
+      bannerDetails.is_published = req.body.is_published;
     }
     await bannerDetails.save();
-     return res.status(200).json({
-       success: true,
-       message: "Published",
-     });
+    return res.status(200).json({
+      success: true,
+      message: "Published",
+    });
   } catch (error) {
     return res.status(500).json({
       success: false,
       message: error.message + " Internal server error",
     });
   }
-}
+};
+const getAllBanner = async (req, res) => {
+  try {
+    const bannerDetails = await Banner.find();
+
+    if (!bannerDetails) {
+      return res.status(500).json({
+        success: false,
+        message: "No banner found",
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      bannerDetails,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message + " Internal server error",
+    });
+  }
+};
+const getBannerById = async (req, res) => {
+  try {
+    const bannerDetails = await Banner.findById(req.params.bannerId);
+    if (!bannerDetails) {
+      return res.status(500).json({
+        success: false,
+        message: "No banner",
+      });
+    }
+    return res.status(200).json(bannerDetails);
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message + " Internal server error",
+    });
+  }
+};
 module.exports = {
   createBanner,
   editBanner,
   getBannersByBannerTypeAndDetails,
   deleteBanner,
   publishBanner,
+  getAllBanner,
+  getBannerById,
 };

@@ -38,9 +38,19 @@ const UserSchema = new Schema({
     default: true,
     required: false,
   },
-  fcmToken:{
-    type:String
-  }
+  fcmToken: {
+    type: String,
+  },
+  is_utsav: {
+    type: Boolean,
+    required: false,
+    default: false,
+  },
+  firstOrderComplete: {
+    type: Boolean,
+    required: false,
+    default: false,
+  },
 });
 const userModel=mongoose.model('user',UserSchema)
 module.exports=userModel;

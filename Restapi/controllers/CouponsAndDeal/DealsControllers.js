@@ -666,7 +666,195 @@ const deleteProductFeaturedDeal = async (req, res) => {
     });
   }
 };
+const getAllFlashDealOnUser = async (req, res) => {
+  try {
+    const flashDealDetails = await FlashDeal.find({ status: true });
+    if (!flashDealDetails) {
+      return res.status(500).json({
+        success: false,
+        message: " No deals",
+      });
+    }
+    return res.status(200).json({
+      flashDealDetails,
+    });
+  } catch (error) {
+    console.error("Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message + " Internal Server Error",
+    });
+  }
+};
+const getAllFeaturedDealsOnUser = async (req, res) => {
+  try {
+    const featuredDealsDetails = await FeaturedDeal.find({
+      status:true
+    });
+    if (!featuredDealsDetails) {
+      return res.status(500).json({
+        success: false,
+        message: " No deals",
+      });
+    }
+    return res.status(200).json({
+      featuredDealsDetails,
+    });
+  } catch (error) {
+    console.error("Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message + " Internal Server Error",
+    });
+  }
+};
+const getDealOfTheDayOnUser = async (req, res) => {
+  try {
+    const dealOfTheDayDetails = await DealOfTheDay.find({
+      status: true,
+    }).populate({
+      path: "productId",
+      populate: {
+        path: "productGroup",
+        model: "Product", // Adjust to your actual model name
+      },
+    });
+    if (!dealOfTheDayDetails) {
+      return res.status(500).json({
+        success: false,
+        message: " No deals",
+      });
+    }
+    return res.status(200).json({
+      dealOfTheDayDetails,
+    });
+  } catch (error) {
+    console.error("Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message + " Internal Server Error",
+    });
+  }
+};
+const getFlashDealByIdOnUser = async (req, res) => {
+  try {
+    const dealDetails = await FlashDeal.findOne({
+      _id: req.params.dealId,
+    }).populate({
+      path: "products",
+      populate: {
+        path: "productGroup",
+        model: "Product", // Adjust to your actual model name
+      },
+    });
+    if (!dealDetails) {
+      return res.status(500).json({
+        success: false,
+        message: "No such deal",
+      });
+    }
+      const startDate = new Date(dealDetails.start_Date);
+     const endDate = new Date(dealDetails.end_Date);
+      const currentDate=Date.now();
+      if(currentDate>endDate){
+        return res.status(500).json({
+        success: false,
+        message: "Deal expired",
+      })
+      }
+      if (currentDate < startDate) {
+        return res.status(500).json({
+          success: false,
+          message: "Deal Not started yet",
+        });
+      }
 
+    return res.status(200).json({
+      success: true,
+      dealDetails,
+    });
+  } catch (error) {
+    console.error("Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message + " Internal Server Error",
+    });
+  }
+};
+const getFeaturedDealByIdOnUser = async (req, res) => {
+  try {
+    const dealDetails = await FeaturedDeal.findOne({
+      _id: req.params.dealId,
+    }).populate({
+      path: "products",
+      populate: {
+        path: "productGroup",
+        model: "Product", // Adjust to your actual model name
+      },
+    });
+    if (!dealDetails) {
+      return res.status(500).json({
+        success: false,
+        message: "No such deal",
+      });
+    }
+    const startDate = new Date(dealDetails.start_Date);
+    const endDate = new Date(dealDetails.end_Date);
+    const currentDate = Date.now();
+    if (currentDate > endDate) {
+      return res.status(500).json({
+        success: false,
+        message: "Deal expired",
+      });
+    }
+    if (currentDate < startDate) {
+      return res.status(500).json({
+        success: false,
+        message: "Deal Not started yet",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      dealDetails,
+    });
+  } catch (error) {
+    console.error("Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message + " Internal Server Error",
+    });
+  }
+};
+const getDEalOfTheDayByIdOnUser = async (req, res) => {
+  try {
+    const dealDetails = await DealOfTheDay.findOne({
+      _id: req.params.dealId,
+    }).populate({
+      path: "productId",
+      populate: {
+        path: "productGroup",
+        model: "Product", // Adjust to your actual model name
+      },
+    });
+    if (!dealDetails) {
+      return res.status(500).json({
+        success: false,
+        message: "No such deal",
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      dealDetails,
+    });
+  } catch (error) {
+    console.error("Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message + " Internal Server Error",
+    });
+  }
+};
 module.exports = {
   createFlashDeal,
   createFeaturedDeal,
@@ -690,4 +878,11 @@ module.exports = {
   updateStatusDealOfTheDay,
   deleteProductFlashDeal,
   deleteProductFeaturedDeal,
+  getAllFlashDealOnUser,
+  getAllFeaturedDealsOnUser,
+  getDealOfTheDayOnUser,
+  getFlashDealByIdOnUser,
+  getFeaturedDealByIdOnUser,
+  getDEalOfTheDayByIdOnUser,
+
 };

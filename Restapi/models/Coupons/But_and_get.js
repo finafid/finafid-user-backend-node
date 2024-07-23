@@ -10,7 +10,7 @@ const getAndBuySchema = new Schema({
     {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Product",
-      require: false,
+      required: false,
     },
   ],
   banner: {
@@ -21,7 +21,37 @@ const getAndBuySchema = new Schema({
     type: Boolean,
     default: false,
   },
+  buyQuantity: {
+    type: Number,
+    required: true,
+  },
+  getQuantity: {
+    type: Number,
+    required: true,
+  },
+  dealType: {
+    type: String,
+    enum: ["BUY_ONE_GET_ONE", "BUY_TWO_GET_ONE", "CUSTOM"],
+    required: true,
+  },
+  customConditions: {
+    buyProducts: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Product",
+        required: false,
+      },
+    ],
+    getProducts: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Product",
+        required: false,
+      },
+    ],
+  },
 });
+
 const GetAndBuy = mongoose.model("GetAndBuy", getAndBuySchema);
 
 module.exports = GetAndBuy;

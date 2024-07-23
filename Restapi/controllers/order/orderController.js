@@ -1,8 +1,12 @@
 const order = require("../../models/Order/orderSc");
-const orderStatus=require("../../models/Order/OrderStatus")
+const orderStatus = require("../../models/Order/OrderStatus");
 const Wallet = require("../../models/Wallet/wallet");
 const { authenticate, createOrder } = require("../../controllers/order/socket"); // Adjust the path to your Shiprocket module
-
+const GetAndBuy = require("../../models/Coupons/But_and_get");
+const User = require("../../models/auth/userSchema");
+const Variant = require("../../models/product/Varient");
+const MemberShipPlan = require("../../models/Utsab/MembershipPlan");
+const referral = require("../../models/auth/referral");
 const placeOrder = async (req, res) => {
   try {
     const newOrderItems = [];
@@ -14,77 +18,60 @@ const placeOrder = async (req, res) => {
       };
       newOrderItems.push(newOrderItem);
     });
+    let totalUtsavReward = 0;
+    for (const element of newOrderItems) {
+      const variantDetails = await Variant.findById(element.productId);
+      totalUtsavReward += variantDetails.utsavReward * element.itemQuantity;
+    }
+    let totalBasicReward = 0;
+    for (const element of newOrderItems) {
+      const variantDetails = await Variant.findById(element.productId);
+      totalBasicReward += variantDetails.basicReward * element.itemQuantity;
+    }
 
-    // const totalPrices = await Promise.all(
-    //   newOrderItems.map(async (orderItem) => {
-    //     const priceOfItemDetails = await Variant.findOne({
-    //       _id: orderItem.productId,
-    //     });
+    // Check for deals
+    // const deal = await GetAndBuy.findOne({
+    //   products: { $in: newOrderItems.map((item) => item.productId) },
+    //   status: true, // Only active deals
+    // });
 
-    //     const totalPrice =
-    //       priceOfItemDetails.unitPrice * orderItem.itemQuantity;
-    //     return totalPrice;
-    //   })
-    // );
+    // let discount = 0;
 
-    // const grandTotal = totalPrices.reduce((acc, price) => acc + price, 0);
+    // for (const orderItem of newOrderItems) {
+    //   const productDetails = await Variant.findById(orderItem.productId);
 
-    // const totalDiscount = await Promise.all(
-    //   newOrderItems.map(async (orderItem) => {
-    //     const priceOfItemDetails = await Variant.findOne({
-    //       _id: orderItem.productId,
-    //     });
+    //   if (deal) {
+    //     if (
+    //       deal.dealType === "BUY_ONE_GET_ONE" &&
+    //       orderItem.itemQuantity >= 2
+    //     ) {
+    //       discount += productDetails.unitPrice; // For every 2 items, 1 is free
+    //     } else if (
+    //       deal.dealType === "BUY_TWO_GET_ONE" &&
+    //       orderItem.itemQuantity >= 3
+    //     ) {
+    //       discount += productDetails.unitPrice; // For every 3 items, 1 is free
+    //     } else if (deal.dealType === "CUSTOM") {
+    //       // Implement custom deal logic here if necessary
+    //     }
+    //   }
+    // }
+    const userData = await User.findById(req.user._id);
 
-    //     const totalDiscount =
-    //       (priceOfItemDetails.unitPrice - priceOfItemDetails.sellingPrice) *
-    //       orderItem.itemQuantity;
-    //     return totalDiscount;
-    //   })
-    // );
-
-    // const grandDiscount = totalDiscount.reduce((acc, price) => acc + price, 0);
-    //   const totalUtsabDiscount = await Promise.all(
-    //     newOrderItems.map(async (orderItem) => {
-    //       const priceOfItemDetails = await Variant.findOne({
-    //         _id: orderItem.productId,
-    //       });
-
-    //       let totalUtsabDiscount=0;
-    //       if(priceOfItemDetails.isUtsav===true)
-    //         {totalUtsabDiscount =
-    //           (priceOfItemDetails.sellingPrice -
-    //             priceOfItemDetails.utsabPrice) *
-    //           orderItem.itemQuantity;}
-    //       return totalUtsabDiscount;
-    //     })
-    //   );
-
-    //   const grandUtsabDiscount = totalUtsabDiscount.reduce(
-    //     (acc, price) => acc + price,
-    //     0
-    //   );
-      // const address = {
-      //   locality: req.body.locality,
-      //   city: req.body.address.city,
-      //   street: req.body.address.street,
-      //   houseNumber: req.body.address.houseNumber,
-      //   pinCode: req.body.address.pinCode,
-      //   landMark: req.body.address.landMark,
-      //state: req.body.address.state,
-      //   recipient_name:req.body.recipient_name,
-      //  recipient_mobileNumber:req.body.recipient_mobileNumber
-      // };
     const newOrder = new order({
       orderItem: newOrderItems,
       userId: req.user._id,
-      address:req.body.address,
+      address: req.body.address,
       status: req.body.status,
       totalPrice: req.body.total,
       discount: req.body.discount,
       subtotal: req.body.subtotal,
       tax: req.body.tax,
       payment_method: req.body.payment_method,
-    
+      utsavReward: totalUtsavReward,
+      basicReward: totalBasicReward,
+
+      // is_utsab: userData.is_utsab
     });
     await newOrder.save();
     console.log(newOrder);
@@ -145,8 +132,6 @@ const placeOrder = async (req, res) => {
   }
 };
 
-module.exports = placeOrder;
-
 const getOrderDetails = async (req, res) => {
   try {
     const orderDetail = await order
@@ -193,7 +178,8 @@ const getOrderById = async (req, res) => {
           path: "productGroup",
           model: "Product",
         },
-      }).populate("userId")
+      })
+      .populate("userId");
     if (!orderDetail) {
       return res.status(500).json({
         success: false,
@@ -221,44 +207,75 @@ const updateStatus = async (req, res) => {
         }
       )
       .populate("userId");
-      if (req.body.status == "Completed") {
-        const walletDetails=await Wallet.findOne({
-          userId:req.body.userId
-        })
-        walletDetails.balance = walletDetails.balance + (orderDetail.totalPrice+(orderDetail.totalPrice*.01))
+    if (req.body.status == "Completed") {
+      const walletDetails = await Wallet.findOne({
+        userId: orderDetail.userId,
+      });
+  
+      const userData = await User.findById(orderDetail.userId);
+       console.log({ userData: userData });
+      const referralDetails = await referral.findOne({
+        userId: orderDetail.userId,
+      });
+      console.log({ referralDetails: referralDetails });
+      const planDetails = await MemberShipPlan.findOne({
+          identity: "PLAN_IDENTITY",
+        });
+      
+        const referredUserData=await User.findById(referralDetails.referred_by);
+        console.log({ referredUserData: referredUserData });
+        if (referralDetails && referralDetails.referred_user &&referredUserData.is_utsav==true) {
+          const walletDetailsOfReferredUser = await Wallet.findOneAndUpdate({
+            userId: referralDetails.referred_by,
+          });
+       if (userData.is_utsav == false) {
+         walletDetailsOfReferredUser.balance =
+           walletDetailsOfReferredUser.balance + planDetails.reward;
+         await walletDetailsOfReferredUser.save();
+         userData.firstOrderComplete = true;
+         await userData.save();
+       }}
+          if (userData.is_utsav == true) {
+          walletDetailsOfReferredUser.balance =
+            walletDetailsOfReferredUser.balance + orderDetail.utsavReward;
+          await walletDetailsOfReferredUser.save();
+        }
+     
+        walletDetails.balance = walletDetails.balance + orderDetail.basicReward;
         await walletDetails.save();
       }
-    if (!orderDetail) {
-      return res.status(500).json({
-        success: false,
-        message: "No order till now",
-      });
-    }
-    const statusDetails = await orderStatus.findOne({
-      orderId: req.params.orderId,
-    });
-    const newStatusDetails =  {
-      status: req.body.status,
-      date: Date.now(),
-    };
-    if(!statusDetails){
-      const newStatus = new orderStatus({
-        orderStatusDetails: [newStatusDetails],
+      if (!orderDetail) {
+        return res.status(500).json({
+          success: false,
+          message: "No order till now",
+        });
+      }
+      const statusDetails = await orderStatus.findOne({
         orderId: req.params.orderId,
       });
-      await newStatus.save();
-       return res.status(200).json({
-         success: true,
-         orderDetail,
-       });
+      const newStatusDetails = {
+        status: req.body.status,
+        date: Date.now(),
+      };
+      if (!statusDetails) {
+        const newStatus = new orderStatus({
+          orderStatusDetails: [newStatusDetails],
+          orderId: req.params.orderId,
+        });
+        await newStatus.save();
+        return res.status(200).json({
+          success: true,
+          orderDetail,
+        });
+      }
+      statusDetails.orderStatusDetails.push(newStatusDetails);
+      await statusDetails.save();
+      return res.status(200).json({
+        success: true,
+        orderDetail,
+      });
     }
-    statusDetails.orderStatusDetails.push(newStatusDetails);
-    await statusDetails.save();
-    return res.status(200).json({
-      success: true,
-      orderDetail,
-    });
-  } catch (error) {
+   catch (error) {
     return res.status(500).json({
       success: false,
       message: error.message + "internal server error",
@@ -372,8 +389,6 @@ const getAllOrder = async (req, res) => {
   }
 };
 
-
-
 const editOrder = async (req, res) => {
   try {
     const orderDetails = await order.findOne({
@@ -404,29 +419,28 @@ const editOrder = async (req, res) => {
     });
   }
 };
-const orderStatusDetails=async(req,res)=>{
+const orderStatusDetails = async (req, res) => {
   try {
-    const statusDetails = await orderStatus.findOne(
-      {orderId:req.params.orderId}
-    )
-    if(!statusDetails){
-       return res.status(500).json({
-         success: false,
-         message: "internal server error",
-       });
+    const statusDetails = await orderStatus.findOne({
+      orderId: req.params.orderId,
+    });
+    if (!statusDetails) {
+      return res.status(500).json({
+        success: false,
+        message: "internal server error",
+      });
     }
-     return res.status(200).json({
-       success: true,
-       statusDetails,
-     });
-
+    return res.status(200).json({
+      success: true,
+      statusDetails,
+    });
   } catch (err) {
-   return res.status(500).json({
-     success: false,
-     message: err.message + "internal server error",
-   });
+    return res.status(500).json({
+      success: false,
+      message: err.message + "internal server error",
+    });
   }
-}
+};
 
 module.exports = {
   placeOrder,

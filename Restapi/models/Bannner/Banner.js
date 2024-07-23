@@ -5,7 +5,30 @@ const bannerSchema = new Schema({
   position: {
     type: String,
     required: true,
-    enum: ["Top", "Bottom ", "Middle","Pop_up"],
+    enum: [
+      "Top",
+      "Bottom",
+      "Middle_1",
+      "Middle_2",
+      "Middle_3",
+      "Middle_4",
+      "Popup",
+    ],
+  },
+  bannerType: {
+    type: String,
+    required: true,
+    enum: [
+      "Leaderboard",
+      "Large Rectangle",
+      "Medium Rectangle",
+      "Wide Skyscraper",
+      "Skyscraper",
+      "Square",
+      "Microbar",
+      "Hero",
+      "Small Rectangle",
+    ],
   },
   details: {
     resourceType: {
@@ -13,7 +36,7 @@ const bannerSchema = new Schema({
       required: true,
       enum: [
         "Brand",
-        "Category ",
+        "Category",
         "Subcategory",
         "ProductType",
         "Home",
@@ -23,21 +46,29 @@ const bannerSchema = new Schema({
     },
     valueId: {
       type: String,
-      required: true,
+      required: false,
     },
   },
   linkUrl: {
     type: String,
     required: true,
   },
-  bannerUrl: {
+  bannerImg: {
+    type: String,
+    required: true,
+  },
+  description: {
+    type: String,
+    required: false,
+  },
+  bannerTitle: {
     type: String,
     required: true,
   },
   is_published: {
     type: Boolean,
     required: false,
-    default:false
+    default: false,
   },
 });
 

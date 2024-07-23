@@ -76,19 +76,9 @@ const productSchema = new Schema(
         ref: "Variant",
       },
     ],
-    is_featured: {
-      type: Boolean,
-      default: false,
-      required: false,
-    },
     productCode:{
         type: String,
         required: true,
-    },
-    is_active: {
-      type: Boolean,
-      default: true,
-      required: false,
     },
   },
   { timestamps: true }

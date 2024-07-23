@@ -59,6 +59,15 @@ const {
   addVariants,
   deleteVariants,
   getVariantById,
+  featuredMainCategory,
+  featuredSubCategory,
+  featuredBrand,
+  featuredProduct,
+  getAllFeaturedBrand,
+  getAllFeaturedCategory,
+  getAllFeaturedSubCategory,
+  getAllFeaturedProduct,
+  activeProduct,
 } = require("../controllers/product/productCon");
 const {
   addToWishlist,
@@ -149,6 +158,8 @@ const {
   getBannersByBannerTypeAndDetails,
   deleteBanner,
   publishBanner,
+  getAllBanner,
+  getBannerById,
 } = require("../controllers/BannerController/bannerCon");
 
 const {
@@ -174,6 +185,12 @@ const {
   updateStatusDealOfTheDay,
   deleteProductFlashDeal,
   deleteProductFeaturedDeal,
+  getAllFlashDealOnUser,
+  getAllFeaturedDealsOnUser,
+  getDealOfTheDayOnUser,
+  getFlashDealByIdOnUser,
+  getFeaturedDealByIdOnUser,
+  getDEalOfTheDayByIdOnUser,
 } = require("../controllers/CouponsAndDeal/DealsControllers.js");
 
 const {
@@ -185,7 +202,34 @@ const {
   getAllCoupons,
   updateStatusCoupons,
 } = require("../controllers/CouponsAndDeal/CouponsController.js");
+const {
+  shareReferralCode,
+  redeemedReferral,
+} = require("../controllers/auth/referralCon");
+const {
+  createNewDeal,
+  getAllDeal,
+  getDealById,
+  updateDeal,
+  deleteDeal,
+} = require("../controllers/CouponsAndDeal/GetandBuyDealController.js");
 
+const {
+  isUtsabApplicable,
+  addMembershipPlan,
+  totalOrderOfUtsav,
+  addBorrowMember,
+  addLeader,
+  getAllBorrowLIst,
+  getAllLeader,
+  addBorrowMembershipPlan,
+  getAllMemberList,
+  totalSpendOfMemberSingle,
+  getReferralDetailsSingle,
+  getMemberShipPlan,
+  getBorrowMemberShipPlan,
+  getMemberById,
+} = require("../controllers/Utsab/UtsabController.js");
 //user Authentication
 routs.post("/register", userRegistrationValidation, userRegistration);
 routs.post("/login", userLoginValidation, userLogin);
@@ -290,6 +334,17 @@ routs.post(
 );
 routs.get("/deleteVariant/:variantId", upload.single("logo"), deleteVariants);
 routs.post("/updateProduct", upload.single("logo"), updateProduct);
+
+routs.post("/activeProduct/:categoryId", activeProduct);
+routs.post("/featuredMainCategory/:categoryId", featuredMainCategory);
+routs.post("/featuredSubCategory/:categoryId", featuredSubCategory);
+routs.post("/featuredBrand/:categoryId", featuredBrand);
+routs.post("/featuredProduct/:categoryId", featuredProduct);
+
+routs.get("/getAllFeaturedBrand", getAllFeaturedBrand);
+routs.get("/getAllFeaturedCategory", getAllFeaturedCategory);
+routs.get("/getAllFeaturedSubCategory", getAllFeaturedSubCategory);
+routs.get("/getAllFeaturedProduct", getAllFeaturedProduct);
 //Wishlist
 routs.post("/addToWishlist", auth, addToWishlist);
 routs.get("/getWishlistItems", auth, getTheWishlist);
@@ -320,8 +375,8 @@ routs.post("/updateAddressOfUser", auth, updateAddressOfUser);
 routs.get("/deleteAddress/:addressId", auth, deleteAddress);
 routs.post("/setDefaultAddress", auth, setDefaultAddress);
 //payment
-routs.post("/create-order", paymentDetails);
-routs.post("/verify-payment", verifySignature);
+routs.post("/create-order", auth, paymentDetails);
+routs.post("/verify-payment", auth, verifySignature);
 
 //giftCard
 
@@ -341,7 +396,7 @@ routs.post(
   "/editTemplateId/:templateId",
   upload.single("template"),
   editTemplateId
-);  
+);
 //wallet
 routs.post("/addBalance", auth, addBalance);
 routs.get("/showTransactions", auth, showTransactions);
@@ -393,14 +448,15 @@ routs.get("/createOrder", auth, createOrder);
 
 //banner
 
-routs.post("/createBanner", createBanner);
-routs.get("/editBanner/:bannerId", editBanner);
-routs.post("/getAllBanners", getBannersByBannerTypeAndDetails);
-routs.delete("/deleteBanner/:bannerId", createOrder);
-
-routs.post("/publishBanner/:bannerId", publishBanner); 
-  //Deals
-  routs.post("/createFlashDeal", upload.single("banner"), createFlashDeal);
+routs.post("/createBanner", upload.single("bannerImg"), createBanner);
+routs.post("/editBanner/:bannerId", upload.single("bannerImg"), editBanner);
+routs.post("/getAllBannersByBannerType", getBannersByBannerTypeAndDetails);
+routs.get("/getAllBanners", getAllBanner);
+routs.delete("/deleteBanner/:bannerId", deleteBanner);
+routs.post("/publishBanner/:bannerId", publishBanner);
+routs.get("/getBannerById/:bannerId", getBannerById);
+//Deals
+routs.post("/createFlashDeal", upload.single("banner"), createFlashDeal);
 routs.post("/createFeaturedDeal", upload.single("banner"), createFeaturedDeal);
 routs.post("/createDealOfTheDay", upload.single("banner"), createDealOfTheDay);
 routs.get("/getAllFlashDeal", getAllFlashDeal);
@@ -434,7 +490,13 @@ routs.post("/updateStatusFeaturedDeal/:dealId", updateStatusFeaturedDeal);
 routs.post("/updateStatusDealOfTheDay/:dealId", updateStatusDealOfTheDay);
 routs.post("/deleteProductFeaturedDeal/:dealId", deleteProductFeaturedDeal);
 routs.post("/deleteProductFlashDeal/:dealId", deleteProductFlashDeal);
-;
+routs.get("/getAllFlashDealOnUser", getAllFlashDealOnUser);
+routs.get("/getAllFeaturedDealsOnUser", getAllFeaturedDealsOnUser);
+routs.get("/getDealOfTheDayOnUser", getDealOfTheDayOnUser);
+routs.get("/getFlashDealByIdOnUser/:dealId", getFlashDealByIdOnUser);
+routs.get("/getFeaturedDealByIdOnUser/:dealId", getFeaturedDealByIdOnUser);
+routs.get("/getDEalOfTheDayByIdOnUser/:dealId", getDEalOfTheDayByIdOnUser);
+
 //coupons
 
 routs.post("/createCoupons", createCoupons);
@@ -444,4 +506,25 @@ routs.post("/updateCoupons/:couponsId", updateCoupons);
 routs.delete("/deleteCoupons/:couponId", deleteCoupons);
 routs.get("/getAllCoupons", getAllCoupons);
 routs.post("/updateStatusCoupons/:couponId", updateStatusCoupons);
+
+//referral
+routs.get("/shareReferralCode", auth, shareReferralCode);
+routs.post("/redeemedReferral", auth, redeemedReferral);
+
+//utsab
+
+routs.post("/addMembershipPlan", addMembershipPlan);
+routs.get("/getMemberShipPlan", getMemberShipPlan);
+routs.get("/isUtsabApplicable", auth, isUtsabApplicable);
+routs.get("/totalOrderOfUtsav", totalOrderOfUtsav);
+routs.get("/totalSpendOfMember/:userId", totalSpendOfMemberSingle);
+routs.post("/addBorrowMember", addBorrowMember);
+routs.post("/addLeader", addLeader);
+routs.get("/getAllBorrowLIst", getAllBorrowLIst);
+routs.get("/getAllLeader", getAllLeader);
+routs.get("/getAllMemberList", getAllMemberList);
+routs.post("/addBorrowMembershipPlan", addBorrowMembershipPlan);
+routs.get("/getReferralDetails/:userId", getReferralDetailsSingle);
+routs.get("/getMemberById/:userId", getMemberById);
+routs.get("/getBorrowMemberShipPlan", getBorrowMemberShipPlan);
 module.exports = routs;

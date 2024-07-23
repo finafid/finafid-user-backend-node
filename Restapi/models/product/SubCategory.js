@@ -1,6 +1,5 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
-const mainCategory = require("../product/mainCatagory");
 
 const subCategorySc = new Schema(
   {
@@ -10,7 +9,6 @@ const subCategorySc = new Schema(
     },
     description: {
       type: String,
-      
     },
     logoUrl: {
       type: String,
@@ -20,6 +18,11 @@ const subCategorySc = new Schema(
       type: Schema.Types.ObjectId,
       require: true,
       ref: "mainCategory",
+    },
+    is_featured: {
+      type: Boolean,
+      required: false,
+      default: false,
     },
   },
   { timestamps: true }

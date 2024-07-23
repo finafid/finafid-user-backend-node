@@ -61,10 +61,10 @@ const variantSchema = new Schema(
       type: Number,
       required: true,
     },
-    hasShippingCost: {
-      type: Boolean,
-      required: true,
-    },
+    // hasShippingCost: {
+    //   type: Boolean,
+    //   required: true,
+    // },
     shippingCost: {
       type: Number,
       required: true,
@@ -81,7 +81,28 @@ const variantSchema = new Schema(
       type: Number,
       required: true,
     },
-
+    is_featured: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    is_active: {
+      type: Boolean,
+      default: true,
+      required: false,
+    },
+    utsavReward: {
+      type: Number,
+      required: false,
+    },
+    basicReward: {
+      type: Number,
+      required: false,
+    },
+    utsavDiscountType: {
+      type: String,
+      required: false,
+    },
     images: [
       {
         type: String,

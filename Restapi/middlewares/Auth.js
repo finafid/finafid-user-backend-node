@@ -1,4 +1,4 @@
-const { config } = require("dotenv");
+
 const jwtToken = require("jsonwebtoken");
 const BlackList = require("../models/auth/blackList")
 

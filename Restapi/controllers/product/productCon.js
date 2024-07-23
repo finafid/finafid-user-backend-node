@@ -202,13 +202,15 @@ const createProduct = async (req, res) => {
         sellingPrice: variantData.sellingPrice,
         utsavPrice: variantData.utsavPrice,
         barCode: variantData.barCode,
+        utsavReward: variantData.utsavReward,
+        basicReward: variantData.basicReward,
+        utsavDiscountType: variantData.utsavDiscountType,
       });
 
       await variant.save();
       newProduct.variants.push(variant._id);
+      await newProduct.save();
     }
-
-    await newProduct.save();
 
     res.status(201).json({
       success: true,
@@ -267,8 +269,13 @@ const updateVariants = async (req, res) => {
     variantDetails.sellingPrice = parseFloat(req.body.sellingPrice);
     variantDetails.utsavPrice = parseFloat(req.body.utsavPrice);
     variantDetails.barCode = parseFloat(req.body.barCode);
-       // Save variant details
-       await variantDetails.save();
+    variantDetails.utsavReward = parseFloat(req.body.utsavReward);
+    variantDetails.basicReward = parseFloat(req.body.basicReward);
+    variantDetails.utsavDiscountType = (req.body.utsavDiscountType);
+    
+    
+    // Save variant details
+    await variantDetails.save();
 
     const productDetails = await Product.findById(req.body.productId);
     if (!productDetails) {
@@ -314,11 +321,14 @@ const addVariants = async (req, res) => {
       utsavDiscount: req.body.utsavDiscount,
       minOrderQuantity: req.body.minOrderQuantity,
       discountType: req.body.discountType,
-      hasShippingCost: req.body.hasShippingCost,
+      // hasShippingCost: req.body.hasShippingCost,
       taxPercent: req.body.taxPercent,
       sellingPrice: parseFloat(req.body.sellingPrice),
       utsabPrice: parseFloat(req.body.utsavPrice),
-      barCode: parseFloat(req.body.barCode),
+      barCode: (req.body.barCode),
+      utsavReward: parseFloat(req.body.utsavReward),
+      basicReward: parseFloat(req.body.basicReward),
+      utsavDiscountType: req.body.utsavDiscountType,
     });
     if (!variant) {
       return res
@@ -636,7 +646,6 @@ const updateProduct = async (req, res) => {
 
   try {
     const {
-      productId,
       totalQuantity,
       name,
       isCustomizable,
@@ -647,7 +656,7 @@ const updateProduct = async (req, res) => {
       productType,
       brand,
       unit,
-      barCode,
+      productCode,
       description,
       variationAttributes,
       variation,
@@ -711,13 +720,12 @@ const updateProduct = async (req, res) => {
     existingProduct.productTypeId = productType;
     existingProduct.brand = brand;
     existingProduct.unit = unit;
-    existingProduct.barCode = barCode;
+    existingProduct.productCode = productCode;
     existingProduct.description = description;
     existingProduct.variation = variation;
     existingProduct.variationAttributes = variationAttributes;
     existingProduct.thumbnail = singleImageUrl;
     existingProduct.otherImages = newList;
-    existingProduct.variants = variants;
 
     await existingProduct.save();
 
@@ -1048,6 +1056,143 @@ const getAllProductType = async (req, res) => {
     res.status(500).json({ message: error.message + " Internal Server Error" });
   }
 };
+const featuredMainCategory = async (req, res) => {
+  try {
+    const mainCategoryList = await mainCategory.findById(req.params.categoryId);
+    if (!mainCategoryList) {
+      return res.status(500).json({ message: "No subCategory" });
+    }
+    mainCategoryList.is_featured = req.body.featured;
+    await mainCategoryList.save();
+    return res.status(200).json({ message: "Done" });
+  } catch (error) {
+    res.status(500).json({ message: error.message + " Internal Server Error" });
+  }
+};
+const featuredSubCategory = async (req, res) => {
+  try {
+    const details = await subCategory.findById(req.params.categoryId);
+    if (!details) {
+      return res.status(500).json({ message: "No subCategory" });
+    }
+    details.is_featured = req.body.featured;
+    await details.save();
+    return res.status(200).json({ message: "Done" });
+  } catch (error) {
+    res.status(500).json({ message: error.message + " Internal Server Error" });
+  }
+};
+const featuredBrand = async (req, res) => {
+  try {
+    const details = await Brand.findById(req.params.categoryId);
+    if (!details) {
+      return res.status(500).json({ message: "No subCategory" });
+    }
+    details.is_featured = req.body.featured;
+    await details.save();
+    return res.status(200).json({ message: "Done" });
+  } catch (error) {
+    res.status(500).json({ message: error.message + " Internal Server Error" });
+  }
+};
+const featuredProduct = async (req, res) => {
+  try {
+    const details = await Variant.findOneAndUpdate(
+      { _id: req.params.categoryId },
+      { is_featured: req.body.featured },
+      { new: true }
+    );
+
+    if (!details) {
+      return res.status(500).json({ message: "No varient" });
+    }
+   
+    return res.status(200).json({ message: "Done" });
+  } catch (error) {
+    res.status(500).json({ message: error.message + " Internal Server Error" });
+  }
+};
+const activeProduct = async (req, res) => {
+  try {
+   const details = await Variant.findOneAndUpdate(
+     { _id: req.params.categoryId },
+     { is_active: req.body.is_active },
+     { new: true }
+   );
+    if (!details) {
+      return res.status(500).json({ message: "No varient" });
+    }
+  
+    return res.status(200).json({ message: "Done" });
+  } catch (error) {
+    res.status(500).json({ message: error.message + " Internal Server Error" });
+  }
+};
+const getAllFeaturedBrand = async (req, res) => {
+  try {
+    const brandDetails = await Brand.find({
+      is_featured: true,
+    });
+    if (!brandDetails) {
+      return res
+        .status(500)
+        .json({ message: error.message + " Internal Server Error" });
+    }
+    return res.status(200).json({ brandDetails });
+  } catch (error) {
+    res.status(500).json({ message: error.message + " Internal Server Error" });
+  }
+};
+const getAllFeaturedCategory = async (req, res) => {
+  try {
+    const categoryDetails = await mainCategory.find({
+      is_featured: true,
+    });
+    if (!categoryDetails) {
+      return res
+        .status(500)
+        .json({ message: error.message + " Internal Server Error" });
+    }
+    return res.status(200).json({ categoryDetails });
+  } catch (error) {
+    res.status(500).json({ message: error.message + " Internal Server Error" });
+  }
+};
+const getAllFeaturedSubCategory = async (req, res) => {
+  try {
+    const subCategoryDetails = await subCategory.find({
+      is_featured: true,
+    });
+    if (!subCategoryDetails) {
+      return res
+        .status(500)
+        .json({ message: error.message + " Internal Server Error" });
+    }
+    return res.status(200).json({ subCategoryDetails });
+  } catch (error) {
+    res.status(500).json({ message: error.message + " Internal Server Error" });
+  }
+};
+const getAllFeaturedProduct = async (req, res) => {
+  try {
+    const variantDetails = await Variant.find({
+      is_featured: true,
+    }).populate({
+      path: "productGroup",
+      populate: {
+        path: "productTypeId", // Nested population
+      },
+    });
+    if (!variantDetails) {
+      return res
+        .status(500)
+        .json({ message: error.message + " Internal Server Error" });
+    }
+    return res.status(200).json({ variantDetails });
+  } catch (error) {
+    res.status(500).json({ message: error.message + " Internal Server Error" });
+  }
+};
 module.exports = {
   getAllProduct,
   categoryDetails,
@@ -1086,4 +1231,13 @@ module.exports = {
   addVariants,
   deleteVariants,
   getVariantById,
+  featuredMainCategory,
+  featuredSubCategory,
+  featuredBrand,
+  featuredProduct,
+  getAllFeaturedBrand,
+  getAllFeaturedCategory,
+  getAllFeaturedSubCategory,
+  getAllFeaturedProduct,
+  activeProduct,
 };

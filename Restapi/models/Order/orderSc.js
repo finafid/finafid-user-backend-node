@@ -6,7 +6,7 @@ const orderSchema = new mongoose.Schema(
       {
         productId: {
           type: mongoose.Schema.Types.ObjectId,
-          ref: "Product",
+          ref: "Variant",
           required: true,
         },
         itemQuantity: {
@@ -20,34 +20,6 @@ const orderSchema = new mongoose.Schema(
       required: false,
     },
     address: {
-      // locality: {
-      //   type: String,
-      // },
-      // city: {
-      //   type: String,
-      // },
-      // street: {
-      //   type: String,
-      // },
-      // houseNumber: {
-      //   type: String,
-
-      //   validate: {
-      //     validator: function (value) {
-      //       return /^[a-zA-Z0-9 ]+$/.test(value);
-      //     },
-      //     message: "House number must be alphanumeric",
-      //   },
-      // },
-      // pinCode: {
-      //   type: Number,
-      // },
-      // landMark: {
-      //   type: String,
-      // },
-      // state: {
-      //   type: String,
-      // },
       type: mongoose.Schema.Types.Mixed,
       required: true,
     },
@@ -62,6 +34,11 @@ const orderSchema = new mongoose.Schema(
     subtotal: {
       type: Number,
       required: true,
+    },
+    transactionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Transaction",
+      required: false,
     },
     tax: {
       type: Number,
@@ -82,6 +59,24 @@ const orderSchema = new mongoose.Schema(
     },
     recipient_mobileNumber: {
       type: Number,
+      default: false,
+    },
+    is_utsab: {
+      type: Boolean,
+      default: false,
+    },
+    utsavReward: {
+      type: Number,
+      required: false,
+      default: 0,
+    },
+    basicReward: {
+      type: Number,
+      required: false,
+      default: 0,
+    },
+    transactionId: {
+      type: String,
       default: false,
     },
     status: {
