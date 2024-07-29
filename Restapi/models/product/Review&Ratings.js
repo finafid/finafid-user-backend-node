@@ -22,12 +22,18 @@ const reviewSchema = new mongoose.Schema(
     },
     title: {
       type: String,
-     
     },
-    imgLink: [{
+    imgLink: [
+      {
+        type: String,
+        // required: true,
+      },
+    ],
+    status: {
       type: String,
-     // required: true,
-    }],
+      required: false,
+      default:true
+    },
   },
   { timestamps: true }
 );

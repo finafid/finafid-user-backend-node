@@ -1116,7 +1116,7 @@ const activeProduct = async (req, res) => {
   try {
    const details = await Variant.findOneAndUpdate(
      { _id: req.params.categoryId },
-     { is_active: req.body.is_active },
+     { is_active: req.body.activeStatus },
      { new: true }
    );
     if (!details) {

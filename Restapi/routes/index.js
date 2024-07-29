@@ -234,6 +234,30 @@ const {
   approveLeaderRequest,
   getAllApprovedLeader,
 } = require("../controllers/Utsab/UtsabController.js");
+const {
+  getAllReviews,
+} = require("../controllers/Admin_user/User_admin_reviews");
+const {
+  getAllUser,
+  blockingCustomer,
+  deleteCustomer,
+  getCustomerDetailsById,
+  makeUtsabMember,
+  customerOrderDetails,
+} = require("../controllers/Admin_user/adminUserCOntroller.js");
+const {
+  getAllNewArrivals,
+  markAsaNewArrivals,
+  getAllUtsavFeaturedBrand,
+  markAsaUtsavFeaturedBrand,
+  createUtsavGallery,
+  getAllGallery,
+  getGalleryDetailsById,
+  deleteGalleryById,
+  editGalleryDetails,
+  publishGalleryById,
+  getAllPublishedGallery,
+} = require("../controllers/Utsab/UtsavBannerController.js");
 //user Authentication
 routs.post("/register", userRegistrationValidation, userRegistration);
 routs.post("/login", userLoginValidation, userLogin);
@@ -522,8 +546,8 @@ routs.get("/getMemberShipPlan", getMemberShipPlan);
 routs.get("/isUtsabApplicable", auth, isUtsabApplicable);
 routs.get("/totalOrderOfUtsav", totalOrderOfUtsav);
 routs.get("/totalSpendOfMember/:userId", totalSpendOfMemberSingle);
-routs.post("/addBorrowMember",auth, addBorrowMember);
-routs.get("/addLeader",auth, addLeader);
+routs.post("/addBorrowMember", auth, addBorrowMember);
+routs.get("/addLeader", auth, addLeader);
 routs.get("/getAllBorrowLIst", getAllBorrowLIst);
 routs.get("/getAllLeader", getAllLeader);
 routs.get("/getAllMemberList", getAllMemberList);
@@ -535,4 +559,37 @@ routs.get("/getAllWalletTransaction", getAllWalletTransaction);
 routs.post("/approveBorrowRequest/:requestId", approveBorrowRequest);
 routs.post("/approveLeaderRequest/:requestId", approveLeaderRequest);
 routs.get("/getAllApprovedLeader", getAllApprovedLeader);
+
+//admin_user
+routs.post("/blockingCustomer/:userId", blockingCustomer);
+routs.get("/deleteCustomer/:userId", deleteCustomer);
+routs.get("/getCustomerDetailsById/:userId", getCustomerDetailsById);
+routs.get("/getAllUser", getAllUser);
+routs.post("/makeUtsabMember/:userId", makeUtsabMember);
+routs.get("/customerOrderDetails/:userId", customerOrderDetails);
+
+//utsavGallery
+routs.post(
+  "/createUtsavGallery",
+  upload.single("bannerImg"),
+  createUtsavGallery
+);
+routs.post("/markAsaNewArrivals/:productId", markAsaNewArrivals);
+routs.post("/markAsaUtsavFeaturedBrand/:brandId", markAsaUtsavFeaturedBrand);
+routs.get("/getAllNewArrivals", getAllNewArrivals);
+routs.get("/getAllUtsavFeaturedBrand", getAllUtsavFeaturedBrand);
+routs.get("/getAllGallery", getAllGallery);
+routs.get("/getGalleryDetailsById/:galleryId", getGalleryDetailsById);
+routs.delete("/deleteGalleryById/:galleryId", deleteGalleryById);
+routs.post(
+  "/editGalleryDetails/:galleryId",
+  upload.single("bannerImg"),
+  editGalleryDetails
+);
+routs.post("/publishGalleryById/:galleryId", publishGalleryById);
+
+routs.get("/getAllPublishedGallery", getAllPublishedGallery);
+
+//admin_review
+routs.get("/getAllReviews", getAllReviews);
 module.exports = routs;

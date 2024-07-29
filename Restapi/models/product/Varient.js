@@ -103,6 +103,11 @@ const variantSchema = new Schema(
       type: String,
       required: false,
     },
+    newArrival: {
+      type: Boolean,
+      default: false,
+      required: false,
+    },
     images: [
       {
         type: String,

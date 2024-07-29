@@ -14,6 +14,11 @@ const brandSchema = new Schema({
     type: String,
     required: true,
   },
+  utsavFeatured: {
+    type: Boolean,
+    required: false,
+    default: false,
+  },
   is_featured: {
     type: Boolean,
     required: false,

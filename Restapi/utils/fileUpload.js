@@ -9,6 +9,10 @@ async function compressAndResizeImage(
   compressionQuality
 ) {
   try {
+     if (outputFormat === "gif" || outputFormat === "GIF") {
+       // Return the original buffer for GIFs to preserve animation
+       return inputImagePath;
+     }
     let image = sharp(inputImagePath);
     if (width) {
       image = image.resize({ width });

@@ -42,6 +42,7 @@ const bannerSchema = new Schema({
         "Home",
         "About",
         "Contact",
+        "Utsav",
       ],
     },
     valueId: {

@@ -262,11 +262,9 @@ const getAllLeader = async (req, res) => {
         }
       })
     );
-    return res
-      .status(200)
-      .json({
-        membersWithDetails: membersWithDetails,
-      });
+    return res.status(200).json({
+      membersWithDetails: membersWithDetails,
+    });
   } catch (error) {
     return res
       .status(500)
@@ -318,11 +316,32 @@ const getAllBorrowLIst = async (req, res) => {
         admin_approval: "pending",
       })
       .populate("userId");
+
     if (!borrowMemberDetails) {
       return res.status(500).json({ message: " No member" });
     }
-
-    return res.status(200).json(borrowMemberDetails);
+    const membersWithDetails = await Promise.all(
+      borrowMemberDetails.map(async (member) => {
+        const userId = member.userId;
+        try {
+          const totalSpendData = await totalSpendOfMember(userId);
+          const referralDetailsData = await getReferralDetails(userId);
+          return {
+            ...member._doc,
+            totalSpend: totalSpendData.totalSpend,
+            referralDetails: referralDetailsData.referralDetails,
+          };
+        } catch (error) {
+          console.error(`Error fetching details for userId ${userId}:`, error);
+          return {
+            ...member._doc,
+            totalSpend: 0,
+            referralDetails: null,
+          };
+        }
+      })
+    );
+    return res.status(200).json(membersWithDetails);
   } catch (error) {
     return res
       .status(500)
@@ -551,11 +570,32 @@ const getReferralDetailsSingle = async (req, res) => {
 };
 const getAllWalletTransaction = async (req, res) => {
   try {
-    const detailsTransaction = await walletTransaction
+    const membersWithDetails = await walletTransaction
       .find({
         type: "debit",
       })
-      .populate("userId");
+      .populate("userId","fullName");
+    const detailsTransaction = await Promise.all(
+      membersWithDetails.map(async (member) => {
+        const userId = member.userId;
+        try {
+          const referralDetailsData = await getReferralDetails(userId);
+
+          return {
+            ...member._doc,
+
+            referralDetails: referralDetailsData.referralDetails,
+          };
+        } catch (error) {
+          console.error(`Error fetching details for userId ${userId}:`, error);
+          return {
+            ...member._doc,
+
+            referralDetails: null,
+          };
+        }
+      })
+    );
     return res.status(200).json({ detailsTransaction: detailsTransaction });
   } catch (error) {
     return res
@@ -572,6 +612,7 @@ const approveBorrowRequest = async (req, res) => {
       return res.status(500).json({ message: " No member" });
     }
     borrowMemberDetails.admin_approval = req.body.approval;
+    await borrowMemberDetails.save();
     return res.status(200).json(borrowMemberDetails);
   } catch (error) {
     return res
