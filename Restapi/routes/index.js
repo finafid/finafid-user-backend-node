@@ -77,7 +77,7 @@ const {
   getTheCart,
   deleteFromCart,
   clearCart,
-} = require("../controllers/cart&wishlist/cartWlController");
+} = require("../controllers/cartAndwishlist/cartWlController.js");
 const {
   placeOrder,
   getOrderDetails,
@@ -134,7 +134,7 @@ const {
   editVariationType,
   createVariation,
   getAllVariation,
-} = require("../controllers/product/variation&UnitController.js");
+} = require("../controllers/product/variationAndUnitController.js");
 const {
   adminRegistration,
   adminLogin,

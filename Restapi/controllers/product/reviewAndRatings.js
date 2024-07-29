@@ -1,5 +1,5 @@
-const Review = require("../../models/product/Review&Ratings");
-const {getImageLinks}=require("../../utils/fileUpload")
+const Review = require("../../models/product/ReviewAndRatings");
+const { getImageLinks } = require("../../utils/fileUpload");
 const createReview = async (req, res) => {
   let imgLink = "";
   if (req.files && req.files.length > 0) {
@@ -11,7 +11,7 @@ const createReview = async (req, res) => {
     rating: req.body.rating,
     comment: req.body.comment,
     title: req.body.title,
-    imgLink
+    imgLink,
   });
 
   try {
@@ -27,11 +27,7 @@ const GetAllReviews = async (req, res) => {
   try {
     const reviews = await Review.find({
       productId: req.params.productId,
-    }).populate({path:"userId",
-      model:"user"
-    }
-
-    );
+    }).populate({ path: "userId", model: "user" });
     res.json(reviews);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -138,9 +134,6 @@ const getAvgRating = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
-
-
 
 module.exports = {
   createReview,
