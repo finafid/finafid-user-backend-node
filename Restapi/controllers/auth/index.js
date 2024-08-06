@@ -1,4 +1,3 @@
-const { response } = require("express");
 const User = require("../../models/auth/userSchema");
 const {
   sendMail,
@@ -19,8 +18,13 @@ const {
 
 const userRegistration = async (req, res) => {
   const { email, phone } = req.body;
-  const userDetails = await User.findOne({ $or: [{ email }, { phone }] });
-
+  const userDetails = await User.findOne({
+    $or: [
+      { email, is_Active: true },
+      { phone, is_Active: true },
+    ],
+  });
+  console.log(userDetails);
   if (userDetails) {
     return res.status(400).json({
       message: "Account is already Register",
@@ -41,8 +45,8 @@ const userRegistration = async (req, res) => {
 };
 const userLogin = async (req, res) => {
   try {
-    const user = await User.findOne({ email: req.body.email });
-    if (user.blocking==true) {
+    const user = await User.findOne({ email: req.body.email, is_Active: true });
+    if (user && user.blocking==true) {
          return res
           .status(401)
           .json({ message: "Your account is permanently blocked" });
@@ -51,7 +55,7 @@ const userLogin = async (req, res) => {
       if (!user) {
         return res
           .status(401)
-          .json({ message: "Authy failed,Invalid Email and Password" });
+          .json({ message: "Auth failed,Invalid Email and Password" });
       }
     const isPassEqual = await bcrypt.compare(req.body.password, user.password);
     if (!isPassEqual) {
@@ -78,8 +82,7 @@ const userLogin = async (req, res) => {
     });
   } catch (err) {
     return res.status(500).json({
-      message: "error",
-      err,
+      message: err.message,
     });
   }
 };
@@ -515,7 +518,41 @@ const updateNotification = async (req, res) => {
       .json({ message: error.message + " Internal Server Error" });
   }
 };
-
+const deleteUserAccount=async(req,res)=>{
+  try {
+    const userDetails=await User.findById(req.params.userId)
+    if(!userDetails){
+      return res
+        .status(500)
+        .json({ message: "User is not present" });
+    }
+    userDetails.is_Active=false;
+    await userDetails.save();
+    return res
+      .status(200)
+      .json({ message: "Account deleted successfully" });
+  
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: error.message + " Internal Server Error" });
+  }
+}
+const deleteUserAccountFromUser=async(req,res)=>{
+  try {
+    const userDetails = await User.findById(req.user._id);
+    if (!userDetails) {
+      return res.status(500).json({ message: "User is not present" });
+    }
+    userDetails.is_Active = false;
+    await userDetails.save();
+    return res.status(200).json({ message: "Account deleted successfully" });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: error.message + " Internal Server Error" });
+  }
+}
 module.exports = {
   userRegistration,
   userLogin,
@@ -530,4 +567,6 @@ module.exports = {
   updateUserDetails,
   updateEmail,
   updateNotification,
+  deleteUserAccount,
+  deleteUserAccountFromUser,
 };

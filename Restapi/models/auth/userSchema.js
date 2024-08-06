@@ -1,13 +1,12 @@
-const { boolean } = require('joi');
-const mongoose=require('mongoose');
-const Schema=mongoose.Schema;
+const mongoose = require("mongoose");
+const Schema = mongoose.Schema;
 const UserSchema = new Schema(
   {
     fullName: { type: String, required: true },
     email: {
       type: String,
       required: true,
-      unique: true,
+      unique: false,
     },
     password: {
       type: String,
@@ -22,7 +21,7 @@ const UserSchema = new Schema(
     phone: {
       type: Number,
       required: true,
-      unique: true,
+      //unique: true,
     },
     email_validation: {
       type: Boolean,
@@ -47,8 +46,8 @@ const UserSchema = new Schema(
       required: false,
       default: false,
     },
-    is_Active:{
-       type: Boolean,
+    is_Active: {
+      type: Boolean,
       required: false,
       default: true,
     },
@@ -60,5 +59,5 @@ const UserSchema = new Schema(
   },
   { timestamps: true }
 );
-const userModel=mongoose.model('user',UserSchema)
-module.exports=userModel;
+const userModel = mongoose.model("user", UserSchema);
+module.exports = userModel;

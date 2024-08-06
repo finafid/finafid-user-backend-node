@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
 const brandSchema = new Schema({
@@ -8,7 +8,7 @@ const brandSchema = new Schema({
   },
   description: {
     type: String,
-    required: true,
+    required: false,
   },
   logoUrl: {
     type: String,
@@ -24,8 +24,15 @@ const brandSchema = new Schema({
     required: false,
     default: false,
   },
+  categoryList: [
+    {
+      type: Schema.Types.ObjectId,
+      require: true,
+      ref: "mainCategory",
+    },
+  ],
 });
 
-const Brand = mongoose.model('Brand', brandSchema);
+const Brand = mongoose.model("Brand", brandSchema);
 
-module.exports = Brand; 
+module.exports = Brand;

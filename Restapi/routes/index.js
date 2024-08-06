@@ -13,6 +13,8 @@ const {
   updateUserDetails,
   updateEmail,
   updateNotification,
+  deleteUserAccount,
+  deleteUserAccountFromUser,
 } = require("../controllers/auth");
 const {
   userRegistrationValidation,
@@ -68,6 +70,8 @@ const {
   getAllFeaturedSubCategory,
   getAllFeaturedProduct,
   activeProduct,
+  brandBasedOnCategory,
+  getFeaturedProductBasedOnCategory,
 } = require("../controllers/product/productCon");
 const {
   addToWishlist,
@@ -258,13 +262,18 @@ const {
   publishGalleryById,
   getAllPublishedGallery,
 } = require("../controllers/Utsab/UtsavBannerController.js");
+const {
+  getAllUtsavProduct,
+  getAllUtsavProductBasedOnCategory,
+} = require("../controllers/product/UtsavProductCon.js");
 //user Authentication
 routs.post("/register", userRegistrationValidation, userRegistration);
 routs.post("/login", userLoginValidation, userLogin);
 routs.post("/refresh_token", auth, getRefreshToken);
 routs.post("/send_mail_Varification", emailVarification, sendMailVarification);
 routs.post("/otp_varification", varifyOtp);
-
+routs.get("/deleteUserAccount/:userId", deleteUserAccount);
+routs.get("/deleteUserAccountFromUser", auth, deleteUserAccountFromUser);
 //Forgot password
 routs.post(
   "/sendMailForUpdatePassword",
@@ -373,6 +382,11 @@ routs.get("/getAllFeaturedBrand", getAllFeaturedBrand);
 routs.get("/getAllFeaturedCategory", getAllFeaturedCategory);
 routs.get("/getAllFeaturedSubCategory", getAllFeaturedSubCategory);
 routs.get("/getAllFeaturedProduct", getAllFeaturedProduct);
+routs.get(
+  "/getFeaturedProductBasedOnCategory/:categoryId",
+  getFeaturedProductBasedOnCategory
+);
+routs.get("/brandBasedOnCategory/:categoryId", brandBasedOnCategory);
 //Wishlist
 routs.post("/addToWishlist", auth, addToWishlist);
 routs.get("/getWishlistItems", auth, getTheWishlist);
@@ -536,7 +550,7 @@ routs.get("/getAllCoupons", getAllCoupons);
 routs.post("/updateStatusCoupons/:couponId", updateStatusCoupons);
 
 //referral
-routs.get("/shareReferralCode", auth, shareReferralCode);
+routs.post("/shareReferralCode", auth, shareReferralCode);
 routs.post("/redeemedReferral", auth, redeemedReferral);
 
 //utsab
@@ -546,7 +560,7 @@ routs.get("/getMemberShipPlan", getMemberShipPlan);
 routs.get("/isUtsabApplicable", auth, isUtsabApplicable);
 routs.get("/totalOrderOfUtsav", totalOrderOfUtsav);
 routs.get("/totalSpendOfMember/:userId", totalSpendOfMemberSingle);
-routs.post("/addBorrowMember", auth, addBorrowMember);
+routs.post("/applyForBorrowMember", auth, addBorrowMember);
 routs.get("/addLeader", auth, addLeader);
 routs.get("/getAllBorrowLIst", getAllBorrowLIst);
 routs.get("/getAllLeader", getAllLeader);
@@ -592,4 +606,12 @@ routs.get("/getAllPublishedGallery", getAllPublishedGallery);
 
 //admin_review
 routs.get("/getAllReviews", getAllReviews);
+
+//utsavProduct
+
+routs.get("/getAllUtsavProduct", getAllUtsavProduct);
+routs.get(
+  "/getAllUtsavProductBasedOnCategory/:categoryId",
+  getAllUtsavProductBasedOnCategory
+);
 module.exports = routs;

@@ -33,7 +33,7 @@ const shareReferralCode = async (req, res) => {
         userId: req.user._id,
       });
     }
-    const email = "deep123aeccse@gmail.com";
+    const email = req.body.email;
     const message = `<div style="font-family: Arial, sans-serif; color: #333; background-color: #f9f9f9; padding: 20px;">
             <p style="margin-bottom: 10px;">Dear ${userData.fullName},</p>
             <p style="margin-bottom: 10px;">The Code for your email is ${referralCode.code}.</p>

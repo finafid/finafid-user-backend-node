@@ -7,6 +7,9 @@ const cors = require('cors');
 const passport = require("passport");
 const upload=require("../Restapi/utils/fileUpload")
 const connectDb = require("./config/dbconfig")
+const helmet = require("helmet");
+
+
 
 const session = require("express-session")
 async function startServer() {
@@ -20,6 +23,7 @@ async function startServer() {
   // Call the startServer function
   startServer();
   app.use(express.json())
+  app.use(helmet())
   app.use(express.urlencoded({ extended: true }));
   app.use(cors());
   app.use("/ping",(req,res)=>{

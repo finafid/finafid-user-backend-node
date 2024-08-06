@@ -64,7 +64,7 @@ const bannerSchema = new Schema({
   },
   bannerTitle: {
     type: String,
-    required: true,
+    required: false,
   },
   is_published: {
     type: Boolean,

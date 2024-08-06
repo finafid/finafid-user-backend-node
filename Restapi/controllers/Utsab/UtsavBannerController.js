@@ -48,9 +48,11 @@ const getImageLink = async (req, res) => {
 };
 const getAllNewArrivals = async (req, res) => {
   try {
-    const productDetails = await varient.find({
-      newArrival: true,
-    });
+    const productDetails = await varient
+      .find({
+        newArrival: true,
+      })
+      .populate("productGroup");
     if (!productDetails) {
       return res
         .status(500)

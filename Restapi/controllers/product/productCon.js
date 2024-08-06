@@ -47,6 +47,13 @@ const getImageLink = async (req, res) => {
   }
 };
 
+const shuffleArray = (array) => {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+};
 const getAllProduct = async (req, res) => {
   try {
     const product = await productSc
@@ -66,15 +73,19 @@ const getAllVarients = async (req, res) => {
     const variants = await Variant.find().populate({
       path: "productGroup",
       populate: {
-        path: "productTypeId", // Nested population
+        path: "productTypeId",
       },
     });
 
-    return res.status(200).json({ variants });
+    // Shuffle the variants array
+    const shuffledVariants = shuffleArray(variants);
+
+    return res.status(200).json({ variants: shuffledVariants });
   } catch (err) {
     return res.status(500).json({ message: "error", error: err.message });
   }
 };
+
 const productOnId = async (req, res) => {
   try {
     const productId = req.params.productId;
@@ -271,9 +282,8 @@ const updateVariants = async (req, res) => {
     variantDetails.barCode = parseFloat(req.body.barCode);
     variantDetails.utsavReward = parseFloat(req.body.utsavReward);
     variantDetails.basicReward = parseFloat(req.body.basicReward);
-    variantDetails.utsavDiscountType = (req.body.utsavDiscountType);
-    
-    
+    variantDetails.utsavDiscountType = req.body.utsavDiscountType;
+
     // Save variant details
     await variantDetails.save();
 
@@ -325,7 +335,7 @@ const addVariants = async (req, res) => {
       taxPercent: req.body.taxPercent,
       sellingPrice: parseFloat(req.body.sellingPrice),
       utsabPrice: parseFloat(req.body.utsavPrice),
-      barCode: (req.body.barCode),
+      barCode: req.body.barCode,
       utsavReward: parseFloat(req.body.utsavReward),
       basicReward: parseFloat(req.body.basicReward),
       utsavDiscountType: req.body.utsavDiscountType,
@@ -393,6 +403,7 @@ const getVariantById = async (req, res) => {
     const variantDetails = await Variant.findById({
       _id: variantId,
     }).populate("productGroup");
+
     if (!variantDetails) {
       return res
         .status(500)
@@ -415,17 +426,14 @@ const getVariantById = async (req, res) => {
 };
 const createBrand = async (req, res) => {
   try {
-    const { name, description } = req.body;
-    console.log(req.file);
+    const { name, description, categoryList } = req.body;
     const logoUrl = await getImageLink(req);
-    console.log(logoUrl);
     const newBrand = new Brand({
       name,
       description,
       logoUrl,
+      categoryList,
     });
-    console.log(newBrand);
-
     await newBrand.save();
 
     return res.status(201).json({
@@ -516,7 +524,10 @@ const createSubCategory = async (req, res) => {
     if (!mainCategoryDetails) {
       return res.status(500).json({ message: "Main category is not present" });
     }
-    const logoUrl = await getImageLink(req);
+    let logoUrl=""
+    if(req.file){
+         logoUrl = await getImageLink(req);
+    }
     const newSubCategory = new subCategory({
       name,
       description,
@@ -821,11 +832,12 @@ const editBrand = async (req, res) => {
 
     if (!req.file) {
       const logoUrl = req.body.logo;
-      const { name, description, subCategoryId } = req.body;
+      const { name, description, subCategoryId, categoryList } = req.body;
       brandDetails.name = name;
       brandDetails.description = description;
       brandDetails.subCategoryId = subCategoryId;
       brandDetails.logoUrl = logoUrl;
+      brandDetails.categoryList = categoryList;
       await brandDetails.save();
     } else {
       const logoUrl = await getImageLink(req);
@@ -1106,7 +1118,7 @@ const featuredProduct = async (req, res) => {
     if (!details) {
       return res.status(500).json({ message: "No varient" });
     }
-   
+
     return res.status(200).json({ message: "Done" });
   } catch (error) {
     res.status(500).json({ message: error.message + " Internal Server Error" });
@@ -1114,15 +1126,15 @@ const featuredProduct = async (req, res) => {
 };
 const activeProduct = async (req, res) => {
   try {
-   const details = await Variant.findOneAndUpdate(
-     { _id: req.params.categoryId },
-     { is_active: req.body.activeStatus },
-     { new: true }
-   );
+    const details = await Variant.findOneAndUpdate(
+      { _id: req.params.categoryId },
+      { is_active: req.body.activeStatus },
+      { new: true }
+    );
     if (!details) {
       return res.status(500).json({ message: "No varient" });
     }
-  
+
     return res.status(200).json({ message: "Done" });
   } catch (error) {
     res.status(500).json({ message: error.message + " Internal Server Error" });
@@ -1193,6 +1205,47 @@ const getAllFeaturedProduct = async (req, res) => {
     res.status(500).json({ message: error.message + " Internal Server Error" });
   }
 };
+const brandBasedOnCategory = async (req, res) => {
+  try {
+    const brandDetails = await Brand.find({
+      categoryList: { $in: [req.params.categoryId] },
+    });
+    res.status(200).json({ brandDetails });
+  } catch (error) {
+    res.status(500).json({ message: error.message + " Internal Server Error" });
+  }
+};
+const getFeaturedProductBasedOnCategory = async (req, res) => {
+  try {
+    const productList = await productSc
+      .find({
+        categoryId: req.params.categoryId,
+      })
+      .populate({
+        path: "variants",
+        model: "Variant",
+        populate: {
+          path: "productGroup",
+          model: "Product",
+        },
+      });
+    const variantList = [];
+    productList.forEach((element) => {
+      if (Array.isArray(element.variants)) {
+        variantList.push(...element.variants);
+      } else if (element.variants) {
+        variantList.push(element.variants);
+      }
+    });
+    const filteredVariants = variantList.filter(
+      (variant) => variant.is_featured === true
+    );
+
+    return res.status(200).json({ productList: filteredVariants });
+  } catch (error) {
+    res.status(500).json({ message: error.message + " Internal Server Error" });
+  }
+};
 module.exports = {
   getAllProduct,
   categoryDetails,
@@ -1240,4 +1293,6 @@ module.exports = {
   getAllFeaturedSubCategory,
   getAllFeaturedProduct,
   activeProduct,
+  brandBasedOnCategory,
+  getFeaturedProductBasedOnCategory,
 };
