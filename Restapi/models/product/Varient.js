@@ -78,7 +78,7 @@ const variantSchema = new Schema(
       required: true,
     },
     barCode: {
-      type: Number,
+      type: String,
       required: true,
     },
     is_featured: {

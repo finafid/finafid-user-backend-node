@@ -78,9 +78,9 @@ const getAllVarients = async (req, res) => {
     });
 
     // Shuffle the variants array
-    const shuffledVariants = shuffleArray(variants);
+    //const shuffledVariants = shuffleArray(variants);
 
-    return res.status(200).json({ variants: shuffledVariants });
+    return res.status(200).json({ variants: variants });
   } catch (err) {
     return res.status(500).json({ message: "error", error: err.message });
   }
@@ -370,13 +370,9 @@ const addVariants = async (req, res) => {
 const deleteVariants = async (req, res) => {
   try {
     const variantId = req.params.variantId;
-    const variantDetail = await Variant.findById({
-      _id: variantId,
-    });
-    const variantDetails = await Variant.findByIdAndDelete({
-      _id: variantId,
-    });
-    if (!variantDetails) {
+    const variantDetail = await Variant.findByIdAndDelete(variantId);
+    
+    if (!variantDetail) {
       return res
         .status(500)
         .json({ message: "Internal Server Error", error: error.message });
@@ -467,7 +463,7 @@ const categoryDetails = async (req, res) => {
         const populatedSubCategories = await Promise.all(
           subCategories.map(async (subCategory) => {
             const productTypes = await productType
-              .find({ id: subCategory.id })
+              .find({ subCategoryId: subCategory._id })
               .lean()
               .exec();
             return {
@@ -1246,6 +1242,42 @@ const getFeaturedProductBasedOnCategory = async (req, res) => {
     res.status(500).json({ message: error.message + " Internal Server Error" });
   }
 };
+const deleteNonProductVariants = async (req, res) => {
+  try {
+    
+    const variantDetail = await Variant.find();
+
+    if (!variantDetail) {
+      return res
+        .status(500)
+        .json({ message: "Internal Server Error", error: error.message });
+    }
+
+   for (const element of variantDetail) {
+     try {
+       const variantDetail = await Variant.findById(element._id);
+       const productDetails = await productSc.findById(
+         variantDetail.productGroup
+       );
+
+       if (!productDetails) {
+         await Variant.findByIdAndDelete(element._id);
+       }
+     } catch (error) {
+       console.error(
+         `Failed to process variant with ID ${element._id}:`,
+         error
+       );
+     }
+   }
+    return res.status(200).json(variantDetail);
+  } catch (error) {
+    console.error("Error saving product:", error);
+    res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
+  }
+};
 module.exports = {
   getAllProduct,
   categoryDetails,
@@ -1295,4 +1327,5 @@ module.exports = {
   activeProduct,
   brandBasedOnCategory,
   getFeaturedProductBasedOnCategory,
+  deleteNonProductVariants,
 };

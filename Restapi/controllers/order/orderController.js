@@ -57,7 +57,8 @@ const placeOrder = async (req, res) => {
     //   }
     // }
     const userData = await User.findById(req.user._id);
-
+    console.log(req.body);
+    
     const newOrder = new order({
       orderItem: newOrderItems,
       userId: req.user._id,

@@ -51,7 +51,7 @@ const userLogin = async (req, res) => {
           .status(401)
           .json({ message: "Your account is permanently blocked" });
       }
-    
+      console.log(req.body)
       if (!user) {
         return res
           .status(401)
@@ -61,7 +61,7 @@ const userLogin = async (req, res) => {
     if (!isPassEqual) {
       return res
         .status(401)
-        .json({ message: "Authy failed,Invalid Email and Password" });
+        .json({ message: "Auth failed,Invalid Email and Password" });
     }
     const tokenObject = {
       _id: user._id,

@@ -72,6 +72,7 @@ const {
   activeProduct,
   brandBasedOnCategory,
   getFeaturedProductBasedOnCategory,
+  deleteNonProductVariants,
 } = require("../controllers/product/productCon");
 const {
   addToWishlist,
@@ -266,6 +267,23 @@ const {
   getAllUtsavProduct,
   getAllUtsavProductBasedOnCategory,
 } = require("../controllers/product/UtsavProductCon.js");
+const {
+  sendAppNotification,
+} = require("../controllers/Notification/notificationController");
+const {
+  getAllSearchTypeBasedOnSubCategory,
+  getAllSearchTypeBasedOnProductType,
+  getAllSearchTypeBasedOnProduct,
+} = require("../controllers/product/productSearchController.js");
+const {
+  paymentResponse,
+  paymentDetail,
+} = require("../controllers/Payment/PayuPaymentController.js");
+
+const {
+  getAllProductInformationBasedOnProduct,
+  getSearchData,
+} = require("../controllers/product/SearchEngine.js");
 //user Authentication
 routs.post("/register", userRegistrationValidation, userRegistration);
 routs.post("/login", userLoginValidation, userLogin);
@@ -387,6 +405,8 @@ routs.get(
   getFeaturedProductBasedOnCategory
 );
 routs.get("/brandBasedOnCategory/:categoryId", brandBasedOnCategory);
+
+routs.get("/deleteNonProductVariants", deleteNonProductVariants);
 //Wishlist
 routs.post("/addToWishlist", auth, addToWishlist);
 routs.get("/getWishlistItems", auth, getTheWishlist);
@@ -614,4 +634,33 @@ routs.get(
   "/getAllUtsavProductBasedOnCategory/:categoryId",
   getAllUtsavProductBasedOnCategory
 );
+
+//notification
+routs.post("/sendAppNotification", sendAppNotification);
+
+//productSearch
+routs.get(
+  "/getAllSearchTypeBasedOnSubCategory/:subCategoryId",
+  getAllSearchTypeBasedOnSubCategory
+);
+routs.get(
+  "/getAllSearchTypeBasedOnProductType/:productTypeId",
+  getAllSearchTypeBasedOnProductType
+);
+routs.get(
+  "/getAllSearchTypeBasedOnProduct/:productTypeId",
+  getAllSearchTypeBasedOnProduct
+);
+
+//payu
+
+routs.post("/paymentResponse",auth, paymentResponse);
+routs.post("/paymentDetail",auth, paymentDetail);
+
+//searchengine
+routs.get(
+  "/getAllProductInformationBasedOnProduct",
+  getAllProductInformationBasedOnProduct
+);
+routs.post("/getSearchData", getSearchData);
 module.exports = routs;
