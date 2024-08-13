@@ -5,6 +5,7 @@ const productSc = require("../../models/product/productSc");
 const Brand = require("../../models/brand/brandSc");
 const ProductSearch = require("../../models/product/productSearchSchema");
 const Variant = require("../../models/product/Varient.js");
+const ReviewAndRatings = require("../../models/product/ReviewAndRatings.js");
 const getAllSearchTypeBasedOnSubCategory = async (req, res) => {
   try {
     const { subCategoryId } = req.params;
@@ -69,7 +70,7 @@ const getAllSearchTypeBasedOnProduct = async (req, res) => {
     const { productId } = req.params;
     const productDetails = await productSc.findById(productId);
     const productList = await productSc.find({
-     productTypeId: productDetails.productTypeId,
+      productTypeId: productDetails.productTypeId,
     });
     let variationList = [];
     variationList = productList.forEach((element) => {
@@ -80,66 +81,163 @@ const getAllSearchTypeBasedOnProduct = async (req, res) => {
     res.status(500).json({ message: error.message + " Internal Server Error" });
   }
 };
-const getAllVariants = async (req, res) => {
+const getAllVariantsOnUser = async (req, res) => {
   try {
+    console.log(req.query);
     const {
       sortBy,
-      priceMin,
-      priceMax,
-      discountMin=0,
-      discountMax,
-      ratingMin,
-      ratingMax=5,
+      minPrice,
+      maxPrice,
+      discount,
+      rating,
+      productTypeId,
+      subCategoryId,
+      mainCategoryId,
+      brandId,
+      page = 1, // Default to the first page
+      limit = 10, // Default to 10 items per page
     } = req.query;
 
     let query = {};
 
-    if (priceMin || priceMax) {
-      query.price = {};
-      if (priceMin) query.price.$gte = parseFloat(priceMin);
-      if (priceMax) query.price.$lte = parseFloat(priceMax);
+    // Price filter
+    if (maxPrice || minPrice) {
+      query.sellingPrice = {};
+      if (minPrice) query.sellingPrice.$gte = parseFloat(minPrice);
+      if (maxPrice) query.sellingPrice.$lte = parseFloat(maxPrice);
     }
 
-    if (discountMin || discountMax) {
-      query.discount = {};
-      if (discountMin) query.discount.$gte = parseFloat(discountMin);
-      if (discountMax) query.discount.$lte = parseFloat(discountMax);
+    // Discount filter
+    if (discount) {
+      const discountArray = discount.split(",").map(Number);
+      query.discount = { $in: discountArray };
     }
 
+    let variants = await Variant.find(query)
+      .populate("productGroup")
+      .skip((page - 1) * limit) // Skip previous pages
+      .limit(parseInt(limit)); // Limit to the number of items per page
 
-    if (ratingMin || ratingMax) {
-      query.customerRatings = {};
-      if (ratingMin) query.customerRatings.$gte = parseFloat(ratingMin);
-      if (ratingMax) query.customerRatings.$lte = parseFloat(ratingMax);
+    let resultVariants = [];
+
+    // Rating filter
+    if (rating) {
+      const ratingArray = rating.split(",").map(Number);
+
+      variants = await Promise.all(
+        variants.map(async (element) => {
+          const review = await ReviewAndRatings.findOne({
+            productId: element.productGroup,
+            rating: { $in: ratingArray },
+          });
+          if (review) return element;
+        })
+      );
+
+      variants = variants.filter((variant) => variant !== undefined);
     }
 
+    // Main Category filter
+    if (mainCategoryId) {
+      variants = await Promise.all(
+        variants.map(async (element) => {
+          const productDetails = await productSc.findById(element.productGroup);
+          if (
+            productDetails &&
+            productDetails.categoryId.toString() === mainCategoryId
+          ) {
+            return element;
+          }
+        })
+      );
 
-    let variants = await Variant.find(query).populate({
-      path: "productGroup",
-      populate: {
-        path: "productTypeId",
-      },
-    });
+      variants = variants.filter((variant) => variant !== undefined);
+    }
 
-  
+    // Sub Category filter
+    if (subCategoryId) {
+      variants = await Promise.all(
+        variants.map(async (element) => {
+          const productDetails = await productSc.findById(element.productGroup);
+          if (
+            productDetails &&
+            productDetails.subCategoryId.toString() === subCategoryId
+          ) {
+            return element;
+          }
+        })
+      );
+
+      variants = variants.filter((variant) => variant !== undefined);
+    }
+
+    // Product Type filter
+    if (productTypeId) {
+      variants = await Promise.all(
+        variants.map(async (element) => {
+          const productDetails = await productSc.findById(element.productGroup);
+          if (
+            productDetails &&
+            productDetails.productTypeId.toString() === productTypeId
+          ) {
+            return element;
+          }
+        })
+      );
+
+      variants = variants.filter((variant) => variant !== undefined);
+    }
+
+    // Brand filter
+    if (brandId) {
+      variants = await Promise.all(
+        variants.map(async (element) => {
+          const productDetails = await productSc.findById(element.productGroup);
+          if (productDetails && productDetails.brand.toString() === brandId) {
+            return element;
+          }
+        })
+      );
+
+      variants = variants.filter((variant) => variant !== undefined);
+    }
+
+    resultVariants = variants;
+
+    // Sorting
     if (sortBy) {
       let sortQuery = {};
-      if (sortBy === "price") sortQuery.price = 1; // 1 for ascending, -1 for descending
+      if (sortBy === "price") sortQuery.price = 1;
       if (sortBy === "discount") sortQuery.discount = 1;
       if (sortBy === "ratings") sortQuery.customerRatings = 1;
-      variants = variants.sort(sortQuery);
+      resultVariants = resultVariants.sort((a, b) => {
+        if (sortQuery.price) return (a.price - b.price) * sortQuery.price;
+        if (sortQuery.discount)
+          return (a.discount - b.discount) * sortQuery.discount;
+        if (sortQuery.customerRatings)
+          return (
+            (a.customerRatings - b.customerRatings) * sortQuery.customerRatings
+          );
+      });
     }
 
-    // Return the filtered and sorted variants
-    res.status(200).json(variants);
+    res.status(200).json({
+      page: parseInt(page),
+      limit: parseInt(limit),
+      totalItems: resultVariants.length,
+      variants: resultVariants,
+    });
   } catch (error) {
+    console.error("Error fetching variants:", error);
     res.status(500).json({ message: error.message + " Internal Server Error" });
   }
 };
+
+
 
 module.exports = {
   getAllSearchTypeBasedOnSubCategory,
   getAllSearchTypeBasedOnProductType,
   getAllSearchTypeBasedOnProduct,
-  getAllVariants,
+  getAllVariantsOnUser,
 };

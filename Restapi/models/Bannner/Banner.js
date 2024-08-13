@@ -28,6 +28,7 @@ const bannerSchema = new Schema({
       "Microbar",
       "Hero",
       "Small Rectangle",
+      "Tinybar",
     ],
   },
   details: {

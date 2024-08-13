@@ -280,6 +280,7 @@ const {
   getAllSearchTypeBasedOnSubCategory,
   getAllSearchTypeBasedOnProductType,
   getAllSearchTypeBasedOnProduct,
+  getAllVariantsOnUser,
 } = require("../controllers/product/productSearchController.js");
 const {
   paymentResponse,
@@ -288,7 +289,8 @@ const {
 
 const {
   getAllProductInformationBasedOnProduct,
-  getSearchData,
+  getSearchDataFirst,
+  getSearchDataSecond,
 } = require("../controllers/product/SearchEngine.js");
 //user Authentication
 routs.post("/register", userRegistrationValidation, userRegistration);
@@ -640,15 +642,15 @@ routs.get(
   "/getAllUtsavProductBasedOnCategory/:categoryId",
   getAllUtsavProductBasedOnCategory
 );
-    routs.get("/getAllTopSellingBrand", getAllTopSellingBrand);  
-    routs.get("/getAllTopSellingProduct", getAllTopSellingProduct); 
-    routs.get("/getAllFeaturedProductType", getAllFeaturedProductType);  
-    routs.post("/makeTopSellingProduct/:productId", makeTopSellingProduct); 
-    routs.post("/makeTopSellingBrand/:brandId", makeTopSellingBrand);
-    routs.post("/makeProductTypeIsFeatured/:productTypeId", makeProductTypeIsFeatured);
+routs.get("/getAllTopSellingBrand", getAllTopSellingBrand);  
+routs.get("/getAllTopSellingProduct", getAllTopSellingProduct); 
+routs.get("/getAllFeaturedProductType", getAllFeaturedProductType);  
+routs.post("/makeTopSellingProduct/:productId", makeTopSellingProduct); 
+routs.post("/makeTopSellingBrand/:brandId", makeTopSellingBrand);
+routs.post("/makeProductTypeIsFeatured/:productTypeId", makeProductTypeIsFeatured);
 
-       //notification
-       routs.post("/sendAppNotification", sendAppNotification);
+//notification
+routs.post("/sendAppNotification", sendAppNotification);
 
 //productSearch
 routs.get(
@@ -663,6 +665,7 @@ routs.get(
   "/getAllSearchTypeBasedOnProduct/:productTypeId",
   getAllSearchTypeBasedOnProduct
 );
+routs.get("/getAllVariantsOnUser", getAllVariantsOnUser);
 
 //payu
 
@@ -674,5 +677,6 @@ routs.get(
   "/getAllProductInformationBasedOnProduct",
   getAllProductInformationBasedOnProduct
 );
-routs.post("/getSearchData", getSearchData);
-module.exports = routs;
+routs.post("/getSearchData", getSearchDataFirst);
+routs.post("/getSearchDataSecond", getSearchDataSecond);
+(module.exports = routs);

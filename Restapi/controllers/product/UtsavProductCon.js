@@ -80,44 +80,51 @@ const getAllTopSellingBrand = async (req, res) => {
     const orderDetails = await Order.find();
     let productCountMap = new Map();
 
-    for (let element of orderDetails) {
-      for (let product of element.orderItem) {
-        const varientDetails = await Variant.findById(product.productId);
-        const productDetails = await productSc
-          .findById(varientDetails.productGroup)
-          .populate("brand");
+    await Promise.all(
+      orderDetails.map(async (element) => {
+        const products = await Promise.all(
+          element.orderItem.map(async (product) => {
+            const varientDetails = await Variant.findById(product.productId);
+            const productDetails = await productSc
+              .findById(varientDetails.productGroup)
+              .populate("brand");
+            return productDetails;
+          })
+        );
 
-        const brandDetails = await Brand.findById(productDetails.brand);
+        for (let productDetails of products) {
+          const brandDetails = await Brand.findById(productDetails.brand);
+          const brandId = brandDetails._id.toString();
 
-        const brandId = brandDetails._id.toString(); // Use the unique brand ID as the key
-
-        if (productCountMap.has(brandId)) {
-          productCountMap.get(brandId).count += 1;
-        } else {
-          productCountMap.set(brandId, {
-            brand: brandDetails,
-            count: 1,
-          });
+          if (productCountMap.has(brandId)) {
+            productCountMap.get(brandId).count += 1;
+          } else {
+            productCountMap.set(brandId, {
+              brand: brandDetails,
+              count: 1,
+            });
+          }
         }
-      }
-    }
+      })
+    );
+
     const adminSellingProductDetails = await Brand.find({
       topSellingBrand: true,
     });
-    if (adminSellingProductDetails) {
-      for (let brand of adminSellingProductDetails) {
-        const brandId = brand._id.toString(); // Use the unique brand ID as the key
 
-        if (productCountMap.has(brandId)) {
-          productCountMap.get(brandId).count += 1;
-        } else {
-          productCountMap.set(brandId, {
-            brand: brand,
-            count: 1,
-          });
-        }
+    adminSellingProductDetails.forEach((brand) => {
+      const brandId = brand._id.toString();
+
+      if (productCountMap.has(brandId)) {
+        productCountMap.get(brandId).count += 1;
+      } else {
+        productCountMap.set(brandId, {
+          brand: brand,
+          count: 1,
+        });
       }
-    }
+    });
+
     const result = Array.from(productCountMap.values());
     res.status(200).json(result);
   } catch (error) {
@@ -125,52 +132,66 @@ const getAllTopSellingBrand = async (req, res) => {
     res.status(500).json({ message: error.message + " Internal Server Error" });
   }
 };
+
 const getAllTopSellingProduct = async (req, res) => {
   try {
-    const orderDetails = await Order.find();
+    // Fetch all orders
+    const orderDetails = await Order.find().populate({
+      path: "orderItem.productId",
+      populate: {
+        path: "productGroup",
+        populate: {
+          path: "brand",
+        },
+      },
+    });
+
     let productCountMap = new Map();
 
-    for (let element of orderDetails) {
-      for (let product of element.orderItem) {
-        const varientDetails = await Variant.findById(product.productId);
-        const productDetails = await productSc
-          .findById(varientDetails.productGroup)
-          .populate("brand");
+    // Process orders and products
+    await Promise.all(
+      orderDetails.map(async (order) => {
+        await Promise.all(
+          order.orderItem.map(async (item) => {
+            const productDetails = item.productId; // Already populated
 
-        const productId = productDetails._id.toString(); // Use the unique ID as the key
+            const productId = productDetails._id.toString(); // Use the unique ID as the key
 
-        if (productCountMap.has(productId)) {
-          productCountMap.get(productId).count += 1;
-        } else {
-          productCountMap.set(productId, {
-            product: productDetails,
-            count: 1,
-          });
-        }
-      }
-    }
+            if (productCountMap.has(productId)) {
+              productCountMap.get(productId).count += 1;
+            } else {
+              productCountMap.set(productId, {
+                product: productDetails,
+                count: 1,
+              });
+            }
+          })
+        );
+      })
+    );
 
+    // Fetch top-selling products and populate brand
     const adminSellingProductDetails = await productSc
       .find({
         topSellingProduct: true,
       })
       .populate("brand");
 
-    if (adminSellingProductDetails) {
-      for (let product of adminSellingProductDetails) {
-        const productId = product._id.toString();
+    // Update the map with top-selling products
+    adminSellingProductDetails.forEach((product) => {
+      const productId = product._id.toString();
 
-        if (productCountMap.has(productId)) {
-          productCountMap.get(productId).count += 1;
-        } else {
-          productCountMap.set(productId, {
-            product: product,
-            count: 1,
-          });
-        }
+      if (productCountMap.has(productId)) {
+        productCountMap.get(productId).count += 1;
+      } else {
+        productCountMap.set(productId, {
+          product: product,
+          count: 1,
+        });
       }
-    }
+    });
 
+    // Convert the map to an array for the response
     const result = Array.from(productCountMap.values());
     res.status(200).json(result);
   } catch (error) {
@@ -178,18 +199,20 @@ const getAllTopSellingProduct = async (req, res) => {
     res.status(500).json({ message: error.message + " Internal Server Error" });
   }
 };
+
 const makeProductTypeIsFeatured = async (req, res) => {
   try {
     const { productTypeId } = req.params;
     const productTypeDetails = await productType.findById(productTypeId);
+    console.log(productTypeDetails);
     if (!productTypeDetails) {
       return res
         .status(500)
-        .json({ message: error.message + " Internal Server Error" });
+        .json({ message: " Internal Server Error" });
     }
     productTypeDetails.is_featured=req.body.value;
     await productTypeDetails.save();
-    return res.status(500).json({ message: error.message + " Internal Server Error" });
+    return res.status(200).json({ message: "Completed"});
   } catch (error) {
     console.error("Error fetching product details:", error);
     res.status(500).json({ message: error.message + " Internal Server Error" });
@@ -200,6 +223,7 @@ const getAllFeaturedProductType = async (req, res) => {
     const productTypeDetails = await productType.find({
       is_featured:true
     });
+    res.status(200).json(productTypeDetails);
   } catch (error) {
     console.error("Error fetching product details:", error);
     res.status(500).json({ message: error.message + " Internal Server Error" });

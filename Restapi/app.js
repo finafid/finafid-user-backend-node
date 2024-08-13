@@ -8,7 +8,7 @@ const passport = require("passport");
 const upload=require("../Restapi/utils/fileUpload")
 const connectDb = require("./config/dbconfig")
 const helmet = require("helmet");
-
+const bodyParser = require("body-parser");
 
 
 const session = require("express-session")
@@ -23,6 +23,7 @@ async function startServer() {
   // Call the startServer function
   startServer();
   app.use(express.json())
+  app.use(bodyParser.json());
   app.use(helmet())
   app.use(express.urlencoded({ extended: true }));
   app.use(cors());

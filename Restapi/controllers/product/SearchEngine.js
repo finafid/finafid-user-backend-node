@@ -80,23 +80,49 @@ async function findBrandName(brandId) {
   }
 }
 const axios = require("axios");
-
-const getSearchData = async (req, res) => {
+const Variant = require("../../models/product/Varient");
+const searchEngineLink=process.env.searchEngineLink
+const getSearchDataFirst = async (req, res) => {
   try {
     const response = await axios.post("http://laptop-uptfb6dh:8000/search/", {
       query: req.body.query,
     });
-    console.log(response.data.results);
+    // console.log(response.data.results);
+    // for (let element of response.data.results) {
+    //   console.log(element.Product);
+    // }
+     return res.status(200).json(response.data.results);
+  } catch (error) {
+    res.status(500).json({ message: error.message + " Internal Server Error" });
+  }
+};
+const getSearchDataSecond = async (req, res) => {
+  try {
+    const response = await axios.post("http://laptop-uptfb6dh:8000/search/", {
+      query: req.body.query,
+    });
+    let variantList=[]
     for (let element of response.data.results) {
-      console.log(element.Product);
+      const productDetails = await productSc
+        .findOne({
+          name: element.Product,
+        })
+        .populate({
+          path: "variants",
+          populate: {
+            path: "productGroup",
+            model: "Product",
+          },
+        });
+
+      variantList.push(productDetails.variants);
     }
-     res.status(200).json(response.data);
+     return res.status(200).json(variantList);
   } catch (error) {
     res.status(500).json({ message: error.message + " Internal Server Error" });
   }
 };
 
-module.exports = { getSearchData };
 
 const getUserSearchData = async (req, res) => {
   try {
@@ -106,6 +132,7 @@ const getUserSearchData = async (req, res) => {
 };
 module.exports = {
   getAllProductInformationBasedOnProduct,
-  getSearchData,
+  getSearchDataFirst,
   getUserSearchData,
+  getSearchDataSecond,
 };
