@@ -24,6 +24,11 @@ const productTypeSchema = new Schema(
       ref: "subCategory",
       require: true,
     },
+    is_featured: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
   },
   { timestamps: true }
 );

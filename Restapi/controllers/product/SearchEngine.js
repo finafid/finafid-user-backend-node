@@ -87,8 +87,8 @@ const getSearchData = async (req, res) => {
       query: req.body.query,
     });
     console.log(response.data.results);
-    for (let element in response.data.results) {
-      console.log(element.product);
+    for (let element of response.data.results) {
+      console.log(element.Product);
     }
      res.status(200).json(response.data);
   } catch (error) {

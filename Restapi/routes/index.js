@@ -266,6 +266,12 @@ const {
 const {
   getAllUtsavProduct,
   getAllUtsavProductBasedOnCategory,
+  makeTopSellingProduct,
+  getAllTopSellingBrand,
+  getAllTopSellingProduct,
+  makeProductTypeIsFeatured,
+  getAllFeaturedProductType,
+  makeTopSellingBrand,
 } = require("../controllers/product/UtsavProductCon.js");
 const {
   sendAppNotification,
@@ -634,9 +640,15 @@ routs.get(
   "/getAllUtsavProductBasedOnCategory/:categoryId",
   getAllUtsavProductBasedOnCategory
 );
+    routs.get("/getAllTopSellingBrand", getAllTopSellingBrand);  
+    routs.get("/getAllTopSellingProduct", getAllTopSellingProduct); 
+    routs.get("/getAllFeaturedProductType", getAllFeaturedProductType);  
+    routs.post("/makeTopSellingProduct/:productId", makeTopSellingProduct); 
+    routs.post("/makeTopSellingBrand/:brandId", makeTopSellingBrand);
+    routs.post("/makeProductTypeIsFeatured/:productTypeId", makeProductTypeIsFeatured);
 
-//notification
-routs.post("/sendAppNotification", sendAppNotification);
+       //notification
+       routs.post("/sendAppNotification", sendAppNotification);
 
 //productSearch
 routs.get(

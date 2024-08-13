@@ -191,7 +191,7 @@ const createProduct = async (req, res) => {
         variantImageLinks = [...variantImageLinks, ...imageLinks];
         count++;
       }
-
+      const varientName = "" + variantData.sku + name;
       const variant = new Variant({
         productGroup: newProduct._id,
         attributes: variantData.attributes,
@@ -216,6 +216,7 @@ const createProduct = async (req, res) => {
         utsavReward: variantData.utsavReward,
         basicReward: variantData.basicReward,
         utsavDiscountType: variantData.utsavDiscountType,
+        name: varientName,
       });
 
       await variant.save();
@@ -256,10 +257,10 @@ const updateVariants = async (req, res) => {
     } else if (req.files && req.files["images[]"]) {
       newList = await getImageLinks(req.files["images[]"]);
     }
-
+    const productGroupDetails = await productSc.findById(req.body.productId);
     console.log(req.body.images);
     console.log(req.body);
-
+    const varientName= "" + req.body.sku + productGroupDetails.name;
     variantDetails.productGroup = req.body.productId;
     variantDetails.attributes = req.body.attributes;
     variantDetails.sku = req.body.sku;
@@ -283,7 +284,7 @@ const updateVariants = async (req, res) => {
     variantDetails.utsavReward = parseFloat(req.body.utsavReward);
     variantDetails.basicReward = parseFloat(req.body.basicReward);
     variantDetails.utsavDiscountType = req.body.utsavDiscountType;
-
+    variantDetails.name =varientName
     // Save variant details
     await variantDetails.save();
 
@@ -314,8 +315,11 @@ module.exports = updateVariants;
 
 const addVariants = async (req, res) => {
   try {
+    const productGroupDetails = await productSc.findById(req.body.productId);
     const variantImageLinks = await getImageLinks(req.files["images[]"]);
+     const varientName= "" + req.body.sku + productGroupDetails.name;
     const variant = new Variant({
+      name:varientName,
       productGroup: req.body.productId,
       attributes: req.body.attributes,
       sku: req.body.sku,

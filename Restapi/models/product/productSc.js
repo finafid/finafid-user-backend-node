@@ -70,15 +70,20 @@ const productSchema = new Schema(
       type: Schema.Types.Mixed,
       required: true,
     },
+    topSellingProduct: {
+      type: Boolean,
+      default: false,
+      required:false
+    },
     variants: [
       {
         type: Schema.Types.ObjectId,
         ref: "Variant",
       },
     ],
-    productCode:{
-        type: String,
-        required: true,
+    productCode: {
+      type: String,
+      required: true,
     },
   },
   { timestamps: true }
