@@ -43,6 +43,15 @@ const userRegistration = async (req, res) => {
     return res.status(500).json({ message: "error", error: err.message });
   }
 };
+function generateTokens(user) {
+  const accessToken = jwt.sign({ userId: user.id }, process.env.SECRET, {
+    expiresIn: "15m",
+  });
+  const refreshToken = jwt.sign({ userId: user.id }, process.env.SECRET, {
+    expiresIn: "7d",
+  });
+  return { accessToken, refreshToken };
+}
 const userLogin = async (req, res) => {
   try {
     const user = await User.findOne({ email: req.body.email, is_Active: true });
@@ -68,18 +77,14 @@ const userLogin = async (req, res) => {
       fullname: user.fullname,
       email: user.email,
     };
-    const jwtToken = jwt.sign(tokenObject, process.env.SECRET, {
-      expiresIn: "10h",
-    });
+    const jwtToken = generateTokens(user);
     const { fcmToken } = req.body;
     if (fcmToken) {
       user.fcmToken = fcmToken;
       await user.save();
     }
     tokenObject.imgUrl = user.imgUrl;
-    return res.status(200).json({
-      token: jwtToken,
-    });
+    return res.status(200).json(jwtToken);
   } catch (err) {
     return res.status(500).json({
       message: err.message,
@@ -553,6 +558,32 @@ const deleteUserAccountFromUser=async(req,res)=>{
       .json({ message: error.message + " Internal Server Error" });
   }
 }
+// Function to verify the refresh token
+function verifyRefreshToken(token) {
+  return new Promise((resolve, reject) => {
+    jwt.verify(token, REFRESH_TOKEN_SECRET, (err, payload) => {
+      if (err) return reject(err);
+      resolve(payload);
+    });
+  });
+}
+
+// Express route to refresh tokens
+const verify_Refresh_Token = async (req, res) => {
+  const { refreshToken } = req.body;
+
+  if (!refreshToken) return res.status(400).send("Refresh Token Required");
+
+  try {
+    const payload = await verifyRefreshToken(refreshToken);
+    const user = { id: payload.userId }; // Fetch user details from your database
+    const tokens = generateTokens(user);
+    res.json(tokens);
+  } catch (error) {
+    res.status(403).send("Invalid Refresh Token");
+  }
+};
+
 module.exports = {
   userRegistration,
   userLogin,
@@ -569,4 +600,5 @@ module.exports = {
   updateNotification,
   deleteUserAccount,
   deleteUserAccountFromUser,
+  verify_Refresh_Token,
 };

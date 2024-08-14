@@ -15,6 +15,7 @@ const {
   updateNotification,
   deleteUserAccount,
   deleteUserAccountFromUser,
+  verify_Refresh_Token,
 } = require("../controllers/auth");
 const {
   userRegistrationValidation,
@@ -323,16 +324,26 @@ routs.post(
   upload.single("avatar"),
   updateUserDetails
 );
-
+routs.post("/verifyRefreshToken", verify_Refresh_Token);
 // Product Details
 
 routs.get("/allProducts", getAllProduct);
 routs.get("/allCategoryDetails", categoryDetails);
-routs.post("/createCategory", upload.single("logo"), createCategory);
-routs.post("/createSubCategory", upload.single("logo"), createSubCategory);
-routs.post("/createProductType", upload.single("logo"), createProductType);
+routs.post("/createCategory", upload.single("logo"), auth, createCategory);
+routs.post(
+  "/createSubCategory",
+  upload.single("logo"),
+  auth,
+  createSubCategory
+);
+routs.post(
+  "/createProductType",
+  upload.single("logo"),
+  auth,
+  createProductType
+);
 routs.get("/getAllVariants", getAllVarients);
-routs.post("/createBrand", upload.single("logo"), createBrand);
+routs.post("/createBrand", upload.single("logo"), auth, createBrand);
 routs.get("/getProductGroupById/:productId", productOnId);
 routs.get(
   "/getProductBasisOfSubcategory/:subCategoryId",
@@ -365,23 +376,29 @@ routs.post(
   upload.single("logo"),
   editProductType
 );
-routs.post("/editBrand/:brandId", upload.single("logo"), editBrand);
+routs.post("/editBrand/:brandId", upload.single("logo"),auth, editBrand);
 routs.get("/getProductById/:productId", productOnId);
 routs.post("/updateProduct/:productId", upload.any(), updateProduct);
-routs.post("/createProduct", upload.any(), createProduct);
-routs.get("/deleteProduct", deleteProduct);
-routs.get("/deleteCategory/:categoryId", deleteCategory);
-routs.get("/deleteSubCategory/:subCategoryId", deleteSubCategory);
-routs.get("/deleteProductType/:productTypeId", deleteProductType);
+routs.post("/createProduct", upload.any(), auth, createProduct);
+routs.get("/deleteProduct", auth, deleteProduct);
+routs.get("/deleteCategory/:categoryId", auth, deleteCategory);
+routs.get("/deleteSubCategory/:subCategoryId", auth, deleteSubCategory);
+routs.get("/deleteProductType/:productTypeId", auth, deleteProductType);
 routs.get("/getCategoryId/:categoryId", getCategoryId);
 routs.get("/getSubCategoryId/:subcategoryId", getSubCategoryId);
 routs.post(
   "/editSubCategory/:subCategoryId",
   upload.single("logo"),
+  auth,
   editSubCategory
 );
 routs.get("/getProductTypeById/:productTypeId", getProductTypeById);
-routs.post("/createProductType", upload.single("logo"), createProductType);
+routs.post(
+  "/createProductType",
+  upload.single("logo"),
+  auth,
+  createProductType
+);
 routs.get("/getAllSubCategory", getAllSubCategory);
 routs.get("/getAllProductType", getAllProductType);
 routs.get("/getVariantById/:variantId", getVariantById);
@@ -395,8 +412,13 @@ routs.post(
   upload.fields([{ name: "images[]", maxCount: 10 }]),
   addVariants
 );
-routs.get("/deleteVariant/:variantId", upload.single("logo"), deleteVariants);
-routs.post("/updateProduct", upload.single("logo"), updateProduct);
+routs.get(
+  "/deleteVariant/:variantId",
+  auth,
+  upload.single("logo"),
+  deleteVariants
+);
+routs.post("/updateProduct", upload.single("logo"), auth, updateProduct);
 
 routs.post("/activeProduct/:categoryId", activeProduct);
 routs.post("/featuredMainCategory/:categoryId", featuredMainCategory);

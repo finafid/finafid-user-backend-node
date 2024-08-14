@@ -33,6 +33,15 @@ const adminRegistration = async (req, res) => {
     return res.status(500).json({ message: "error", error: err.message });
   }
 };
+function generateTokens(user) {
+  const accessToken = jwt.sign({ userId: user.id }, JWT_SECRET, {
+    expiresIn: "15m",
+  });
+  const refreshToken = jwt.sign({ userId: user.id }, REFRESH_TOKEN_SECRET, {
+    expiresIn: "7d",
+  });
+  return { accessToken, refreshToken };
+}
 const adminLogin = async (req, res) => {
     try {
         const adminDetails = await Admin.findOne({ email: req.body.email });
@@ -54,11 +63,9 @@ const adminLogin = async (req, res) => {
           fullname: adminDetails.fullname,
           email: Admin.email,
         };
-        const jwtToken = jwt.sign(tokenObject, process.env.SECRET, { expiresIn: '10h' });
+        const jwtToken = generateTokens(adminDetails);
         tokenObject.imgUrl = Admin.imgUrl;
-        return res.status(200).json({
-            token: jwtToken
-        })
+        return res.status(200).json(jwtToken);
     } catch (err) {
         return res.status(500).json({
             message: err.message+"Internal server error"
