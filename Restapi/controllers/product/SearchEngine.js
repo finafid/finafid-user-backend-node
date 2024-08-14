@@ -85,23 +85,40 @@ const searchEngineLink=process.env.searchEngineLink
 const getSearchDataFirst = async (req, res) => {
   try {
     const response = await axios.post("http://laptop-uptfb6dh:8000/search/", {
-      query: req.body.query,
+      query: req.query.query,
     });
-    // console.log(response.data.results);
-    // for (let element of response.data.results) {
-    //   console.log(element.Product);
-    // }
-     return res.status(200).json(response.data.results);
+    let stringList=[]
+   
+    if (response.data.message){
+      return res.status(400).json({ message: response.data.message});;
+    } 
+    for (let element of response.data.results) {
+      console.log(element.Product);
+      stringList.push(element.Product);
+
+    }
+     return res.status(200).json(stringList);
   } catch (error) {
     res.status(500).json({ message: error.message + " Internal Server Error" });
   }
 };
 const getSearchDataSecond = async (req, res) => {
   try {
+    const {
+      sortBy,
+      minPrice,
+      maxPrice,
+      discount,
+      rating,
+      page = 1, // Default to the first page
+      limit = 10, // Default to 10 items per page
+    } = req.query;
+
     const response = await axios.post("http://laptop-uptfb6dh:8000/search/", {
-      query: req.body.query,
+      query: req.query.query,
     });
-    let variantList=[]
+
+    let variantList = [];
     for (let element of response.data.results) {
       const productDetails = await productSc
         .findOne({
@@ -115,13 +132,79 @@ const getSearchDataSecond = async (req, res) => {
           },
         });
 
-      variantList.push(productDetails.variants);
+      variantList = variantList.concat(productDetails.variants);
     }
-     return res.status(200).json(variantList);
+
+    // Apply Price filter
+    if (maxPrice || minPrice) {
+      variantList = variantList.filter((variant) => {
+        const price = variant.sellingPrice;
+        if (minPrice && price < parseFloat(minPrice)) return false;
+        if (maxPrice && price > parseFloat(maxPrice)) return false;
+        return true;
+      });
+    }
+
+    // Apply Discount filter
+    if (discount) {
+      const discountArray = discount.split(",").map(Number);
+      const maxDiscount = Math.max(...discountArray);
+      variantList = variantList.filter(
+        (variant) => variant.discount >= 0 && variant.discount <= maxDiscount
+      );
+    }
+
+    // Apply Rating filter
+    if (rating) {
+      const ratingArray = rating.split(",").map(Number);
+      const minRating = Math.min(...ratingArray);
+      variantList = await Promise.all(
+        variantList.map(async (variant) => {
+          const review = await ReviewAndRatings.findOne({
+            productId: variant.productGroup._id,
+            rating: { $gte: minRating },
+          });
+          if (review) return variant;
+        })
+      );
+
+      variantList = variantList.filter((variant) => variant !== undefined);
+    }
+
+    // Apply Sorting
+    if (sortBy) {
+      let sortQuery = {};
+
+      if (sortBy === "price asc") sortQuery = { key: "sellingPrice", order: 1 };
+      if (sortBy === "price desc")
+        sortQuery = { key: "sellingPrice", order: -1 };
+      if (sortBy === "discount") sortQuery = { key: "discount", order: -1 };
+      // if (sortBy === "customerRatings asc")
+      //   sortQuery = { key: "customerRatings", order: 1 };
+      // if (sortBy === "customerRatings desc")
+      //   sortQuery = { key: "customerRatings", order: -1 };
+
+      variantList = variantList.sort((a, b) => {
+        return (a[sortQuery.key] - b[sortQuery.key]) * sortQuery.order;
+      });
+    }
+
+    // Pagination
+    const totalItems = variantList.length;
+    variantList = variantList.slice((page - 1) * limit, page * limit);
+
+    return res.status(200).json({
+      page: parseInt(page),
+      limit: parseInt(limit),
+      totalItems: totalItems,
+      variants: variantList,
+    });
   } catch (error) {
+    console.error("Error filtering variants:", error);
     res.status(500).json({ message: error.message + " Internal Server Error" });
   }
 };
+
 
 
 const getUserSearchData = async (req, res) => {

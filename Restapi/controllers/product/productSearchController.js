@@ -115,7 +115,7 @@ const getAllVariantsOnUser = async (req, res) => {
      query.discount = { $gte: 0, $lte: maxDiscount };
    }
 
-
+   const varientList = await Variant.find(query).populate("productGroup");
     let variants = await Variant.find(query)
       .populate("productGroup")
       .skip((page - 1) * limit) // Skip previous pages
@@ -229,7 +229,7 @@ const getAllVariantsOnUser = async (req, res) => {
     res.status(200).json({
       page: parseInt(page),
       limit: parseInt(limit),
-      totalItems: resultVariants.length,
+      totalItems: varientList.length,
       variants: resultVariants,
     });
   } catch (error) {

@@ -677,6 +677,6 @@ routs.get(
   "/getAllProductInformationBasedOnProduct",
   getAllProductInformationBasedOnProduct
 );
-routs.post("/getSearchData", getSearchDataFirst);
-routs.post("/getSearchDataSecond", getSearchDataSecond);
+routs.get("/getSearchData", getSearchDataFirst);
+routs.get("/getSearchDataSecond", getSearchDataSecond);
 (module.exports = routs);

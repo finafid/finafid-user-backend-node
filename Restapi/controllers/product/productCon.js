@@ -594,23 +594,18 @@ const getSearchResult = async (req, res) => {
 
 const getProductBasisOfSubcategory = async (req, res) => {
   try {
-    const subCategoryName = req.params.subCategoryId;
-    const subCategoryRecord = await subCategory.findOne({
-      _id: subCategoryId,
-    });
+   
+    const subCategoryRecord = await productSc
+      .find({
+        subCategoryId: req.params.subCategoryId,
+      })
+      .populate("variants");
     if (!subCategoryRecord) {
       return res.status(404).json({ message: "Subcategory not found" });
     }
-    const subCategoryId = subCategoryRecord._id.toString();
-    const id = subCategoryId;
-    const productTypeList = await productType.find({ subCategory: id });
-    const productList = await Promise.all(
-      productTypeList.map(async (productType) => {
-        return await productSc.findOne({ productType: productType._id });
-      })
-    );
+  
 
-    res.status(200).json({ productList });
+    res.status(200).json({ subCategoryRecord });
   } catch (error) {
     res.status(500).json({ message: error.message + " Internal Server Error" });
   }
