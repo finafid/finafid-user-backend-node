@@ -108,10 +108,13 @@ const getAllVariantsOnUser = async (req, res) => {
     }
 
     // Discount filter
-    if (discount) {
-      const discountArray = discount.split(",").map(Number);
-      query.discount = { $in: discountArray };
-    }
+   if (discount) {
+     const discountArray = discount.split(",").map(Number);
+     
+     const maxDiscount = Math.max(...discountArray);
+     query.discount = { $gte: 0, $lte: maxDiscount };
+   }
+
 
     let variants = await Variant.find(query)
       .populate("productGroup")
@@ -123,12 +126,13 @@ const getAllVariantsOnUser = async (req, res) => {
     // Rating filter
     if (rating) {
       const ratingArray = rating.split(",").map(Number);
-
+      const minRating = Math.min(...ratingArray);
       variants = await Promise.all(
         variants.map(async (element) => {
+          console.log(element.productGroup._id);
           const review = await ReviewAndRatings.findOne({
-            productId: element.productGroup,
-            rating: { $in: ratingArray },
+            productId: element.productGroup._id,
+             rating: { $gte: minRating },
           });
           if (review) return element;
         })
@@ -205,21 +209,22 @@ const getAllVariantsOnUser = async (req, res) => {
     resultVariants = variants;
 
     // Sorting
-    if (sortBy) {
-      let sortQuery = {};
-      if (sortBy === "price") sortQuery.price = 1;
-      if (sortBy === "discount") sortQuery.discount = 1;
-      if (sortBy === "ratings") sortQuery.customerRatings = 1;
-      resultVariants = resultVariants.sort((a, b) => {
-        if (sortQuery.price) return (a.price - b.price) * sortQuery.price;
-        if (sortQuery.discount)
-          return (a.discount - b.discount) * sortQuery.discount;
-        if (sortQuery.customerRatings)
-          return (
-            (a.customerRatings - b.customerRatings) * sortQuery.customerRatings
-          );
-      });
-    }
+   if (sortBy) {
+     let sortQuery = {};
+
+     if (sortBy === "price asc") sortQuery = { key: "sellingPrice", order: 1 };
+     if (sortBy === "price desc") sortQuery = { key: "sellingPrice", order: -1 };
+     if (sortBy === "discount") sortQuery = { key: "discount", order: -1 };
+     if (sortBy === "customerRatings asc")
+       sortQuery = { key: "customerRatings", order: 1 };
+     if (sortBy === "customerRatings desc")
+       sortQuery = { key: "customerRatings", order: -1 };
+
+     resultVariants = resultVariants.sort((a, b) => {
+       return (a[sortQuery.key] - b[sortQuery.key]) * sortQuery.order;
+     });
+   }
+
 
     res.status(200).json({
       page: parseInt(page),
