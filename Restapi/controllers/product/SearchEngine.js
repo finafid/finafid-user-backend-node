@@ -80,12 +80,13 @@ async function findBrandName(brandId) {
   }
 }
 //http://laptop-uptfb6dh:8000/search/
+//https://finafid-search-engine-b5dc68ef0eb1.herokuapp.com/search/
 const axios = require("axios");
 const Variant = require("../../models/product/Varient");
 const searchEngineLink=process.env.searchEngineLink
 const getSearchDataFirst = async (req, res) => {
   try {
-    const response = await axios.post("http://13.126.199.92:8000/search/", {
+    const response = await axios.post("https://finafid-search-engine-b5dc68ef0eb1.herokuapp.com/search/", {
       query: req.query.query,
     });
     let stringList=[]
