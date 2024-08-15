@@ -580,12 +580,25 @@ const verify_Refresh_Token = async (req, res) => {
     const payload = await verifyRefreshToken(refreshToken);
     console.log(payload);
     const userDetails = await User.findById(payload._id);
-    const tokenObject = {
-      _id: userDetails._id,
-      fullname: userDetails.fullname,
-      email: userDetails.email,
-    };
-    const tokens = generateTokens(tokenObject, userDetails);
+    const adminDetails = await Admin.findById(payload._id);
+     let tokens={}
+    let tokenObject={}
+    if(userDetails){
+        tokenObject = {
+         _id: userDetails._id,
+         fullname: userDetails.fullname,
+         email: userDetails.email,
+       };
+      tokens = generateTokens(tokenObject, userDetails);
+    }
+    if (adminDetails) {
+      tokenObject = {
+        _id: adminDetails._id,
+        fullname: adminDetails.fullname,
+        email: adminDetails.email,
+      };
+      tokens = generateTokens(tokenObject, userDetails);
+    }
     res.json(tokens);
   } catch (error) {
     res.status(403).send(error.message);

@@ -326,7 +326,6 @@ routs.post(
   updateUserDetails
 );
 routs.post("/verifyRefreshToken", verify_Refresh_Token);
-;
 routs.post("/validAccessToken", validAccessToken);
 // Product Details
 
