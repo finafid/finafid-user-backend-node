@@ -563,7 +563,7 @@ const deleteUserAccountFromUser=async(req,res)=>{
 // Function to verify the refresh token
 function verifyRefreshToken(token) {
   return new Promise((resolve, reject) => {
-    jwt.verify(token, REFRESH_TOKEN_SECRET, (err, payload) => {
+    jwt.verify(token, process.env.SECRET, (err, payload) => {
       if (err) return reject(err);
       resolve(payload);
     });
@@ -578,11 +578,17 @@ const verify_Refresh_Token = async (req, res) => {
 
   try {
     const payload = await verifyRefreshToken(refreshToken);
-    const user = { id: payload.userId }; // Fetch user details from your database
-    const tokens = generateTokens(user);
+    console.log(payload);
+    const userDetails = await User.findById(payload._id);
+    const tokenObject = {
+      _id: userDetails._id,
+      fullname: userDetails.fullname,
+      email: userDetails.email,
+    };
+    const tokens = generateTokens(tokenObject, userDetails);
     res.json(tokens);
   } catch (error) {
-    res.status(403).send("Invalid Refresh Token");
+    res.status(403).send(error.message);
   }
 };
 const validAccessToken=async(req,res)=>{
