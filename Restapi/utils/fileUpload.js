@@ -134,7 +134,7 @@ const uploadFiles = async (files) => {
       const inputImagePath = file.buffer;
       const extension = file.originalname.split(".").pop();
       const width = 800; // Desired width
-      const compressionQuality = 5; // Desired compression quality
+      const compressionQuality = 0; // Desired compression quality
 
       const imageBuffer = await compressAndResizeImage(
         inputImagePath,

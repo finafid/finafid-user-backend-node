@@ -13,7 +13,7 @@ const getImageLink = async (req, res) => {
 
     // Define resizing and compression parameters
     const width = 800;
-    const compressionQuality = 5;
+    const compressionQuality = 0;
 
     // Compress and resize the image
     const imageBuffer = await compressAndResizeImage(
