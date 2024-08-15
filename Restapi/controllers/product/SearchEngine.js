@@ -79,12 +79,13 @@ async function findBrandName(brandId) {
     throw new Error(error.message);
   }
 }
+//http://laptop-uptfb6dh:8000/search/
 const axios = require("axios");
 const Variant = require("../../models/product/Varient");
 const searchEngineLink=process.env.searchEngineLink
 const getSearchDataFirst = async (req, res) => {
   try {
-    const response = await axios.post("http://laptop-uptfb6dh:8000/search/", {
+    const response = await axios.post("http://13.126.199.92:8000/search/", {
       query: req.query.query,
     });
     let stringList=[]

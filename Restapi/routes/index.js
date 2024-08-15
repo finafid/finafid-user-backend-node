@@ -16,6 +16,7 @@ const {
   deleteUserAccount,
   deleteUserAccountFromUser,
   verify_Refresh_Token,
+  validAccessToken,
 } = require("../controllers/auth");
 const {
   userRegistrationValidation,
@@ -325,6 +326,8 @@ routs.post(
   updateUserDetails
 );
 routs.post("/verifyRefreshToken", verify_Refresh_Token);
+;
+routs.post("/validAccessToken", validAccessToken);
 // Product Details
 
 routs.get("/allProducts", getAllProduct);

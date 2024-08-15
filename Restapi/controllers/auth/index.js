@@ -11,10 +11,12 @@ const Otp = require("../../models/auth/sendOtp");
 const BlackList = require("../../models/auth/blackList");
 const Cart = require("../../models/productBag/cartSc");
 const WishList = require("../../models/productBag/wishListSc");
+const Admin =require("../../models/Auth admin/adminSchema")
 const {
   generateStringOfImageList,
   compressAndResizeImage,
 } = require("../../utils/fileUpload");
+const { adminDetails } = require("../auth _admin/authAdmin");
 
 const userRegistration = async (req, res) => {
   const { email, phone } = req.body;
@@ -43,11 +45,11 @@ const userRegistration = async (req, res) => {
     return res.status(500).json({ message: "error", error: err.message });
   }
 };
-function generateTokens(user) {
-  const accessToken = jwt.sign({ userId: user.id }, process.env.SECRET, {
+function generateTokens(tokenObject,user) {
+  const accessToken = jwt.sign(tokenObject, process.env.SECRET, {
     expiresIn: "15m",
   });
-  const refreshToken = jwt.sign({ userId: user.id }, process.env.SECRET, {
+  const refreshToken = jwt.sign(tokenObject, process.env.SECRET, {
     expiresIn: "7d",
   });
   return { accessToken, refreshToken };
@@ -77,7 +79,7 @@ const userLogin = async (req, res) => {
       fullname: user.fullname,
       email: user.email,
     };
-    const jwtToken = generateTokens(user);
+    const jwtToken = generateTokens(tokenObject, user);
     const { fcmToken } = req.body;
     if (fcmToken) {
       user.fcmToken = fcmToken;
@@ -583,7 +585,24 @@ const verify_Refresh_Token = async (req, res) => {
     res.status(403).send("Invalid Refresh Token");
   }
 };
-
+const validAccessToken=async(req,res)=>{
+  try {
+    
+    const accessToken = req.body.token;
+    console.log(accessToken);
+    const decodedData = jwt.verify(accessToken, process.env.SECRET);
+    console.log(decodedData);
+    req.user = decodedData;
+    const userDetails = await User.findById(req.user._id);
+    const adminDetails = await Admin.findById(req.user._id);
+    if (!userDetails && !adminDetails) {
+      return res.status(401).send("Invalid Refresh Token");
+    }
+    return res.status(200).send("valid Refresh Token");
+  } catch (error) {
+    res.status(401).json({message:error.message});
+  }
+}
 module.exports = {
   userRegistration,
   userLogin,
@@ -601,4 +620,5 @@ module.exports = {
   deleteUserAccount,
   deleteUserAccountFromUser,
   verify_Refresh_Token,
+  validAccessToken,
 };

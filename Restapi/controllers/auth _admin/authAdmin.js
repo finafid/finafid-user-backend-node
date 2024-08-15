@@ -33,11 +33,11 @@ const adminRegistration = async (req, res) => {
     return res.status(500).json({ message: "error", error: err.message });
   }
 };
-function generateTokens(user) {
-  const accessToken = jwt.sign({ userId: user.id }, JWT_SECRET, {
+function generateTokens(tokenObject, user) {
+  const accessToken = jwt.sign(tokenObject, process.env.SECRET, {
     expiresIn: "15m",
   });
-  const refreshToken = jwt.sign({ userId: user.id }, REFRESH_TOKEN_SECRET, {
+  const refreshToken = jwt.sign(tokenObject, process.env.SECRET, {
     expiresIn: "7d",
   });
   return { accessToken, refreshToken };
@@ -63,7 +63,7 @@ const adminLogin = async (req, res) => {
           fullname: adminDetails.fullname,
           email: Admin.email,
         };
-        const jwtToken = generateTokens(adminDetails);
+        const jwtToken = generateTokens(tokenObject,adminDetails);
         tokenObject.imgUrl = Admin.imgUrl;
         return res.status(200).json(jwtToken);
     } catch (err) {
