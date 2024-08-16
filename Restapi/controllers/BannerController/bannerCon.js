@@ -141,22 +141,25 @@ const editBanner = async (req, res) => {
 };
 const getBannersByBannerTypeAndDetails = async (req, res) => {
   try {
-    const { position, resourceType, bannerType } = req.body;
-    const { valueId } = req.body;
+    const { position, resourceType, bannerType, valueId } = req.body;
 
-    let details = { resourceType: resourceType };
-    if (valueId) {
-      details.valueId = valueId;
-    }
-    console.log(details);
-    const banners = await Banner.find({
+    // Build the query object
+    const query = {
       position,
       bannerType,
-      details,
-      is_published:true
-    });
-    console.log(banners);
-    console.log(req.body)
+      is_published: true,
+      "details.resourceType": resourceType,
+    };
+
+    // Add valueId to the query if it exists in the request body
+    if (valueId) {
+      query["details.valueId"] = valueId;
+    }
+
+    // Query the database
+    const banners = await Banner.find(query);
+
+    // Check if any banners were found
     if (!banners || banners.length === 0) {
       return res.status(404).json({
         success: false,
@@ -164,6 +167,7 @@ const getBannersByBannerTypeAndDetails = async (req, res) => {
       });
     }
 
+    // Return the found banners
     return res.status(200).json({
       success: true,
       data: banners,
