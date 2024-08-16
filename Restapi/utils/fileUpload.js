@@ -77,17 +77,21 @@ async function generateStringOfImageList(body, key, res) {
     throw new Error("Failed to upload image to S3");
   }
 }
+const mime = require("mime-types");
+
 const uploadImageToS3 = async (buffer, fileName) => {
+  const contentType = mime.lookup(fileName) || "application/octet-stream"; // Detect MIME type or default
+
   const params = {
     Bucket: process.env.bucket_name,
     Key: fileName,
     Body: buffer,
-   // ACL: "public-read",
-    ContentType: "image/jpeg", // Adjust based on your image type
+    ContentType: contentType, // Automatically set ContentType
   };
 
   return s3.upload(params).promise();
 };
+
 
 
 const getImageLinks = async (files) => {
