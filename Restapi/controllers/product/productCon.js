@@ -17,7 +17,7 @@ const getImageLink = async (req, res) => {
     const inputImagePath = await req.file.buffer;
     const extension = req.file.originalname.split(".").pop();
     const width = 800;
-    const compressionQuality = 5;
+    const compressionQuality = 0;
 
     const imageBuffer = await compressAndResizeImage(
       inputImagePath,
