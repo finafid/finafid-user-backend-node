@@ -141,20 +141,24 @@ const createProduct = async (req, res) => {
       uploadedFiles[fieldName].push(file);
     }
 
-    // Upload thumbnail image
+    // Upload thumbnail image in parallel
     let singleImageUrl = "";
     if (uploadedFiles["thumbnail"]) {
-      const [imageLink] = await uploadFiles(uploadedFiles["thumbnail"]);
+      const [imageLink] = await Promise.all([
+        uploadFiles(uploadedFiles["thumbnail"]),
+      ]);
       singleImageUrl = imageLink;
     }
 
-    // Upload other images
+    // Upload other images in parallel
     let imageListUrls = [];
     if (uploadedFiles["otherImages[]"]) {
-      imageListUrls = await uploadFiles(uploadedFiles["otherImages[]"]);
+      imageListUrls = await Promise.all(
+        uploadFiles(uploadedFiles["otherImages[]"])
+      );
     }
 
-    // Create the product
+    // Create the product without variants initially
     const newProduct = new Product({
       totalQuantity,
       name,
@@ -177,52 +181,58 @@ const createProduct = async (req, res) => {
 
     await newProduct.save();
 
-    // Process each variant
-    for (let i = 0; i < variants.length; i++) {
-      const variantData = variants[i];
-      let variantImageLinks = [];
+    // Process each variant in parallel
+    await Promise.all(
+      variants.map(async (variantData, i) => {
+        let variantImageLinks = [];
 
-      // Collect variant images
-      let count = 0;
-      while (uploadedFiles[`variants[${i}][images][${count}]`]) {
-        const imageLinks = await uploadFiles(
-          uploadedFiles[`variants[${i}][images][${count}]`]
-        );
-        variantImageLinks = [...variantImageLinks, ...imageLinks];
-        count++;
-      }
-      const varientName = "" + variantData.sku + name;
-      const variant = new Variant({
-        productGroup: newProduct._id,
-        attributes: variantData.attributes,
-        sku: variantData.sku,
-        quantity: variantData.quantity,
-        taxModel: variantData.taxModel,
-        isUtsav: variantData.isUtsav || false,
-        unitPrice: variantData.unitPrice,
-        purchasePrice: variantData.purchasePrice,
-        cod: variantData.cod || false,
-        images: variantImageLinks,
-        discount: variantData.discount,
-        shippingCost: variantData.shippingCost,
-        utsavDiscount: variantData.utsavDiscount,
-        minOrderQuantity: variantData.minOrderQuantity,
-        discountType: variantData.discountType,
-        hasShippingCost: variantData.hasShippingCost,
-        taxPercent: variantData.taxPercent,
-        sellingPrice: variantData.sellingPrice,
-        utsavPrice: variantData.utsavPrice,
-        barCode: variantData.barCode,
-        utsavReward: variantData.utsavReward,
-        basicReward: variantData.basicReward,
-        utsavDiscountType: variantData.utsavDiscountType,
-        name: varientName,
-      });
+        // Collect variant images in parallel
+        let count = 0;
+        while (uploadedFiles[`variants[${i}][images][${count}]`]) {
+          const imageLinks = await Promise.all([
+            uploadFiles(uploadedFiles[`variants[${i}][images][${count}]`]),
+          ]);
+          variantImageLinks = [...variantImageLinks, ...imageLinks];
+          count++;
+        }
 
-      await variant.save();
-      newProduct.variants.push(variant._id);
-      await newProduct.save();
-    }
+        const variantName = `${name} ${variantData.sku}`;
+
+        // Create variant
+        const variant = new Variant({
+          productGroup: newProduct._id,
+          attributes: variantData.attributes,
+          sku: variantData.sku,
+          quantity: variantData.quantity,
+          taxModel: variantData.taxModel,
+          isUtsav: variantData.isUtsav || false,
+          unitPrice: variantData.unitPrice,
+          purchasePrice: variantData.purchasePrice,
+          cod: variantData.cod || false,
+          images: variantImageLinks,
+          discount: variantData.discount,
+          shippingCost: variantData.shippingCost,
+          utsavDiscount: variantData.utsavDiscount,
+          minOrderQuantity: variantData.minOrderQuantity,
+          discountType: variantData.discountType,
+          hasShippingCost: variantData.hasShippingCost,
+          taxPercent: variantData.taxPercent,
+          sellingPrice: variantData.sellingPrice,
+          utsavPrice: variantData.utsavPrice,
+          barCode: variantData.barCode,
+          utsavReward: variantData.utsavReward,
+          basicReward: variantData.basicReward,
+          utsavDiscountType: variantData.utsavDiscountType,
+          name: variantName,
+        });
+
+        await variant.save();
+        newProduct.variants.push(variant._id);
+      })
+    );
+
+    // Save the updated product with all variants
+    await newProduct.save();
 
     res.status(201).json({
       success: true,
@@ -236,6 +246,7 @@ const createProduct = async (req, res) => {
       .json({ message: "Internal Server Error", error: error.message });
   }
 };
+
 const updateVariants = async (req, res) => {
   try {
     const variantId = req.params.variantId;
