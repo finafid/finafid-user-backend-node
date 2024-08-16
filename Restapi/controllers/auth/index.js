@@ -47,7 +47,7 @@ const userRegistration = async (req, res) => {
 };
 function generateTokens(tokenObject,user) {
   const accessToken = jwt.sign(tokenObject, process.env.SECRET, {
-    expiresIn: "15m",
+    expiresIn: "1d",
   });
   const refreshToken = jwt.sign(tokenObject, process.env.SECRET, {
     expiresIn: "7d",

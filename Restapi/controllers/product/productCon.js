@@ -107,6 +107,62 @@ const productOnId = async (req, res) => {
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
+const uploadVariants = async (
+  variants,
+  uploadedFiles,
+  productId,
+  productName
+) => {
+  const variantPromises = variants.map(async (variantData, i) => {
+    let variantImageLinks = [];
+
+    // Collect variant images
+    let count = 0;
+    while (uploadedFiles[`variants[${i}][images][${count}]`]) {
+      const imageLinks = await uploadFiles(
+        uploadedFiles[`variants[${i}][images][${count}]`]
+      );
+      variantImageLinks = [...variantImageLinks, ...imageLinks];
+      count++;
+    }
+
+    const variantName = `${productName} ${variantData.sku}`;
+
+    // Create variant
+    const variant = new Variant({
+      productGroup: productId,
+      attributes: variantData.attributes,
+      sku: variantData.sku,
+      quantity: variantData.quantity,
+      taxModel: variantData.taxModel,
+      isUtsav: variantData.isUtsav || false,
+      unitPrice: variantData.unitPrice,
+      purchasePrice: variantData.purchasePrice,
+      cod: variantData.cod || false,
+      images: variantImageLinks,
+      discount: variantData.discount,
+      shippingCost: variantData.shippingCost,
+      utsavDiscount: variantData.utsavDiscount,
+      minOrderQuantity: variantData.minOrderQuantity,
+      discountType: variantData.discountType,
+      hasShippingCost: variantData.hasShippingCost,
+      taxPercent: variantData.taxPercent,
+      sellingPrice: variantData.sellingPrice,
+      utsavPrice: variantData.utsavPrice,
+      barCode: variantData.barCode,
+      utsavReward: variantData.utsavReward,
+      basicReward: variantData.basicReward,
+      utsavDiscountType: variantData.utsavDiscountType,
+      name: variantName,
+    });
+
+    await variant.save();
+    return variant._id;
+  });
+
+  // Wait for all variants to be saved
+  return await Promise.all(variantPromises);
+};
 
 const createProduct = async (req, res) => {
   const {
@@ -151,7 +207,9 @@ const createProduct = async (req, res) => {
     // Upload other images
     let imageListUrls = [];
     if (uploadedFiles["otherImages[]"]) {
-      imageListUrls = await uploadFiles(uploadedFiles["otherImages[]"]);
+      const uploadedUrls = await uploadFiles(uploadedFiles["otherImages[]"]);
+      // Flatten the array if needed
+      imageListUrls = uploadedUrls.flat();
     }
 
     // Create the product
@@ -171,58 +229,25 @@ const createProduct = async (req, res) => {
       variation,
       variationAttributes,
       thumbnail: singleImageUrl,
-      otherImages: imageListUrls,
+      otherImages: imageListUrls, // Use the flattened array here
       variants: [],
     });
 
     await newProduct.save();
 
-    // Process each variant
-    for (let i = 0; i < variants.length; i++) {
-      const variantData = variants[i];
-      let variantImageLinks = [];
+    // Upload variants
+    const variantIds = await uploadVariants(
+      variants,
+      uploadedFiles,
+      newProduct._id,
+      name
+    );
 
-      // Collect variant images
-      let count = 0;
-      while (uploadedFiles[`variants[${i}][images][${count}]`]) {
-        const imageLinks = await uploadFiles(
-          uploadedFiles[`variants[${i}][images][${count}]`]
-        );
-        variantImageLinks = [...variantImageLinks, ...imageLinks];
-        count++;
-      }
-      const varientName = "" +name+ variantData.sku +" ";
-      const variant = new Variant({
-        productGroup: newProduct._id,
-        attributes: variantData.attributes,
-        sku: variantData.sku,
-        quantity: variantData.quantity,
-        taxModel: variantData.taxModel,
-        isUtsav: variantData.isUtsav || false,
-        unitPrice: variantData.unitPrice,
-        purchasePrice: variantData.purchasePrice,
-        cod: variantData.cod || false,
-        images: variantImageLinks,
-        discount: variantData.discount,
-        shippingCost: variantData.shippingCost,
-        utsavDiscount: variantData.utsavDiscount,
-        minOrderQuantity: variantData.minOrderQuantity,
-        discountType: variantData.discountType,
-        hasShippingCost: variantData.hasShippingCost,
-        taxPercent: variantData.taxPercent,
-        sellingPrice: variantData.sellingPrice,
-        utsavPrice: variantData.utsavPrice,
-        barCode: variantData.barCode,
-        utsavReward: variantData.utsavReward,
-        basicReward: variantData.basicReward,
-        utsavDiscountType: variantData.utsavDiscountType,
-        name: varientName,
-      });
+    // Push all variant IDs to the product
+    newProduct.variants.push(...variantIds);
 
-      await variant.save();
-      newProduct.variants.push(variant._id);
-      await newProduct.save();
-    }
+    // Save the updated product with all variants
+    await newProduct.save();
 
     res.status(201).json({
       success: true,
@@ -236,6 +261,8 @@ const createProduct = async (req, res) => {
       .json({ message: "Internal Server Error", error: error.message });
   }
 };
+
+
 const updateVariants = async (req, res) => {
   try {
     const variantId = req.params.variantId;
