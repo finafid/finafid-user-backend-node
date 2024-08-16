@@ -155,7 +155,8 @@ const getBannersByBannerTypeAndDetails = async (req, res) => {
       details,
       is_published:true
     });
-
+    console.log(banners);
+    console.log(req.body)
     if (!banners || banners.length === 0) {
       return res.status(404).json({
         success: false,
