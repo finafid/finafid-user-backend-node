@@ -188,7 +188,8 @@ const sendMailVarification = async (req, res) => {
             <p style="margin-bottom: 0;">The [Your Company] Team</p>
         </div>`;
 
-    await sendMail(userData.email, "Email Verification", msg);
+   const mail= await sendMail(userData.email, "Email Verification", msg);
+   console.log(mail);
 
     return res.status(200).json({
       success: true,
