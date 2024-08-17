@@ -185,7 +185,7 @@ const sendMailVarification = async (req, res) => {
             <p style="margin-bottom: 10px;">Dear ${userData.fullName},</p>
             <p style="margin-bottom: 10px;">The OTP for your email is ${g_otp}.</p>
             <p style="margin-bottom: 10px;">Best regards,</p>
-            <p style="margin-bottom: 0;">The [Your Company] Team</p>
+            <p style="margin-bottom: 0;">The Finafid Team</p>
         </div>`;
 
    const mail= await sendMail(userData.email, "Email Verification", msg);
