@@ -86,12 +86,9 @@ const Variant = require("../../models/product/Varient");
 const searchEngineLink=process.env.searchEngineLink
 const getSearchDataFirst = async (req, res) => {
   try {
-    const response = await axios.post(
-      "https://finafid-search-engine-b5dc68ef0eb1.herokuapp.com/search/",
-      {
-        query: req.query.query,
-      }
-    );
+    const response = await axios.post("http://laptop-uptfb6dh:8000/search/", {
+      query: req.query.query,
+    });
     let stringList=[]
    
     if (response.data.message){
@@ -127,6 +124,7 @@ const getSearchDataSecond = async (req, res) => {
     );
 
     let variantList = [];
+    console.log(response.data.results);
     for (let element of response.data.results) {
       const productDetails = await productSc
         .findOne({
