@@ -141,10 +141,10 @@ const editBanner = async (req, res) => {
 };
 const getBannersByBannerTypeAndDetails = async (req, res) => {
   try {
-    const { position, resourceType, bannerType, valueId } = req.body;
+    const { position, resourceType, bannerType, valueId } = req.query;
+    console.log(req.query);
 
-    // Build the query object
-    const query = {
+    const queryResult = {
       position,
       bannerType,
       is_published: true,
@@ -153,11 +153,11 @@ const getBannersByBannerTypeAndDetails = async (req, res) => {
 
     // Add valueId to the query if it exists in the request body
     if (valueId) {
-      query["details.valueId"] = valueId;
+      queryResult["details.valueId"] = valueId;
     }
 
     // Query the database
-    const banners = await Banner.find(query);
+    const banners = await Banner.find(queryResult);
 
     // Check if any banners were found
     if (!banners || banners.length === 0) {

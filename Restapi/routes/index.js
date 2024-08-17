@@ -544,7 +544,7 @@ routs.get("/createOrder", auth, createOrder);
 
 routs.post("/createBanner", upload.single("bannerImg"), createBanner);
 routs.post("/editBanner/:bannerId", upload.single("bannerImg"), editBanner);
-routs.post("/getAllBannersByBannerType", getBannersByBannerTypeAndDetails);
+routs.get("/getAllBannersByBannerType", getBannersByBannerTypeAndDetails);
 routs.get("/getAllBanners", getAllBanner);
 routs.delete("/deleteBanner/:bannerId", deleteBanner);
 routs.post("/publishBanner/:bannerId", publishBanner);
@@ -653,7 +653,6 @@ routs.post(
   editGalleryDetails
 );
 routs.post("/publishGalleryById/:galleryId", publishGalleryById);
-
 routs.get("/getAllPublishedGallery", getAllPublishedGallery);
 
 //admin_review

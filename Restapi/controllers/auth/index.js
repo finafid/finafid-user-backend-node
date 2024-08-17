@@ -50,7 +50,7 @@ function generateTokens(tokenObject,user) {
     expiresIn: "1d",
   });
   const refreshToken = jwt.sign(tokenObject, process.env.SECRET, {
-    expiresIn: "7d",
+    expiresIn: "365d",
   });
   return { accessToken, refreshToken };
 }
@@ -623,6 +623,7 @@ const validAccessToken=async(req,res)=>{
     res.status(401).json({message:error.message});
   }
 }
+
 module.exports = {
   userRegistration,
   userLogin,

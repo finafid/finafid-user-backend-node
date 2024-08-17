@@ -115,123 +115,126 @@ const getAllVariantsOnUser = async (req, res) => {
      query.discount = { $gte: 0, $lte: maxDiscount };
    }
 
-   const varientList = await Variant.find(query).populate("productGroup");
-    let variants = await Variant.find(query)
-      .populate("productGroup")
-      .skip((page - 1) * limit) // Skip previous pages
-      .limit(parseInt(limit)); // Limit to the number of items per page
+   const variantList = await Variant.find(query).populate("productGroup");
 
-    let resultVariants = [];
+   let filteredVariants = variantList;
 
-    // Rating filter
-    if (rating) {
-      const ratingArray = rating.split(",").map(Number);
-      const minRating = Math.min(...ratingArray);
-      variants = await Promise.all(
-        variants.map(async (element) => {
-          console.log(element.productGroup._id);
-          const review = await ReviewAndRatings.findOne({
-            productId: element.productGroup._id,
-             rating: { $gte: minRating },
-          });
-          if (review) return element;
-        })
-      );
+   // Rating Filter
+   if (rating) {
+     const ratingArray = rating.split(",").map(Number);
+     const minRating = Math.min(...ratingArray);
 
-      variants = variants.filter((variant) => variant !== undefined);
-    }
+     filteredVariants = await Promise.all(
+       filteredVariants.map(async (variant) => {
+         const review = await ReviewAndRatings.findOne({
+           productId: variant.productGroup._id,
+           rating: { $gte: minRating },
+         });
+         return review ? variant : null;
+       })
+     );
 
-    // Main Category filter
-    if (mainCategoryId) {
-      variants = await Promise.all(
-        variants.map(async (element) => {
-          const productDetails = await productSc.findById(element.productGroup);
-          if (
-            productDetails &&
-            productDetails.categoryId.toString() === mainCategoryId
-          ) {
-            return element;
-          }
-        })
-      );
+     filteredVariants = filteredVariants.filter((variant) => variant !== null);
+   }
 
-      variants = variants.filter((variant) => variant !== undefined);
-    }
+   // Main Category Filter
+   if (mainCategoryId) {
+     filteredVariants = await Promise.all(
+       filteredVariants.map(async (variant) => {
+         const productDetails = await productSc.findById(variant.productGroup);
+         return productDetails &&
+           productDetails.categoryId.toString() === mainCategoryId
+           ? variant
+           : null;
+       })
+     );
 
-    // Sub Category filter
-    if (subCategoryId) {
-      variants = await Promise.all(
-        variants.map(async (element) => {
-          const productDetails = await productSc.findById(element.productGroup);
-          if (
-            productDetails &&
-            productDetails.subCategoryId.toString() === subCategoryId
-          ) {
-            return element;
-          }
-        })
-      );
+     filteredVariants = filteredVariants.filter((variant) => variant !== null);
+   }
 
-      variants = variants.filter((variant) => variant !== undefined);
-    }
+   // Sub Category Filter
+   if (subCategoryId) {
+     filteredVariants = await Promise.all(
+       filteredVariants.map(async (variant) => {
+         const productDetails = await productSc.findById(variant.productGroup);
+         return productDetails &&
+           productDetails.subCategoryId.toString() === subCategoryId
+           ? variant
+           : null;
+       })
+     );
 
-    // Product Type filter
-    if (productTypeId) {
-      variants = await Promise.all(
-        variants.map(async (element) => {
-          const productDetails = await productSc.findById(element.productGroup);
-          if (
-            productDetails &&
-            productDetails.productTypeId.toString() === productTypeId
-          ) {
-            return element;
-          }
-        })
-      );
+     filteredVariants = filteredVariants.filter((variant) => variant !== null);
+   }
 
-      variants = variants.filter((variant) => variant !== undefined);
-    }
+   // Product Type Filter
+   if (productTypeId) {
+     filteredVariants = await Promise.all(
+       filteredVariants.map(async (variant) => {
+         const productDetails = await productSc.findById(variant.productGroup);
+         return productDetails &&
+           productDetails.productTypeId.toString() === productTypeId
+           ? variant
+           : null;
+       })
+     );
 
-    // Brand filter
-    if (brandId) {
-      variants = await Promise.all(
-        variants.map(async (element) => {
-          const productDetails = await productSc.findById(element.productGroup);
-          if (productDetails && productDetails.brand.toString() === brandId) {
-            return element;
-          }
-        })
-      );
+     filteredVariants = filteredVariants.filter((variant) => variant !== null);
+   }
 
-      variants = variants.filter((variant) => variant !== undefined);
-    }
+   // Brand Filter
+   if (brandId) {
+     filteredVariants = await Promise.all(
+       filteredVariants.map(async (variant) => {
+         const productDetails = await productSc.findById(variant.productGroup);
+         return productDetails && productDetails.brand.toString() === brandId
+           ? variant
+           : null;
+       })
+     );
 
-    resultVariants = variants;
+     filteredVariants = filteredVariants.filter((variant) => variant !== null);
+   }
 
-    // Sorting
+   // Sorting
    if (sortBy) {
      let sortQuery = {};
 
      if (sortBy === "price asc") sortQuery = { key: "sellingPrice", order: 1 };
-     if (sortBy === "price desc") sortQuery = { key: "sellingPrice", order: -1 };
+     if (sortBy === "price desc")
+       sortQuery = { key: "sellingPrice", order: -1 };
      if (sortBy === "discount") sortQuery = { key: "discount", order: -1 };
      if (sortBy === "customerRatings asc")
        sortQuery = { key: "customerRatings", order: 1 };
      if (sortBy === "customerRatings desc")
        sortQuery = { key: "customerRatings", order: -1 };
 
-     resultVariants = resultVariants.sort((a, b) => {
+     filteredVariants = filteredVariants.sort((a, b) => {
        return (a[sortQuery.key] - b[sortQuery.key]) * sortQuery.order;
      });
    }
 
+   // Pagination
+   const totalVariants = filteredVariants.length;
+   const paginatedVariants = filteredVariants.slice(
+     (page - 1) * limit,
+     page * limit
+   );
 
-    res.status(200).json({
-      page: parseInt(page),
-      limit: parseInt(limit),
-      totalItems: varientList.length,
-      variants: resultVariants,
-    });
+   return res.status(200).json({
+     success: true,
+     totalItems: totalVariants,
+     variants: paginatedVariants,
+   });
+
+
+
+    // res.status(200).json({
+    //   page: parseInt(page),
+    //   limit: parseInt(limit),
+    //   totalItems: varientList.length,
+    //   variants: resultVariants,
+    // });
   } catch (error) {
     console.error("Error fetching variants:", error);
     res.status(500).json({ message: error.message + " Internal Server Error" });
