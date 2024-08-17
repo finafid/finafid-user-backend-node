@@ -6,6 +6,8 @@ const crypto = require("crypto");
 const paymentDetail = async (req, res) => {
   try {
     console.log(req.body)
+    console.log(PAYU_MERCHANT_KEY);
+    console.log(PAYU_MERCHANT_SALT);
     const { amount, orderId } = req.body;
     const userDetails = await User.findById(req.user._id);
     const txnid = "" + orderId;
