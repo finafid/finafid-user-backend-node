@@ -22,8 +22,8 @@ const paymentDetail = async (req, res) => {
       firstname: userDetails.fullName,
       email: userDetails.email,
       phone: userDetails.phone.toString(),
-      surl: "https://www.youtube.com/watch?v=p6D8u6lEDjQ",
-      furl: "https://www.youtube.com/watch?v=dCmp56tSSmA",
+      surl: "https://finafid.com/account/orders",
+      furl: "https://finafid.com/account/orders",
       hash: hash,
       service_provider: "payu_paisa",
     };
