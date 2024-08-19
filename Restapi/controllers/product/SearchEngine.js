@@ -306,7 +306,7 @@ const productSearchDirectory = async (req, res) => {
       }
     }
 
-    res.status(200).json({ message: "Entities saved successfully." });
+    return res.status(200).json({ message: "Entities saved successfully." });
   } catch (error) {
     console.error("Error saving entities:", error);
     res.status(500).json({ message: error.message + " Internal Server Error" });
