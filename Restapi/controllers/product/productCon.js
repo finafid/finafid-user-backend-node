@@ -3,7 +3,7 @@ const subCategory = require("../../models/product/SubCategory");
 const productType = require("../../models/product/productType");
 const productSc = require("../../models/product/productSc");
 const Brand = require("../../models/brand/brandSc");
-const ProductSearch = require("../../models/product/productSearchSchema");
+const { productSearch } = require("../../models/product/productSearchSchema");
 const Variant = require("../../models/product/Varient.js");
 const {
   generateStringOfImageList,

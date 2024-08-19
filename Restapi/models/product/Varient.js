@@ -12,9 +12,13 @@ const variantSchema = new Schema(
       type: Schema.Types.Mixed, // Use Mixed type for flexibility
       required: true,
     },
-    name:{
-        type: String,
-      required:false,
+    variantDetails: {
+      type: Schema.Types.Mixed, // Use Mixed type for flexibility
+      required: true,
+    },
+    name: {
+      type: String,
+      required: false,
     },
     sku: {
       type: String,

@@ -293,6 +293,9 @@ const {
   getAllProductInformationBasedOnProduct,
   getSearchDataFirst,
   getSearchDataSecond,
+  productSearchDirectory,
+  searchEntityByName,
+  searchAndIterate,
 } = require("../controllers/product/SearchEngine.js");
 //user Authentication
 routs.post("/register", userRegistrationValidation, userRegistration);
@@ -702,4 +705,9 @@ routs.get(
 );
 routs.get("/getSearchData", getSearchDataFirst);
 routs.get("/getSearchDataSecond", getSearchDataSecond);
-(module.exports = routs);
+
+routs.get("/productSearchDirectory", productSearchDirectory);
+//routs.get("/searchAndIterate", searchAndIterate);
+//routs.get("/searchEntityByName", searchEntityByName);
+
+  ((module.exports = routs));
