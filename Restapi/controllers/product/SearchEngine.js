@@ -360,10 +360,12 @@ const getSearchDataSecond = async (req, res) => {
     const entities = await productSearch.find({
       entityName: { $regex: `${query}`, $options: "i" }, // 'i' for case-insensitive search
     });
-
-    if (entities.length === 0) {
-      return res.status(404).json({ message: "No matching entities found." });
+    if (!entities){
+      return res.status(400).json({ message: "Query string is required." });
     }
+      if (entities.length === 0) {
+        return res.status(404).json({ message: "No matching entities found." });
+      }
 
     let variantList = [];
 
