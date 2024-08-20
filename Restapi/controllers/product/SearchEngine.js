@@ -295,7 +295,7 @@ const getSearchDataFirst = async (req, res) => {
     const results = await productSearch.find({
       entityName: { $regex: `^${query}`, $options: "i" }, // 'i' for case-insensitive search
     });
-
+    console.log(results);
     if (results.length === 0) {
       return res.status(404).json({ message: "No matching entities found." });
     }
