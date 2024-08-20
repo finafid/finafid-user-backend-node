@@ -14,7 +14,7 @@ const variantSchema = new Schema(
     },
     variantDetails: {
       type: Schema.Types.Mixed, // Use Mixed type for flexibility
-      required: true,
+      required: false,
     },
     name: {
       type: String,

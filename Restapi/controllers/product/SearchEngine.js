@@ -293,7 +293,7 @@ const getSearchDataFirst = async (req, res) => {
 
     // Perform a case-insensitive search using a regular expression
     const results = await productSearch.find({
-      entityName: { $regex: `^${query}`, $options: "i" }, // 'i' for case-insensitive search
+      entityName: { $regex: `${query}`, $options: "i" }, // 'i' for case-insensitive search
     });
     console.log(results);
     if (results.length === 0) {
