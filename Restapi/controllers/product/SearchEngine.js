@@ -221,95 +221,69 @@ const productSearchDirectory = async (req, res) => {
   try {
     const productDetails = await productSc.find();
 
-    for (const product of productDetails) {
-      // Check if the product entity already exists
-      let existingEntry = await productSearch.findOne({
-        entityId: product._id,
-        modelName: "Product",
+    // Helper function to upsert entities
+    const upsertEntity = async (entityId, entityName, modelName) => {
+      const existingEntry = await productSearch.findOne({
+        entityId,
+        modelName,
       });
       if (!existingEntry) {
-        // Store product in Entity schema
-        const productEntry = new productSearch({
-          entityId: product._id,
-          entityName: product.name,
-          modelName: "Product",
+        const newEntry = new productSearch({
+          entityId,
+          entityName,
+          modelName,
         });
-        await productEntry.save();
+        await newEntry.save();
       }
+    };
 
-      // Check if the main category entity already exists
-      const category = await mainCategory.findById(product.categoryId);
-      if (category) {
-        existingEntry = await productSearch.findOne({
-          entityId: category._id,
-          modelName: "Category",
-        });
-        if (!existingEntry) {
-          const categoryEntry = new productSearch({
-            entityId: category._id,
-            entityName: category.name,
-            modelName: "Category",
-          });
-          await categoryEntry.save();
+    // Prepare an array of promises for batch processing
+    const upsertPromises = productDetails.map(async (product) => {
+      // Upsert product
+      await upsertEntity(product._id, product.name, "Product");
+
+      // Upsert main category if exists
+      if (product.categoryId) {
+        const category = await mainCategory.findById(product.categoryId);
+        if (category) {
+          await upsertEntity(category._id, category.name, "Category");
         }
       }
 
-      // Check if the subcategory entity already exists
-      const subcategory = await subCategory.findById(product.subCategoryId);
-      if (subcategory) {
-        existingEntry = await productSearch.findOne({
-          entityId: subcategory._id,
-          modelName: "SubCategory",
-        });
-        if (!existingEntry) {
-          const subCategoryEntry = new productSearch({
-            entityId: subcategory._id,
-            entityName: subcategory.name,
-            modelName: "SubCategory",
-          });
-          await subCategoryEntry.save();
+      // Upsert subcategory if exists
+      if (product.subCategoryId) {
+        const subcategory = await subCategory.findById(product.subCategoryId);
+        if (subcategory) {
+          await upsertEntity(subcategory._id, subcategory.name, "SubCategory");
         }
       }
 
-      // Check if the product type entity already exists
-      const pType = await productType.findById(product.productTypeId);
-      if (pType) {
-        existingEntry = await productSearch.findOne({
-          entityId: pType._id,
-          modelName: "ProductType",
-        });
-        if (!existingEntry) {
-          const productTypeEntry = new productSearch({
-            entityId: pType._id,
-            entityName: pType.name,
-            modelName: "ProductType",
-          });
-          await productTypeEntry.save();
+      // Upsert product type if exists
+      if (product.productTypeId) {
+        const pType = await productType.findById(product.productTypeId);
+        if (pType) {
+          await upsertEntity(pType._id, pType.name, "ProductType");
         }
       }
 
-      // Check if the brand entity already exists
-      const brand = await Brand.findById(product.brandId);
-      if (brand) {
-        existingEntry = await productSearch.findOne({
-          entityId: brand._id,
-          modelName: "Brand",
-        });
-        if (!existingEntry) {
-          const brandEntry = new productSearch({
-            entityId: brand._id,
-            entityName: brand.name,
-            modelName: "Brand",
-          });
-          await brandEntry.save();
+      // Upsert brand if exists
+      if (product.brandId) {
+        const brand = await Brand.findById(product.brandId);
+        if (brand) {
+          await upsertEntity(brand._id, brand.name, "Brand");
         }
       }
-    }
+    });
+
+    // Execute all upsert operations in parallel
+    await Promise.all(upsertPromises);
 
     return res.status(200).json({ message: "Entities saved successfully." });
   } catch (error) {
     console.error("Error saving entities:", error);
-    res.status(500).json({ message: error.message + " Internal Server Error" });
+    return res
+      .status(500)
+      .json({ message: error.message + " Internal Server Error" });
   }
 };
 
