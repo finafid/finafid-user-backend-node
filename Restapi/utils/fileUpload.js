@@ -14,7 +14,7 @@ async function compressAndResizeImage(
        return inputImagePath;
      }
     let image = sharp(inputImagePath);
-    if (width) {
+    if (width && width!=null) {
       image = image.resize({ width });
     }
     if (

@@ -441,10 +441,6 @@ const getVariantById = async (req, res) => {
       variantDetails,
     });
   } catch (error) {
-    console.error("Error creating brand:", error);
-
-    const errorMessage = error.message || "Internal Server Error";
-
     return res.status(500).json({
       success: false,
       message: errorMessage,
