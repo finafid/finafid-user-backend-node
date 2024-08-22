@@ -66,7 +66,6 @@ const paymentResponse = async (req, res) => {
       return res.status(400).send("Invalid payment data");
     }
 
-    // Generate the hash string to validate the response
     const hashString = `${PAYU_MERCHANT_SALT}|${status}|||||||||||${email}|${firstname}|${productinfo}|${amount}|${txnid}|${PAYU_MERCHANT_KEY}`;
     const generatedHash = crypto
       .createHash("sha512")
@@ -77,19 +76,19 @@ const paymentResponse = async (req, res) => {
 
     if (generatedHash === hash) {
       if (status === "success") {
-        const updatedOrder = await Order.findOneAndUpdate(
-          { _id: txnid },
-          { payment_complete: true, status: "Confirmed" },
-          { new: true }
-        );
+        // const updatedOrder = await Order.findOneAndUpdate(
+        //   { _id: txnid },
+        //   { payment_complete: true, status: "Confirmed" },
+        //   { new: true }
+        // );
 
         res.render("paymentSuccess", { order: updatedOrder });
       } else {
-        const updatedOrder = await Order.findOneAndUpdate(
-          { _id: txnid },
-          { status: "Failed" },
-          { new: true }
-        );
+        // const updatedOrder = await Order.findOneAndUpdate(
+        //   { _id: txnid },
+        //   { status: "Failed" },
+        //   { new: true }
+        // );
 
         res.render("paymentFailure", { order: updatedOrder });
       }
