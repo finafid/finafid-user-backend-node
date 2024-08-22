@@ -84,6 +84,7 @@ const {
   getTheCart,
   deleteFromCart,
   clearCart,
+  removeFromCart,
 } = require("../controllers/cartAndwishlist/cartWlController.js");
 const {
   placeOrder,
@@ -452,7 +453,7 @@ routs.post("/addToCart", auth, addToCart);
 routs.get("/getCartItems", auth, getTheCart);
 routs.post("/deleteFromCart", auth, deleteFromCart);
 routs.get("/clearCart", auth, clearCart);
-
+routs.post("/removeFromCart", auth, removeFromCart);
 //order
 routs.post("/placeOrder", auth, apiKeyMiddleware, placeOrder);
 routs.get("/getOrderDetails", auth, getOrderDetails);
@@ -606,7 +607,7 @@ routs.post("/updateStatusCoupons/:couponId", updateStatusCoupons);
 
 //referral
 routs.post("/shareReferralCode", auth, shareReferralCode);
-routs.post("/redeemedReferral", auth, redeemedReferral);
+//routs.post("/redeemedReferral", auth, redeemedReferral);
 
 //utsab
 
@@ -695,7 +696,7 @@ routs.get("/getAllVariantsOnUser", getAllVariantsOnUser);
 
 //payu
 
-routs.post("/paymentResponse",auth, paymentResponse);
+routs.post("/paymentResponse", paymentResponse);
 routs.post("/paymentDetail",auth, paymentDetail);
 
 //searchengine

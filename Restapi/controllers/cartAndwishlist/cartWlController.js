@@ -110,11 +110,6 @@ const deleteFromWishlist = async (req, res) => {
       success: true,
       message: "Deleted successfully",
     });
-
-    return res.status(201).json({
-      success: true,
-      message: "Item deleted successfully",
-    });
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -276,7 +271,43 @@ const deleteFromCart = async (req, res) => {
           });
     }
   }
-  
+  const removeFromCart = async (req, res) => {
+    try {
+      const { productIdList } = req.body;
+      const userCartDetails = await cart.findOne({ UserId: req.user._id });
+      console.log(req.user);
+      console.log(req.body);
+      if (!userCartDetails) {
+        return res.status(404).json({
+          success: false,
+          message: "User cart is not found",
+        });
+      }
+
+      productIdList.forEach((element) => {
+        const index = userCartDetails.cartItems.findIndex(
+          (item) => item.productId.toString() === element.productId._id
+        );
+        if (index !== -1) {
+          userCartDetails.cartItems.splice(index, 1); // Remove item at the found index
+        }
+      });
+
+      await userCartDetails.save();
+
+      return res.status(200).json({
+        success: true,
+        message: "Deleted successfully",
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: error.message + " Internal server error",
+      });
+    }
+  };
+
+
 module.exports = {
   addToWishlist,
   getTheWishlist,
@@ -284,5 +315,6 @@ module.exports = {
   addToCart,
   getTheCart,
   deleteFromCart,
-  clearCart
+  clearCart,
+  removeFromCart,
 };

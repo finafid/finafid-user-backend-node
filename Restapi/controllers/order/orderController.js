@@ -7,6 +7,7 @@ const User = require("../../models/auth/userSchema");
 const Variant = require("../../models/product/Varient");
 const MemberShipPlan = require("../../models/Utsab/MembershipPlan");
 const referral = require("../../models/auth/referral");
+const Transaction = require("../../models/payment/paymentSc");
 const placeOrder = async (req, res) => {
   try {
     const newOrderItems = [];
@@ -29,33 +30,6 @@ const placeOrder = async (req, res) => {
       totalBasicReward += variantDetails.basicReward * element.itemQuantity;
     }
 
-    // Check for deals
-    // const deal = await GetAndBuy.findOne({
-    //   products: { $in: newOrderItems.map((item) => item.productId) },
-    //   status: true, // Only active deals
-    // });
-
-    // let discount = 0;
-
-    // for (const orderItem of newOrderItems) {
-    //   const productDetails = await Variant.findById(orderItem.productId);
-
-    //   if (deal) {
-    //     if (
-    //       deal.dealType === "BUY_ONE_GET_ONE" &&
-    //       orderItem.itemQuantity >= 2
-    //     ) {
-    //       discount += productDetails.unitPrice; // For every 2 items, 1 is free
-    //     } else if (
-    //       deal.dealType === "BUY_TWO_GET_ONE" &&
-    //       orderItem.itemQuantity >= 3
-    //     ) {
-    //       discount += productDetails.unitPrice; // For every 3 items, 1 is free
-    //     } else if (deal.dealType === "CUSTOM") {
-    //       // Implement custom deal logic here if necessary
-    //     }
-    //   }
-    // }
     const userData = await User.findById(req.user._id);
     console.log(req.body);
     
@@ -73,9 +47,17 @@ const placeOrder = async (req, res) => {
       basicReward: totalBasicReward,
       is_utsab: userData.is_utsav,
     });
-    await newOrder.save();
+     await newOrder.save();
     console.log(newOrder);
-
+    const newTransaction = new Transaction({
+      orderId: newOrder._id,
+      amount: req.body.total,
+      currency: "INR",
+      userId: req.user._id,
+    });
+    await newTransaction.save();
+    newOrder.transactionId=newTransaction._id;
+    await newOrder.save()
     // // Authenticate with Shiprocket
     // await authenticate();
     // const userDetails=await User.findOne({

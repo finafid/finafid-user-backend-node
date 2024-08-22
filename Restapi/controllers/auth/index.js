@@ -12,6 +12,7 @@ const BlackList = require("../../models/auth/blackList");
 const Cart = require("../../models/productBag/cartSc");
 const WishList = require("../../models/productBag/wishListSc");
 const Admin =require("../../models/Auth admin/adminSchema")
+const {redeemedReferral}=require("../../controllers/auth/referralCon")
 const {
   generateStringOfImageList,
   compressAndResizeImage,
@@ -19,7 +20,7 @@ const {
 const { adminDetails } = require("../auth _admin/authAdmin");
 
 const userRegistration = async (req, res) => {
-  const { email, phone } = req.body;
+  const { email, phone ,referralCode} = req.body;
   const userDetails = await User.findOne({
     $or: [
       { email, is_Active: true },
@@ -34,12 +35,14 @@ const userRegistration = async (req, res) => {
     });
   }
   const newUser = new User(req.body);
-
+  
   newUser.password = await bcrypt.hash(req.body.password, 10);
   try {
     await newUser.save();
-
     newUser.password = undefined;
+     if (referralCode) {
+       await redeemedReferral(referralCode, newUser._id);
+     }
     return res.status(201).json({ message: "success", data: newUser });
   } catch (err) {
     return res.status(500).json({ message: "error", error: err.message });
@@ -145,7 +148,7 @@ const sendMailVarification = async (req, res) => {
     }
 
     const { email } = req.body;
-    const userData = await User.findOne({ email });
+    const userData = await User.findOne({ email, is_Active: true, blocking:false });
     if (!userData) {
       return res.status(500).json({
         success: false,
