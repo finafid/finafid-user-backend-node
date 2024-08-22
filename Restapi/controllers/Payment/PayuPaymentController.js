@@ -82,7 +82,7 @@ const paymentResponse = async (req, res) => {
         //   { new: true }
         // );
 
-        res.render("paymentSuccess", { order: updatedOrder });
+        res.render("paymentSuccess");
       } else {
         // const updatedOrder = await Order.findOneAndUpdate(
         //   { _id: txnid },
@@ -90,7 +90,7 @@ const paymentResponse = async (req, res) => {
         //   { new: true }
         // );
 
-        res.render("paymentFailure", { order: updatedOrder });
+        res.render("paymentFailure");
       }
     } else {
       res.status(400).send("Payment verification failed");
