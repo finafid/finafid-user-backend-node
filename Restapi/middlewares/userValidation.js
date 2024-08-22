@@ -14,6 +14,7 @@ const userRegistrationValidation = (req, res, next) => {
       .pattern(new RegExp("^[a-zA-Z0-9!@#$%^&*()_+\\-=[\\]{};:'\"|,.<>/?]*$"))
       .required(),
     phone: joi.number().min(10).required(),
+    referralCode: joi.string()
   });
   const { error, value } = schema.validate(req.body);
   if (error) {

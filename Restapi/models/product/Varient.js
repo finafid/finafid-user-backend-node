@@ -9,13 +9,13 @@ const variantSchema = new Schema(
       required: true,
     },
     attributes: {
-      type: Schema.Types.Mixed, // Use Mixed type for flexibility
+      type: Schema.Types.Mixed,
       required: true,
     },
-    // variantDetails: {
-    //   type: Schema.Types.Mixed, // Use Mixed type for flexibility
-    //   required: false,
-    // },
+    variantDetails: {
+      type: Schema.Types.Mixed,
+      required: false,
+    },
     name: {
       type: String,
       required: false,
@@ -114,6 +114,10 @@ const variantSchema = new Schema(
     newArrival: {
       type: Boolean,
       default: false,
+      required: false,
+    },
+    color_images: {
+      type: String,
       required: false,
     },
     images: [

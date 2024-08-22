@@ -75,15 +75,12 @@ const orderSchema = new mongoose.Schema(
       required: false,
       default: 0,
     },
-    transactionId: {
-      type: String,
-      default: false,
-    },
     status: {
       type: String,
       required: true,
       enum: [
         "Pending",
+        "Failed",
         "Confirmed",
         "Shipping",
         "Out For delivery",

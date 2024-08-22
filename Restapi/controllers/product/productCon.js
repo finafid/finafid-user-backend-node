@@ -154,6 +154,7 @@ const uploadVariants = async (
       basicReward: variantData.basicReward,
       utsavDiscountType: variantData.utsavDiscountType,
       name: variantName,
+      variantDetail: variantData.variantDetail,
     });
 
     await variant.save();
@@ -182,7 +183,6 @@ const createProduct = async (req, res) => {
     variation,
     variants,
   } = req.body;
-  console.log("THE REQUEST.FILES IS:", req.files);
 
   try {
     // Initialize an object to store uploaded URLs
@@ -311,6 +311,7 @@ const updateVariants = async (req, res) => {
     variantDetails.utsavReward = parseFloat(req.body.utsavReward);
     variantDetails.basicReward = parseFloat(req.body.basicReward);
     variantDetails.utsavDiscountType = req.body.utsavDiscountType;
+    variantDetails.variantDetail = req.body.variantDetail;
     variantDetails.name =varientName
     // Save variant details
     await variantDetails.save();
@@ -346,7 +347,7 @@ const addVariants = async (req, res) => {
     const variantImageLinks = await getImageLinks(req.files["images[]"]);
      const varientName= "" + req.body.sku + productGroupDetails.name;
     const variant = new Variant({
-      name:varientName,
+      name: varientName,
       productGroup: req.body.productId,
       attributes: req.body.attributes,
       sku: req.body.sku,
@@ -370,6 +371,7 @@ const addVariants = async (req, res) => {
       utsavReward: parseFloat(req.body.utsavReward),
       basicReward: parseFloat(req.body.basicReward),
       utsavDiscountType: req.body.utsavDiscountType,
+      variantDetail: req.body.variantDetail,
     });
     if (!variant) {
       return res
@@ -426,15 +428,15 @@ const deleteVariants = async (req, res) => {
 };
 const getVariantById = async (req, res) => {
   try {
-    const variantId = req.params.variantId;
-    const variantDetails = await Variant.findById({
-      _id: variantId,
+ 
+    const variantDetails = await Variant.findOne({
+      _id: req.params.variantId,
     }).populate("productGroup");
-
+ 
     if (!variantDetails) {
       return res
         .status(500)
-        .json({ message: "Internal Server Error", error: error.message });
+        .json({ message: "No variant found"});
     }
     return res.status(200).json({
       success: true,
@@ -443,7 +445,7 @@ const getVariantById = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: errorMessage,
+      message: error.message,
     });
   }
 };
@@ -579,6 +581,7 @@ const createProductType = async (req, res) => {
       logoUrl,
       subCategoryId,
       categoryId,
+      variation_Features,
     });
     if (!newProductType) {
       res.status(500).json({ message: "Internal Server Error" });
@@ -816,12 +819,20 @@ const editProductType = async (req, res) => {
     }
     if (!req.file) {
       const logoUrl = req.body.logo;
-      const { name, description, subCategoryId, categoryId } = req.body;
+      const {
+        name,
+        description,
+        subCategoryId,
+        categoryId,
+        variation_Features,
+      } = req.body;
       productTypeDetails.name = name;
       productTypeDetails.description = description;
       productTypeDetails.subCategoryId = subCategoryId;
       productTypeDetails.categoryId = categoryId;
       productTypeDetails.logoUrl = logoUrl;
+      
+       productTypeDetails.variation_Features = variation_Features;
       await productTypeDetails.save();
     } else {
       const logoUrl = await getImageLink(req);
@@ -830,6 +841,7 @@ const editProductType = async (req, res) => {
       productTypeDetails.description = description;
       productTypeDetails.subCategoryId = subCategoryId;
       productTypeDetails.logoUrl = logoUrl;
+      productTypeDetails.variation_Features = variation_Features;
       await productTypeDetails.save();
     }
     return res.status(200).json({ productTypeDetails });

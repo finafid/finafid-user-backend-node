@@ -4,12 +4,6 @@ const Schema = mongoose.Schema;
 const transactionSchema = new Schema(
   {
     orderId: { type: Schema.Types.ObjectId, ref: "Order", required: true },
-    razorpay_orderId: {
-      type: String,
-      required: true,
-    },
-    razorpay_payment_id: 
-    { type: String, required: false }, 
     amount: { type: Number, required: true },
     currency: { type: String, default: "INR" },
     userId: {
