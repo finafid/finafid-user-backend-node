@@ -46,6 +46,7 @@ const placeOrder = async (req, res) => {
       utsavReward: totalUtsavReward,
       basicReward: totalBasicReward,
       is_utsab: userData.is_utsav,
+      walletBalanceUsed: req.body.walletBalanceUsed,
     });
     await newOrder.save();
     console.log(newOrder);

@@ -75,6 +75,11 @@ const orderSchema = new mongoose.Schema(
       required: false,
       default: 0,
     },
+    walletBalanceUsed: {
+      type: Number,
+      required: false,
+      default: 0,
+    },
     status: {
       type: String,
       required: true,
