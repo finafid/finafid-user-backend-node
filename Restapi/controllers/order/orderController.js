@@ -32,7 +32,7 @@ const placeOrder = async (req, res) => {
 
     const userData = await User.findById(req.user._id);
     console.log(req.body);
-    
+
     const newOrder = new order({
       orderItem: newOrderItems,
       userId: req.user._id,
@@ -47,7 +47,7 @@ const placeOrder = async (req, res) => {
       basicReward: totalBasicReward,
       is_utsab: userData.is_utsav,
     });
-     await newOrder.save();
+    await newOrder.save();
     console.log(newOrder);
     const newTransaction = new Transaction({
       orderId: newOrder._id,
@@ -56,8 +56,8 @@ const placeOrder = async (req, res) => {
       userId: req.user._id,
     });
     await newTransaction.save();
-    newOrder.transactionId=newTransaction._id;
-    await newOrder.save()
+    newOrder.transactionId = newTransaction._id;
+    await newOrder.save();
     console.log({ newOrder: newOrder });
     await updateStatusDetails(newOrder._id);
     // // Authenticate with Shiprocket
@@ -121,7 +121,7 @@ const getOrderDetails = async (req, res) => {
     const orderDetail = await order
       .find({
         userId: req.user._id,
-        payment_complete:true
+        payment_complete: true,
       })
       .populate({
         path: "orderItem",
@@ -300,7 +300,7 @@ const getAllOrder = async (req, res) => {
 
     // Create a date filter object if startDate and endDate are provided
     let dateFilter = {};
-    dateFilter.payment_complete=true;
+    dateFilter.payment_complete = true;
     if (startDate || endDate) {
       dateFilter.createdAt = {};
       if (startDate) {
@@ -346,8 +346,6 @@ const getAllOrder = async (req, res) => {
       );
       statusCount[status] = filteredOrderList.length;
     });
-
-
 
     // Apply status filter
     let filteredOrders = allOrders;
@@ -444,9 +442,8 @@ async function updateStatusDetails(orderId, status = "Pending") {
       orderStatusDetails: [newStatusDetails],
       orderId,
     });
-    console.log({newStatus:newStatus})
+    console.log({ newStatus: newStatus });
     await newStatus.save();
-    
   }
   if (statusDetails) {
     statusDetails.orderStatusDetails.push(newStatusDetails);
