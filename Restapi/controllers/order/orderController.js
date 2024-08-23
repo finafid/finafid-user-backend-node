@@ -444,10 +444,7 @@ async function updateStatusDetails(orderId, status = "Pending") {
       orderId,
     });
     await newStatus.save();
-    return res.status(200).json({
-      success: true,
-      orderDetail,
-    });
+    
   }
   statusDetails.orderStatusDetails.push(newStatusDetails);
   await statusDetails.save();
