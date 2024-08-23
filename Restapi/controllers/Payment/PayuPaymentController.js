@@ -75,7 +75,7 @@ const paymentResponse = async (req, res) => {
     console.log({ generatedHash, receivedHash: hash });
 
     if (generatedHash === hash) {
-      txnid=ObjectId(txnid)
+      
       if (status === "success") {
         const updatedOrder = await Order.findOneAndUpdate(
           { _id: txnid },
