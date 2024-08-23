@@ -85,9 +85,9 @@ const paymentResponse = async (req, res) => {
       if (status === "success") {
         const updatedOrder = await Order.findOneAndUpdate(
           { _id: txnid },
-           { payment_complete: true, status: "Confirmed" },
+          { payment_complete: true, status: "Confirmed" }
           // { new: true }
-        );
+        ).populate("orderItem");
         console.log(updatedOrder);
         await updateStatusDetails(updatedOrder._id,"Confirmed");
         await removeItemFromCart(updatedOrder.orderItem, updatedOrder.userId);

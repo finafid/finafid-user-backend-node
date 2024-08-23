@@ -313,7 +313,7 @@ async function removeItemFromCart(productIdList,userId) {
   console.log({ userCartDetails: userCartDetails });
   productIdList.forEach((element) => {
     const index = userCartDetails.cartItems.findIndex(
-      (item) => item.productId.toString() === element.productId
+      (item) => item.productId.toString() === element.productId._id
     );
     if (index !== -1) {
       userCartDetails.cartItems.splice(index, 1); 
