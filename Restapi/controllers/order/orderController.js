@@ -58,6 +58,7 @@ const placeOrder = async (req, res) => {
     await newTransaction.save();
     newOrder.transactionId=newTransaction._id;
     await newOrder.save()
+    console.log({ newOrder: newOrder });
     await updateStatusDetails(newOrder._id);
     // // Authenticate with Shiprocket
     // await authenticate();
@@ -434,20 +435,25 @@ async function updateStatusDetails(orderId, status = "Pending") {
   const statusDetails = await orderStatus.findOne({
     orderId,
   });
+  console.log({ statusDetails: statusDetails });
   const newStatusDetails = {
     status: status,
     date: Date.now(),
   };
+  console.log({ newStatusDetails: newStatusDetails });
   if (!statusDetails) {
     const newStatus = new orderStatus({
       orderStatusDetails: [newStatusDetails],
       orderId,
     });
+    console.log({newStatus:newStatus})
     await newStatus.save();
     
   }
-  statusDetails.orderStatusDetails.push(newStatusDetails);
-  await statusDetails.save();
+  if (statusDetails) {
+    statusDetails.orderStatusDetails.push(newStatusDetails);
+    await statusDetails.save();
+  }
 }
 module.exports = {
   placeOrder,
