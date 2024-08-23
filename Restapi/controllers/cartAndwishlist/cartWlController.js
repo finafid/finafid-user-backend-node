@@ -308,15 +308,12 @@ const deleteFromCart = async (req, res) => {
 async function removeItemFromCart(productIdList,userId) {
   const userCartDetails = await cart.findOne({ UserId: userId });
   if (!userCartDetails) {
-    return res.status(404).json({
-      success: false,
-      message: "User cart is not found",
-    });
+    return {message:""}
   }
-
+  console.log({ userCartDetails: userCartDetails });
   productIdList.forEach((element) => {
     const index = userCartDetails.cartItems.findIndex(
-      (item) => item.productId.toString() === element.productId._id
+      (item) => item.productId.toString() === element.productId
     );
     if (index !== -1) {
       userCartDetails.cartItems.splice(index, 1); 

@@ -435,12 +435,10 @@ async function updateStatusDetails(orderId, status = "Pending") {
   const statusDetails = await orderStatus.findOne({
     orderId,
   });
-  console.log({ statusDetails: statusDetails });
   const newStatusDetails = {
     status: status,
     date: Date.now(),
   };
-  console.log({ newStatusDetails: newStatusDetails });
   if (!statusDetails) {
     const newStatus = new orderStatus({
       orderStatusDetails: [newStatusDetails],
