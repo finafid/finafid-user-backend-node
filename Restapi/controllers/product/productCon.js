@@ -573,7 +573,8 @@ const createSubCategory = async (req, res) => {
 };
 const createProductType = async (req, res) => {
   try {
-    const { name, description, subCategoryId, categoryId } = req.body;
+    const { name, description, subCategoryId, categoryId, variation_Features } =
+      req.body;
     const logoUrl = await getImageLink(req);
     const newProductType = new productType({
       name,
