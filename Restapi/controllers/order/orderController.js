@@ -119,6 +119,7 @@ const getOrderDetails = async (req, res) => {
     const orderDetail = await order
       .find({
         userId: req.user._id,
+        payment_complete:true
       })
       .populate({
         path: "orderItem",
@@ -297,6 +298,7 @@ const getAllOrder = async (req, res) => {
 
     // Create a date filter object if startDate and endDate are provided
     let dateFilter = {};
+    dateFilter.payment_complete=true;
     if (startDate || endDate) {
       dateFilter.createdAt = {};
       if (startDate) {
