@@ -8,7 +8,9 @@ const Order=require("../../models/Order/orderSc")
 const {
   updateStatusDetails,
 } = require("../../controllers/order/orderController");
-
+const {
+  removeItemFromCart,
+} = require("../../controllers/cartAndwishlist/cartWlController");
 const paymentDetail = async (req, res) => {
   try {
     const { amount, orderId } = req.body;
@@ -87,7 +89,9 @@ const paymentResponse = async (req, res) => {
           // { new: true }
         );
         console.log(updatedOrder);
-        
+        await updateStatusDetails(updatedOrder._id,"Confirmed");
+        await removeItemFromCart(updatedOrder.orderItem, updatedOrder.userId);
+
         res.render("paymentSuccess");
       } else {
         // const updatedOrder = await Order.findOneAndUpdate(

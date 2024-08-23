@@ -275,8 +275,6 @@ const deleteFromCart = async (req, res) => {
     try {
       const { productIdList } = req.body;
       const userCartDetails = await cart.findOne({ UserId: req.user._id });
-      console.log(req.user);
-      console.log(req.body);
       if (!userCartDetails) {
         return res.status(404).json({
           success: false,
@@ -307,7 +305,26 @@ const deleteFromCart = async (req, res) => {
     }
   };
 
+async function removeItemFromCart(productIdList,userId) {
+  const userCartDetails = await cart.findOne({ UserId: userId });
+  if (!userCartDetails) {
+    return res.status(404).json({
+      success: false,
+      message: "User cart is not found",
+    });
+  }
 
+  productIdList.forEach((element) => {
+    const index = userCartDetails.cartItems.findIndex(
+      (item) => item.productId.toString() === element.productId._id
+    );
+    if (index !== -1) {
+      userCartDetails.cartItems.splice(index, 1); 
+    }
+  });
+
+  await userCartDetails.save();
+}
 module.exports = {
   addToWishlist,
   getTheWishlist,
@@ -317,4 +334,5 @@ module.exports = {
   deleteFromCart,
   clearCart,
   removeFromCart,
+  removeItemFromCart,
 };

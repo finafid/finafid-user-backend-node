@@ -461,4 +461,5 @@ module.exports = {
   getAllOrder,
   editOrder,
   orderStatusDetails,
+  updateStatusDetails,
 };
