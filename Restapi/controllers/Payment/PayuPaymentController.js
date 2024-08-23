@@ -4,7 +4,7 @@ const PAYU_BASE_URL = process.env.PAYU_BASE_URL;
 
 const User = require("../../models/auth/userSchema");
 const crypto = require("crypto");
-const Order=require("../../models/Order/orderSc")
+const Order = require("../../models/Order/orderSc");
 const {
   updateStatusDetails,
 } = require("../../controllers/order/orderController");
@@ -19,8 +19,8 @@ const paymentDetail = async (req, res) => {
     // const txnid = "" + orderDetails.transactionId;
     // console.log(orderDetails.transactionId);
     console.log(PAYU_BASE_URL);
-     console.log(PAYU_MERCHANT_SALT);
-      console.log(PAYU_MERCHANT_KEY);
+    console.log(PAYU_MERCHANT_SALT);
+    console.log(PAYU_MERCHANT_KEY);
 
     const txnid = "" + orderId;
     console.log(txnid);
@@ -80,7 +80,6 @@ const paymentResponse = async (req, res) => {
     console.log({ generatedHash, receivedHash: hash });
 
     if (generatedHash === hash) {
-      
       if (status === "success") {
         const updatedOrder = await Order.findOneAndUpdate(
           { _id: txnid },
@@ -88,7 +87,7 @@ const paymentResponse = async (req, res) => {
           // { new: true }
         ).populate("orderItem");
         console.log(updatedOrder);
-        await updateStatusDetails(updatedOrder._id,"Confirmed");
+        await updateStatusDetails(updatedOrder._id, "Confirmed");
         await removeItemFromCart(updatedOrder.orderItem, updatedOrder.userId);
 
         res.render("paymentSuccess");
@@ -114,7 +113,14 @@ const handlePaymentSuccess = async (txnid, orderDetails, res) => {
     const updatedOrder = await Order.findOneAndUpdate(
       { _id: txnid },
       { payment_complete: true, status: "Confirmed" }
-    ).populate("orderItem");
+    ).populate({
+      path: "orderItem.productId",
+      model: "Variant",
+      populate: {
+        path: "productGroup",
+        model: "Product",
+      },
+    });
 
     console.log("Order updated successfully:", updatedOrder);
 
@@ -140,7 +146,6 @@ const handlePaymentFailure = async (txnid, res) => {
     res.status(500).send("Internal Server Error");
   }
 };
-
 
 module.exports = {
   paymentResponse,
