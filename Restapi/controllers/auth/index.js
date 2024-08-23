@@ -11,8 +11,8 @@ const Otp = require("../../models/auth/sendOtp");
 const BlackList = require("../../models/auth/blackList");
 const Cart = require("../../models/productBag/cartSc");
 const WishList = require("../../models/productBag/wishListSc");
-const Admin =require("../../models/Auth admin/adminSchema")
-const {redeemedReferral}=require("../../controllers/auth/referralCon")
+const Admin = require("../../models/Auth admin/adminSchema");
+const { redeemedReferral } = require("../../controllers/auth/referralCon");
 const {
   generateStringOfImageList,
   compressAndResizeImage,
@@ -20,7 +20,7 @@ const {
 const { adminDetails } = require("../auth _admin/authAdmin");
 
 const userRegistration = async (req, res) => {
-  const { email, phone ,referralCode} = req.body;
+  const { email, phone, referralCode } = req.body;
   const userDetails = await User.findOne({
     $or: [
       { email, is_Active: true },
@@ -35,20 +35,20 @@ const userRegistration = async (req, res) => {
     });
   }
   const newUser = new User(req.body);
-  
+
   newUser.password = await bcrypt.hash(req.body.password, 10);
   try {
     await newUser.save();
     newUser.password = undefined;
-     if (referralCode) {
-       await redeemedReferral(referralCode, newUser._id);
-     }
+    if (referralCode) {
+      await redeemedReferral(referralCode, newUser._id);
+    }
     return res.status(201).json({ message: "success", data: newUser });
   } catch (err) {
     return res.status(500).json({ message: "error", error: err.message });
   }
 };
-function generateTokens(tokenObject,user) {
+function generateTokens(tokenObject, user) {
   const accessToken = jwt.sign(tokenObject, process.env.SECRET, {
     expiresIn: "1d",
   });
@@ -59,19 +59,19 @@ function generateTokens(tokenObject,user) {
 }
 const userLogin = async (req, res) => {
   try {
+    console.log(req.body);
     const user = await User.findOne({ email: req.body.email, is_Active: true });
-    if (user && user.blocking==true) {
-         return res
-          .status(401)
-          .json({ message: "Your account is permanently blocked" });
-      }
-      console.log(req.body)
-      if (!user) {
-        return res
-          .status(401)
-          .json({ message: "Auth failed,Invalid Email and Password" });
-      }
+    if (user && user.blocking == true) {
+      return res
+        .status(401)
+        .json({ message: "Your account is permanently blocked" });
+    }
+    console.log(req.body);
+    if (!user) {
+      return res.status(401).json({ message: "Invalid Credential" });
+    }
     const isPassEqual = await bcrypt.compare(req.body.password, user.password);
+    console.log(isPassEqual);
     if (!isPassEqual) {
       return res
         .status(401)
@@ -146,9 +146,13 @@ const sendMailVarification = async (req, res) => {
         message: "Error in request",
       });
     }
-    console.log(req.body)
+    console.log(req.body);
     const { email } = req.body;
-    const userData = await User.findOne({ email, is_Active: true, blocking:false });
+    const userData = await User.findOne({
+      email,
+      is_Active: true,
+      blocking: false,
+    });
     if (!userData) {
       return res.status(404).json({
         success: false,
@@ -191,8 +195,8 @@ const sendMailVarification = async (req, res) => {
             <p style="margin-bottom: 0;">The Finafid Team</p>
         </div>`;
 
-   const mail= await sendMail(userData.email, "Email Verification", msg);
-   console.log(mail);
+    const mail = await sendMail(userData.email, "Email Verification", msg);
+    console.log(mail);
 
     return res.status(200).json({
       success: true,
@@ -301,6 +305,8 @@ const varifyOtp = async (req, res) => {
     await User.findOneAndUpdate(
       {
         email: email,
+        is_Active: true,
+        blocking: false,
       },
       {
         $set: {
@@ -330,20 +336,17 @@ const updatePasswordForResetPassword = async (req, res) => {
         message: "Error in the function",
       });
     }
-    console.log(errors);
     const { email, password } = req.body;
     const newPassword = await bcrypt.hash(password, 10);
     console.log(newPassword);
     const userData = await User.findOneAndUpdate(
-      { email: email },
+      { email: email, is_Active: true, blocking: false },
       {
-        $set: {
-          password: newPassword,
-        },
+        password: newPassword,
       },
       { new: true }
     );
-    console.log(userData);
+    await userData.save();
     if (!userData) {
       return res.status(500).json({
         success: false,
@@ -529,27 +532,22 @@ const updateNotification = async (req, res) => {
       .json({ message: error.message + " Internal Server Error" });
   }
 };
-const deleteUserAccount=async(req,res)=>{
+const deleteUserAccount = async (req, res) => {
   try {
-    const userDetails=await User.findById(req.params.userId)
-    if(!userDetails){
-      return res
-        .status(500)
-        .json({ message: "User is not present" });
+    const userDetails = await User.findById(req.params.userId);
+    if (!userDetails) {
+      return res.status(500).json({ message: "User is not present" });
     }
-    userDetails.is_Active=false;
+    userDetails.is_Active = false;
     await userDetails.save();
-    return res
-      .status(200)
-      .json({ message: "Account deleted successfully" });
-  
+    return res.status(200).json({ message: "Account deleted successfully" });
   } catch (error) {
     return res
       .status(500)
       .json({ message: error.message + " Internal Server Error" });
   }
-}
-const deleteUserAccountFromUser=async(req,res)=>{
+};
+const deleteUserAccountFromUser = async (req, res) => {
   try {
     const userDetails = await User.findById(req.user._id);
     if (!userDetails) {
@@ -563,7 +561,7 @@ const deleteUserAccountFromUser=async(req,res)=>{
       .status(500)
       .json({ message: error.message + " Internal Server Error" });
   }
-}
+};
 // Function to verify the refresh token
 function verifyRefreshToken(token) {
   return new Promise((resolve, reject) => {
@@ -585,14 +583,14 @@ const verify_Refresh_Token = async (req, res) => {
     console.log(payload);
     const userDetails = await User.findById(payload._id);
     const adminDetails = await Admin.findById(payload._id);
-     let tokens={}
-    let tokenObject={}
-    if(userDetails){
-        tokenObject = {
-         _id: userDetails._id,
-         fullname: userDetails.fullname,
-         email: userDetails.email,
-       };
+    let tokens = {};
+    let tokenObject = {};
+    if (userDetails) {
+      tokenObject = {
+        _id: userDetails._id,
+        fullname: userDetails.fullname,
+        email: userDetails.email,
+      };
       tokens = generateTokens(tokenObject, userDetails);
     }
     if (adminDetails) {
@@ -608,9 +606,8 @@ const verify_Refresh_Token = async (req, res) => {
     res.status(403).send(error.message);
   }
 };
-const validAccessToken=async(req,res)=>{
+const validAccessToken = async (req, res) => {
   try {
-    
     const accessToken = req.body.token;
     console.log(accessToken);
     const decodedData = jwt.verify(accessToken, process.env.SECRET);
@@ -623,9 +620,9 @@ const validAccessToken=async(req,res)=>{
     }
     return res.status(200).send("valid Refresh Token");
   } catch (error) {
-    res.status(401).json({message:error.message});
+    res.status(401).json({ message: error.message });
   }
-}
+};
 
 module.exports = {
   userRegistration,

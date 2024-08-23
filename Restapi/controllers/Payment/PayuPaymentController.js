@@ -35,8 +35,8 @@ const paymentDetail = async (req, res) => {
       firstname: userDetails.fullName,
       email: userDetails.email,
       phone: userDetails.phone.toString(),
-      surl: "https://finafid-backend-node-e762fd401cc5.herokuapp.com/api/v1/paymentResponse",
-      furl: "https://finafid-backend-node-e762fd401cc5.herokuapp.com/api/v1/paymentResponse",
+      surl: "https://finafid-backend-node-e762fd401cc5.herokuapp.com/api/v1/success",
+      furl: "https://finafid-backend-node-e762fd401cc5.herokuapp.com/api/v1/failure",
       hash: hash,
       service_provider: "payu_paisa",
     };
@@ -48,7 +48,6 @@ const paymentDetail = async (req, res) => {
     res.status(500).json({ message: error.message + " Internal Server Error" });
   }
 };
-const { ObjectId } = require("mongodb");
 const paymentResponse = async (req, res) => {
   try {
     console.log("Processing PayU payment response...");
@@ -110,9 +109,42 @@ const paymentResponse = async (req, res) => {
     res.status(500).send("Internal Server Error");
   }
 };
+const handlePaymentSuccess = async (txnid, orderDetails, res) => {
+  try {
+    const updatedOrder = await Order.findOneAndUpdate(
+      { _id: txnid },
+      { payment_complete: true, status: "Confirmed" }
+    ).populate("orderItem");
+
+    console.log("Order updated successfully:", updatedOrder);
+
+    // Update order status and remove items from cart
+    await updateStatusDetails(updatedOrder._id, "Confirmed");
+    await removeItemFromCart(updatedOrder.orderItem, updatedOrder.userId);
+
+    // Render the success page
+    res.render("paymentSuccess");
+  } catch (error) {
+    console.error("Error handling payment success:", error);
+    res.status(500).send("Internal Server Error");
+  }
+};
+const handlePaymentFailure = async (txnid, res) => {
+  try {
+    await Order.findOneAndUpdate({ _id: txnid }, { status: "Failed" });
+
+    // Render the failure page
+    res.render("paymentFailure");
+  } catch (error) {
+    console.error("Error handling payment failure:", error);
+    res.status(500).send("Internal Server Error");
+  }
+};
 
 
 module.exports = {
   paymentResponse,
   paymentDetail,
+  handlePaymentSuccess,
+  handlePaymentFailure,
 };

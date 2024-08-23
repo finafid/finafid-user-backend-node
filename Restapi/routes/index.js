@@ -288,6 +288,8 @@ const {
 const {
   paymentResponse,
   paymentDetail,
+  handlePaymentSuccess,
+  handlePaymentFailure,
 } = require("../controllers/Payment/PayuPaymentController.js");
 
 const {
@@ -698,12 +700,15 @@ routs.get("/getAllVariantsOnUser", getAllVariantsOnUser);
 
 routs.post("/paymentResponse", paymentResponse);
 routs.post("/paymentDetail",auth, paymentDetail);
-
-//searchengine
-routs.get(
-  "/getAllProductInformationBasedOnProduct",
-  getAllProductInformationBasedOnProduct
-);
+  handlePaymentSuccess,
+    handlePaymentFailure,
+    routs.post("/success", paymentResponse); 
+    routs.post("/failure", paymentResponse);
+    //searchengine
+    routs.get(
+      "/getAllProductInformationBasedOnProduct",
+      getAllProductInformationBasedOnProduct
+    );
 routs.get("/getSearchData", getSearchDataFirst);
 routs.get("/getSearchDataSecond", getSearchDataSecond);
 
