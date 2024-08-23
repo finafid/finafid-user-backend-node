@@ -42,13 +42,13 @@ const paymentDetail = async (req, res) => {
     res.status(500).json({ message: error.message + " Internal Server Error" });
   }
 };
-
+const { ObjectId } = require("mongodb");
 const paymentResponse = async (req, res) => {
   try {
     console.log("Processing PayU payment response...");
 
     // PayU typically sends the data in req.body directly, so adjust accordingly
-    const { txnid, status, amount, email, firstname, productinfo, hash } =
+    let { txnid, status, amount, email, firstname, productinfo, hash } =
       req.body;
 
     // Log the incoming payment data for debugging
@@ -75,12 +75,13 @@ const paymentResponse = async (req, res) => {
     console.log({ generatedHash, receivedHash: hash });
 
     if (generatedHash === hash) {
+      txnid=ObjectId(txnid)
       if (status === "success") {
-        // const updatedOrder = await Order.findOneAndUpdate(
-        //   { _id: txnid },
-        //   { payment_complete: true, status: "Confirmed" },
-        //   { new: true }
-        // );
+        const updatedOrder = await Order.findOneAndUpdate(
+          { _id: txnid },
+          { payment_complete: true, status: "Confirmed" },
+          { new: true }
+        );
 
         res.render("paymentSuccess");
       } else {

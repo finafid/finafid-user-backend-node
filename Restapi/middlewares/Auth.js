@@ -1,7 +1,7 @@
 const jwtToken = require("jsonwebtoken");
 const BlackList = require("../models/auth/blackList");
 const User = require("../models/auth/userSchema");
-
+const Admin=require("../models/Auth admin/adminSchema")
 const verifyToken = async (req, res, next) => {
   const token =
     req.body.token || req.query.token || req.headers["authorization"];
@@ -33,7 +33,10 @@ const verifyToken = async (req, res, next) => {
       is_Active: true,
       blocking: false,
     });
-    if (userDetails) {
+    const adminDetails = await Admin.findOne({
+      _id: req.user._id,
+    });
+    if (userDetails || adminDetails) {
       next();
     }
   } catch (error) {
