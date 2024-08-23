@@ -5,6 +5,10 @@ const PAYU_BASE_URL = process.env.PAYU_BASE_URL;
 const User = require("../../models/auth/userSchema");
 const crypto = require("crypto");
 const Order=require("../../models/Order/orderSc")
+const {
+  updateStatusDetails,
+} = require("../../controllers/order/orderController");
+
 const paymentDetail = async (req, res) => {
   try {
     const { amount, orderId } = req.body;
@@ -83,6 +87,7 @@ const paymentResponse = async (req, res) => {
           // { new: true }
         );
         console.log(updatedOrder);
+        
         res.render("paymentSuccess");
       } else {
         // const updatedOrder = await Order.findOneAndUpdate(

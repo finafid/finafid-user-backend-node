@@ -146,11 +146,11 @@ const sendMailVarification = async (req, res) => {
         message: "Error in request",
       });
     }
-
+    console.log(req.body)
     const { email } = req.body;
     const userData = await User.findOne({ email, is_Active: true, blocking:false });
     if (!userData) {
-      return res.status(500).json({
+      return res.status(404).json({
         success: false,
         message: "User is not present",
       });
