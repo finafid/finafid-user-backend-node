@@ -79,10 +79,10 @@ const paymentResponse = async (req, res) => {
       if (status === "success") {
         const updatedOrder = await Order.findOneAndUpdate(
           { _id: txnid },
-          { payment_complete: true, status: "Confirmed" },
-          { new: true }
+          // { payment_complete: true, status: "Confirmed" },
+          // { new: true }
         );
-
+        console.log(updatedOrder);
         res.render("paymentSuccess");
       } else {
         // const updatedOrder = await Order.findOneAndUpdate(
