@@ -305,25 +305,32 @@ const deleteFromCart = async (req, res) => {
     }
   };
 
-async function removeItemFromCart(productIdList,userId) {
+async function removeItemFromCart(productIdList, userId) {
   const userCartDetails = await cart.findOne({ UserId: userId });
+
   if (!userCartDetails) {
-    return {message:""}
+    return { message: "Cart not found" };
   }
+
   console.log({ userCartDetails: userCartDetails });
+
   productIdList.forEach((element) => {
     console.log(element.productId._id);
     const index = userCartDetails.cartItems.findIndex(
-      (item) => item.productId.toString() === element.productId._id,
-      console.log(item.productId.toString())
+      (item) => item.productId.toString() === element.productId._id.toString()
     );
+
     if (index !== -1) {
-      userCartDetails.cartItems.splice(index, 1); 
+      console.log(`Removing item with ID: ${element.productId._id}`);
+      userCartDetails.cartItems.splice(index, 1);
     }
   });
 
   await userCartDetails.save();
+
+  return { message: "Items removed from cart successfully" };
 }
+
 module.exports = {
   addToWishlist,
   getTheWishlist,
