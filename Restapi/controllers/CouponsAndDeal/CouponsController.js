@@ -74,6 +74,7 @@ const applyCoupon = async (req, res) => {
     let discountAmount;
     if (coupon.Discount_Type === "Percentage") {
       discountAmount = (orderAmount * coupon.Discount_Value) / 100;
+      console.log(discountAmount);
     } else if (coupon.Discount_Type === "Flat") {
       discountAmount = coupon.Discount_Value;
     }
