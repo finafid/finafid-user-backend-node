@@ -121,8 +121,15 @@ const getOrderDetails = async (req, res) => {
   try {
     const orderDetail = await order
       .find({
-        userId: req.user._id,
-        payment_complete: true,
+        $and: [
+          {userId:req.user._id},
+          {
+            $or: [
+              { payment_complete: true },
+              { payment_method: { $in: ["COD", "Wallet"] } },
+            ],
+          },
+        ],
       })
       .populate({
         path: "orderItem",
@@ -315,24 +322,28 @@ const getAllOrder = async (req, res) => {
     }
 
     // Fetch all orders first with the date filter applied
-    const allOrders = await order
-      .find({
-        $and: [
-          dateFilter,
-          {
-            $or: [{ payment_complete: true }, { payment_method:"COD" }],
-          },
-        ],
-      })
-      .populate("userId")
-      .populate({
-        path: "orderItem.productId",
-        model: "Variant",
-        populate: {
-          path: "productGroup",
-          model: "Product",
+  const allOrders = await order
+    .find({
+      $and: [
+        dateFilter,
+        {
+          $or: [
+            { payment_complete: true },
+            { payment_method: { $in: ["COD", "Wallet"] } },
+          ],
         },
-      });
+      ],
+    })
+    .populate("userId")
+    .populate({
+      path: "orderItem.productId",
+      model: "Variant",
+      populate: {
+        path: "productGroup",
+        model: "Product",
+      },
+    });
+
 
       
 
