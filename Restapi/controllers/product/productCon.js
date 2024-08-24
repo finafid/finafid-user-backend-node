@@ -832,12 +832,11 @@ const editProductType = async (req, res) => {
       productTypeDetails.subCategoryId = subCategoryId;
       productTypeDetails.categoryId = categoryId;
       productTypeDetails.logoUrl = logoUrl;
-      
        productTypeDetails.variation_Features = variation_Features;
       await productTypeDetails.save();
     } else {
       const logoUrl = await getImageLink(req);
-      const { name, description, subCategoryId, categoryId } = req.body;
+      const { name, description, subCategoryId, variation_Features } = req.body;
       productTypeDetails.name = name;
       productTypeDetails.description = description;
       productTypeDetails.subCategoryId = subCategoryId;
