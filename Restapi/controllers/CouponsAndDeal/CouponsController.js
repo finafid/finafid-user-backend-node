@@ -72,7 +72,7 @@ const applyCoupon = async (req, res) => {
         .json({ message: "Coupon usage limit exceeded for this user" });
     }
     let discountAmount;
-    if (coupon.Discount_Type === "Percentage") {
+    if (coupon.Discount_Type === "Percent") {
       discountAmount = (orderAmount * coupon.Discount_Value) / 100;
       console.log(discountAmount);
     } else if (coupon.Discount_Type === "Flat") {
