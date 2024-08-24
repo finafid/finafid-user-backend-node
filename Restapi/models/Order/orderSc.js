@@ -80,6 +80,10 @@ const orderSchema = new mongoose.Schema(
       required: false,
       default: 0,
     },
+    expectedDeliveryDate: {
+      type: Date,
+      required: false
+    },
     status: {
       type: String,
       required: true,
@@ -92,6 +96,7 @@ const orderSchema = new mongoose.Schema(
         "Delivered",
         "Returned",
         "Canceled",
+        "Payment Refunded",
         "Completed",
       ],
       default: "Pending",

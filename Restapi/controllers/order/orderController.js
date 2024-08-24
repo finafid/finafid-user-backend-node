@@ -122,7 +122,7 @@ const getOrderDetails = async (req, res) => {
     const orderDetail = await order
       .find({
         $and: [
-          {userId:req.user._id},
+          { userId: req.user._id },
           {
             $or: [
               { payment_complete: true },
@@ -141,8 +141,8 @@ const getOrderDetails = async (req, res) => {
             model: "Product",
           },
         },
-      });
-
+      })
+      .sort({ createdAt: -1 });
     if (!orderDetail) {
       return res.status(500).json({
         success: false,
@@ -322,30 +322,27 @@ const getAllOrder = async (req, res) => {
     }
 
     // Fetch all orders first with the date filter applied
-  const allOrders = await order
-    .find({
-      $and: [
-        dateFilter,
-        {
-          $or: [
-            { payment_complete: true },
-            { payment_method: { $in: ["COD", "Wallet"] } },
-          ],
+    const allOrders = await order
+      .find({
+        $and: [
+          dateFilter,
+          {
+            $or: [
+              { payment_complete: true },
+              { payment_method: { $in: ["COD", "Wallet"] } },
+            ],
+          },
+        ],
+      })
+      .populate("userId")
+      .populate({
+        path: "orderItem.productId",
+        model: "Variant",
+        populate: {
+          path: "productGroup",
+          model: "Product",
         },
-      ],
-    })
-    .populate("userId")
-    .populate({
-      path: "orderItem.productId",
-      model: "Variant",
-      populate: {
-        path: "productGroup",
-        model: "Product",
-      },
-    });
-
-
-      
+      });
 
     // Calculate status counts
     const statusCount = {};
@@ -471,6 +468,48 @@ async function updateStatusDetails(orderId, status = "Pending") {
     await statusDetails.save();
   }
 }
+const cancelDelivery = async (req, res) => {
+  try {
+ const orderDetails = await order.findById(req.param.orderId);
+if(!orderDetails){
+  return res.status(400).json({
+      success: false,
+      message:  "No order found",
+    });
+  }
+orderDetails.orderStatus = "Canceled";
+await orderDetails.save();
+ return res.status(200).json({
+   success: true,
+   message: "Order cancelled successful",
+ });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message + " internal server error",
+    });
+  }
+
+};
+const setDeliveryDate = async (req, res) => {
+  try {
+    const orderDetails = await order.findById(req.param.orderId);
+    if (!orderDetails) {
+      return res.status(400).json({
+        success: false,
+        message: "No order found",
+      });
+    }
+orderDetails.expectedDeliveryDate = req.body.date;
+await orderDetails.save();
+
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message + " internal server error",
+    });
+  }
+};
 module.exports = {
   placeOrder,
   getOrderDetails,
@@ -481,4 +520,6 @@ module.exports = {
   editOrder,
   orderStatusDetails,
   updateStatusDetails,
+  setDeliveryDate,
+  cancelDelivery,
 };

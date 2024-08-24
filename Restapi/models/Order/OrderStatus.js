@@ -1,4 +1,3 @@
-const { date } = require("joi");
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
@@ -10,12 +9,14 @@ const orderStatusSchema = new Schema({
         required: true,
         enum: [
           "Pending",
+          "Failed",
           "Confirmed",
           "Shipping",
           "Out For delivery",
           "Delivered",
           "Returned",
           "Canceled",
+          "Payment Refunded",
           "Completed",
         ],
       },

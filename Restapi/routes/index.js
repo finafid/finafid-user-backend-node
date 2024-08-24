@@ -95,6 +95,8 @@ const {
   getAllOrder,
   editOrder,
   orderStatusDetails,
+  setDeliveryDate,
+  cancelDelivery,
 } = require("../controllers/order/orderController");
 const { upload, uploadImageToS3 } = require("../utils/fileUpload");
 const {
@@ -300,6 +302,7 @@ const {
   searchEntityByName,
   searchAndIterate,
 } = require("../controllers/product/SearchEngine.js");
+const {}=require("../controllers/auth/GoogleLogin.js")
 //user Authentication
 routs.post("/register", userRegistrationValidation, userRegistration);
 routs.post("/login", userLoginValidation, userLogin);
@@ -467,9 +470,10 @@ routs.post("/getOrderByStatus", auth, getOrderByStatus);
 routs.get("/getAllOrder", getAllOrder);
 routs.post("/editOrder", auth, editOrder);
 routs.get("/orderStatusDetails/:orderId", orderStatusDetails);
-
-//Address
-routs.post("/addAddress", auth, addAddress);
+   routs.post("/setDeliveryDate",  setDeliveryDate);
+ routs.get("/cancelDelivery", cancelDelivery);   
+   //Address
+   routs.post("/addAddress", auth, addAddress);
 routs.get("/getAddressOfUser", auth, getAddressOfUser);
 routs.post("/updateAddressOfUser", auth, updateAddressOfUser);
 routs.get("/deleteAddress/:addressId", auth, deleteAddress);
@@ -701,9 +705,9 @@ routs.get("/getAllVariantsOnUser", getAllVariantsOnUser);
 routs.post("/paymentResponse", paymentResponse);
 routs.post("/paymentDetail",auth, paymentDetail);
   handlePaymentSuccess,
-    handlePaymentFailure,
-    routs.post("/success", paymentResponse); 
-    routs.post("/failure", paymentResponse);
+  handlePaymentFailure,
+routs.post("/success", paymentResponse); 
+routs.post("/failure", paymentResponse);
     //searchengine
     routs.get(
       "/getAllProductInformationBasedOnProduct",
@@ -715,5 +719,15 @@ routs.get("/getSearchDataSecond", getSearchDataSecond);
 routs.get("/productSearchDirectory", productSearchDirectory);
 //routs.get("/searchAndIterate", searchAndIterate);
 //routs.get("/searchEntityByName", searchEntityByName);
+
+//google login
+// routs.get("/auth/google", authController.googleAuth);
+// routs.get(
+//   "/auth/google/callback",
+//   authController.googleAuthCallback,
+//   authController.authSuccess
+// );
+// routs.get("/profile", authController.getProfile);
+// routs.get("/logout", authController.logout);
 
   ((module.exports = routs));

@@ -21,7 +21,6 @@ const genReferralCode = async (userId) => {
 };
 const shareReferralCode = async (req, res) => {
   try {
-    const userData = await User.findById(req.user._id);
     let referralCode = "";
     referralCode = await Referral.findOne({
       userId: req.user._id,
@@ -35,15 +34,8 @@ const shareReferralCode = async (req, res) => {
     }
     const referralLink =
       "https://finafid.com/auth" + "?referralCode="+referralCode.code;
-    const email = req.body.email;
-    const message = `<div style="font-family: Arial, sans-serif; color: #333; background-color: #f9f9f9; padding: 20px;">
-            <p style="margin-bottom: 10px;">Dear ${userData.fullName},</p>
-            <p style="margin-bottom: 10px;">The Link for your email is ${referralLink}.</p>
-            <p style="margin-bottom: 10px;">Best regards,</p>
-            <p style="margin-bottom: 0;">The Finafid Team</p>
-        </div>`;
-    await sendMail(email, "Email Verification", message);
-    return res.status(200).json({ message: "Send Successfully" });
+    
+    return res.status(200).json({ referralLink: referralLink });
   } catch (error) {
     res.status(500).json({ message: error.message + " Internal Server Error" });
   }

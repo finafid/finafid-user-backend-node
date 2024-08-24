@@ -44,6 +44,10 @@ const bannerSchema = new Schema({
         "About",
         "Contact",
         "Utsav",
+        "Product",
+        "Search",
+        "Flash Deal",
+        "Featured Deal",
       ],
     },
     valueId: {

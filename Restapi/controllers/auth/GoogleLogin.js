@@ -1,33 +1,31 @@
+const passport = require("../../config/passport");
 
-app.get("/", (req, res) => {
-  res.send('<a href="/auth/google">Login with Google</a>');
+// Route to start authentication
+exports.googleAuth = passport.authenticate("google", {
+  scope: ["profile", "email"],
 });
 
-app.get(
-  "/auth/google",
-  passport.authenticate("google", { scope: ["profile", "email"] })
-);
+// Route to handle callback from Google
+exports.googleAuthCallback = passport.authenticate("google", {
+  failureRedirect: "/",
+});
 
-app.get(
-  "/auth/google/callback",
-  passport.authenticate("google", { failureRedirect: "/" }),
-  (req, res) => {
-    // Successful authentication, redirect home.
-    res.redirect("/profile");
+exports.authSuccess = (req, res) => {
+  res.redirect("/profile");
+};
+
+// Route to check if user is logged in
+exports.getProfile = (req, res) => {
+  if (req.isAuthenticated()) {
+    res.send(`Hello ${req.user.displayName}`);
+  } else {
+    res.redirect("/");
   }
-);
+};
 
-app.get("/profile", (req, res) => {
-  // req.user contains the authenticated user
-  res.send(`Hello ${req.user.displayName}`);
-});
-
-app.get("/logout", (req, res) => {
-  req.logout();
-  res.redirect("/");
-});
-
-// Start the server
-app.listen(3000, () => {
-  console.log("Server is running on http://localhost:3000");
-});
+// Route to logout
+exports.logout = (req, res) => {
+  req.logout(() => {
+    res.redirect("/");
+  });
+};
