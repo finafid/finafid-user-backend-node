@@ -301,7 +301,6 @@ const getAllOrder = async (req, res) => {
 
     // Create a date filter object if startDate and endDate are provided
     let dateFilter = {};
-    dateFilter.payment_complete = true;
     if (startDate || endDate) {
       dateFilter.createdAt = {};
       if (startDate) {
@@ -317,7 +316,14 @@ const getAllOrder = async (req, res) => {
 
     // Fetch all orders first with the date filter applied
     const allOrders = await order
-      .find(dateFilter)
+      .find({
+        $and: [
+          dateFilter,
+          {
+            $or: [{ payment_complete: true }, { payment_method:"COD" }],
+          },
+        ],
+      })
       .populate("userId")
       .populate({
         path: "orderItem.productId",
@@ -327,6 +333,8 @@ const getAllOrder = async (req, res) => {
           model: "Product",
         },
       });
+
+      
 
     // Calculate status counts
     const statusCount = {};
@@ -396,6 +404,7 @@ const editOrder = async (req, res) => {
     orderDetails.tax = req.body.tax;
     orderDetails.payment_method = req.body.payment_method;
     orderDetails.payment_complete = req.body.payment_complete;
+    orderDetails.walletBalanceUsed = req.body.walletBalanceUsed;
     await orderDetails.save();
     return res.status(500).json({
       success: true,
