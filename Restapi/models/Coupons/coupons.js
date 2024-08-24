@@ -43,7 +43,7 @@ const couponSchema = new Schema(
     },
     Maximum_Purchase: {
       type: Number,
-      required: true,
+      required: false,
     },
     Start_Date: {
       type: Date,
