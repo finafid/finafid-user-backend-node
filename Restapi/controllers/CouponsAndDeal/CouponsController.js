@@ -38,12 +38,12 @@ const getTheCoupon = async (req, res) => {
 const applyCoupon = async (req, res) => {
   try {
     const { code,  orderAmount } = req.body;
-
+    console.log({body:req.body})
     const coupon = await Coupons.findOne({ code: code });
     if (!coupon) {
       return res.status(404).json({ message: "Coupon not found" });
     }
-
+ console.log({ coupon: coupon });
     const currentDate = new Date();
     if (currentDate < coupon.Start_Date || currentDate > coupon.Expire_Date) {
       return res
@@ -78,7 +78,7 @@ const applyCoupon = async (req, res) => {
     } else if (coupon.Discount_Type === "Flat") {
       discountAmount = coupon.Discount_Value;
     }
-
+    console.log({ discountAmount: discountAmount });
     if (discountAmount > orderAmount) {
       discountAmount = orderAmount;
     }
