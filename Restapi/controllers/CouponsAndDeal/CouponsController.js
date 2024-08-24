@@ -37,7 +37,7 @@ const getTheCoupon = async (req, res) => {
 };
 const applyCoupon = async (req, res) => {
   try {
-    const { code, userId, orderAmount } = req.body;
+    const { code,  orderAmount } = req.body;
 
     const coupon = await Coupons.findOne({ code: code });
     if (!coupon) {
@@ -60,7 +60,7 @@ const applyCoupon = async (req, res) => {
     }
 
     const userCouponUsage = await UserCouponUsage.findOne({
-      userId: userId,
+      userId: req.user._id,
       couponCode: code,
     });
     if (
@@ -88,7 +88,7 @@ const applyCoupon = async (req, res) => {
       await userCouponUsage.save();
     } else {
       const newUserCouponUsage = new UserCouponUsage({
-        userId: userId,
+        userId: req.user._id,
         couponCode: code,
         usageCount: 1,
       });

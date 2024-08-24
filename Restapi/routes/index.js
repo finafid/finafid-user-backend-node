@@ -600,7 +600,7 @@ routs.get("/getDEalOfTheDayByIdOnUser/:dealId", getDEalOfTheDayByIdOnUser);
 //coupons
 
 routs.post("/createCoupons", createCoupons);
-routs.post("/applyCoupon", applyCoupon);
+routs.post("/applyCoupon",auth, applyCoupon);
 routs.get("/getTheCoupon/:couponId", getTheCoupon);
 routs.post("/updateCoupons/:couponsId", updateCoupons);
 routs.delete("/deleteCoupons/:couponId", deleteCoupons);
