@@ -47,6 +47,7 @@ const placeOrder = async (req, res) => {
       basicReward: totalBasicReward,
       is_utsab: userData.is_utsav,
       walletBalanceUsed: req.body.walletBalanceUsed,
+      couponDiscount: req.body.couponDiscount,
     });
     await newOrder.save();
     console.log(newOrder);
@@ -200,6 +201,15 @@ const updateStatus = async (req, res) => {
         }
       )
       .populate("userId");
+    if (!orderDetail) {
+      return res.status(500).json({
+        success: false,
+        message: "No order till now",
+      });
+    }
+    if (req.body.status == "Shipping") {
+      await invoiceGenerate(orderDetail);
+    }
     if (req.body.status == "Completed") {
       const walletDetails = await Wallet.findOne({
         userId: orderDetail.userId,
@@ -242,12 +252,7 @@ const updateStatus = async (req, res) => {
       walletDetails.balance = walletDetails.balance + orderDetail.basicReward;
       await walletDetails.save();
     }
-    if (!orderDetail) {
-      return res.status(500).json({
-        success: false,
-        message: "No order till now",
-      });
-    }
+
     const statusDetails = await orderStatus.findOne({
       orderId: req.params.orderId,
     });
@@ -470,26 +475,25 @@ async function updateStatusDetails(orderId, status = "Pending") {
 }
 const cancelDelivery = async (req, res) => {
   try {
- const orderDetails = await order.findById(req.param.orderId);
-if(!orderDetails){
-  return res.status(400).json({
-      success: false,
-      message:  "No order found",
+    const orderDetails = await order.findById(req.param.orderId);
+    if (!orderDetails) {
+      return res.status(400).json({
+        success: false,
+        message: "No order found",
+      });
+    }
+    orderDetails.orderStatus = "Canceled";
+    await orderDetails.save();
+    return res.status(200).json({
+      success: true,
+      message: "Order cancelled successful",
     });
-  }
-orderDetails.orderStatus = "Canceled";
-await orderDetails.save();
- return res.status(200).json({
-   success: true,
-   message: "Order cancelled successful",
- });
   } catch (err) {
     return res.status(500).json({
       success: false,
       message: err.message + " internal server error",
     });
   }
-
 };
 const setDeliveryDate = async (req, res) => {
   try {
@@ -500,9 +504,8 @@ const setDeliveryDate = async (req, res) => {
         message: "No order found",
       });
     }
-orderDetails.expectedDeliveryDate = req.body.date;
-await orderDetails.save();
-
+    orderDetails.expectedDeliveryDate = req.body.date;
+    await orderDetails.save();
   } catch (err) {
     return res.status(500).json({
       success: false,
@@ -510,6 +513,33 @@ await orderDetails.save();
     });
   }
 };
+const { generateInvoice } = require("../../utils/invoiceGenerator");
+async function invoiceGenerate(orderDetails) {
+  const invoiceData = {
+    invoiceNumber: "INVOICE" + Math.random(),
+    date: Date.now(),
+    customerName: orderDetails.userId.fullName,
+    customerEmail: orderDetails.userId.email,
+    customerPhoneNumber: orderDetails.userId.phone,
+    customerAddress: orderDetails.address,
+
+    items: [
+      { name: "Product 1", quantity: 2, price: 10.0 },
+      { name: "Product 2", quantity: 1, price: 20.0 },
+    ],
+    total: 40.0,
+  };
+  await generateInvoice(invoiceData);
+}
+const downloadInvoice=async(req,res)=>{
+  try {
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message + " internal server error",
+    });
+  }
+}
 module.exports = {
   placeOrder,
   getOrderDetails,
@@ -522,4 +552,5 @@ module.exports = {
   updateStatusDetails,
   setDeliveryDate,
   cancelDelivery,
+  downloadInvoice,
 };

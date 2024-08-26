@@ -97,6 +97,7 @@ const {
   orderStatusDetails,
   setDeliveryDate,
   cancelDelivery,
+  downloadInvoice,
 } = require("../controllers/order/orderController");
 const { upload, uploadImageToS3 } = require("../utils/fileUpload");
 const {
@@ -471,7 +472,8 @@ routs.get("/getAllOrder", getAllOrder);
 routs.post("/editOrder", auth, editOrder);
 routs.get("/orderStatusDetails/:orderId", orderStatusDetails);
    routs.post("/setDeliveryDate",  setDeliveryDate);
- routs.get("/cancelDelivery", cancelDelivery);   
+ routs.get("/cancelDelivery", cancelDelivery);  
+ routs.get("/downloadInvoice", downloadInvoice); 
    //Address
    routs.post("/addAddress", auth, addAddress);
 routs.get("/getAddressOfUser", auth, getAddressOfUser);

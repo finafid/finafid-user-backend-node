@@ -82,7 +82,16 @@ const orderSchema = new mongoose.Schema(
     },
     expectedDeliveryDate: {
       type: Date,
-      required: false
+      required: false,
+    },
+    invoicePath: {
+      type: String,
+      default: false,
+    },
+    couponDiscount:{
+      type: Number,
+      required: false,
+      default: 0,
     },
     status: {
       type: String,
