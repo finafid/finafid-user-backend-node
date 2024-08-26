@@ -180,7 +180,7 @@ const getOrderById = async (req, res) => {
         message: "No order till now",
       });
     }
-    res.send(orderDetail);
+    return res.send(orderDetail);
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -516,21 +516,38 @@ const setDeliveryDate = async (req, res) => {
 const { generateInvoice } = require("../../utils/invoiceGenerator");
 async function invoiceGenerate(orderDetails) {
   const invoiceData = {
-    invoiceNumber: "INVOICE" + Math.random(),
-    date: Date.now(),
+    invoiceNumber: "INVOICE" + Math.random().toString().slice(2, 10),
+    date: new Date().toISOString().split("T")[0], // Formatted as YYYY-MM-DD
     customerName: orderDetails.userId.fullName,
     customerEmail: orderDetails.userId.email,
     customerPhoneNumber: orderDetails.userId.phone,
-    customerAddress: orderDetails.address,
+    customerAddress: `${orderDetails.address.houseNumber}, ${orderDetails.address.street}, ${orderDetails.address.locality}, ${orderDetails.address.city}, ${orderDetails.address.state}, ${orderDetails.address.pinCode}`,
 
-    items: [
-      { name: "Product 1", quantity: 2, price: 10.0 },
-      { name: "Product 2", quantity: 1, price: 20.0 },
-    ],
-    total: 40.0,
+    items: orderDetails.orderItem.map((item) => ({
+      name: item.productId.productGroup.name,
+      quantity: item.itemQuantity,
+      price: item.productId.sellingPrice,
+    })),
+
+    subtotal: orderDetails.subtotal,
+    discount: orderDetails.discount,
+    gst: orderDetails.tax, // Assuming tax is GST, update if necessary
+    shipping: orderDetails.orderItem.reduce(
+      (acc, item) => acc + item.productId.shippingCost,
+      0
+    ),
+    total: orderDetails.totalPrice,
   };
-  await generateInvoice(invoiceData);
+
+  const invoiceLink = await generateAndUploadInvoice(invoiceData);
+
+  // Here you can save `invoiceLink` in your database as the `invoicePath` for the order
+  // Assuming you have a function to update the order in the database:
+  // await updateOrderInvoicePath(orderDetails._id, invoiceLink);
+
+  console.log(`Invoice generated and uploaded successfully: ${invoiceLink}`);
 }
+
 const downloadInvoice=async(req,res)=>{
   try {
   } catch (err) {

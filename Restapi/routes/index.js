@@ -614,7 +614,7 @@ routs.get("/getAllCoupons", getAllCoupons);
 routs.post("/updateStatusCoupons/:couponId", updateStatusCoupons);
 
 //referral
-routs.post("/shareReferralCode", auth, shareReferralCode);
+routs.get("/shareReferralCode", auth, shareReferralCode);
 //routs.post("/redeemedReferral", auth, redeemedReferral);
 
 //utsab
