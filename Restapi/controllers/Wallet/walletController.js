@@ -63,7 +63,7 @@ const showTransactions = async (req, res) => {
 };
 const getBalance = async (req, res) => {
   try {
-    const walletDetails = await Wallet.findOne({
+    let walletDetails = await Wallet.findOne({
       userId: req.user._id,
     }).populate("transactions");
     if (!walletDetails) {
@@ -72,6 +72,7 @@ const getBalance = async (req, res) => {
        balance: 0,
        transactions:[]
      });
+     await walletDetails.save();
     }
     return res.status(200).json({ walletDetails });
   } catch (error) {
