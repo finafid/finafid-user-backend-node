@@ -21,15 +21,17 @@ const genReferralCode = async (userId) => {
 };
 const shareReferralCode = async (req, res) => {
   try {
-    let referralCode = "";
+    let referralCode = {};
     referralCode = await Referral.findOne({
       userId: req.user._id,
     });
+    console.log({ referralCode: referralCode });
     if (!referralCode) {
       console.log("userData");
       const referral = await genReferralCode(req.user._id);
+      console.log({ referral: referral });
       referralCode = await Referral.findOne({
-        userId: req.user._id,
+        userId: req.user._id
       });
     }
     const referralLink =
