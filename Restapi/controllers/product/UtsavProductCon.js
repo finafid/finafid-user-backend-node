@@ -89,13 +89,14 @@ const getAllTopSellingBrand = async (req, res) => {
               .findById(varientDetails.productGroup)
               .populate("brand");
             return productDetails;
+            console.log({ productDetails: productDetails });
           })
         );
 
         for (let productDetails of products) {
           const brandDetails = await Brand.findById(productDetails.brand);
           const brandId = brandDetails._id.toString();
-
+          console.log({ brandDetails: brandDetails });
           if (productCountMap.has(brandId)) {
             productCountMap.get(brandId).count += 1;
           } else {
