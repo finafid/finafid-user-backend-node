@@ -66,14 +66,14 @@ const getBalance = async (req, res) => {
     let walletDetails = await Wallet.findOne({
       userId: req.user._id,
     }).populate("transactions");
-    if (!walletDetails) {
-     walletDetails = new Wallet({
-       userId: req.user._id,
-       balance: 0,
-       transactions:[]
-     });
-     await walletDetails.save();
-    }
+     if (!walletDetails) {
+       walletDetails = new Wallet({
+         userId: req.user._id,
+         balance: 0,
+         transactions: [],
+       });
+       await walletDetails.save();
+     }
     return res.status(200).json({ walletDetails });
   } catch (error) {
     res.status(500).json({ message: error.message + " Internal Server Error" });
