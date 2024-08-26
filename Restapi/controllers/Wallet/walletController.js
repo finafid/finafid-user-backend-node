@@ -67,9 +67,11 @@ const getBalance = async (req, res) => {
       userId: req.user._id,
     }).populate("transactions");
     if (!walletDetails) {
-      return res
-        .status(400)
-        .json({ message: "Cannot find the wallet Details" });
+     walletDetails = new Wallet({
+       userId: req.user._id,
+       balance: 0,
+       transactions:[]
+     });
     }
     return res.status(200).json({ walletDetails });
   } catch (error) {
