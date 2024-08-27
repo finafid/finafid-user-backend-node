@@ -221,61 +221,44 @@ const productSearchDirectory = async (req, res) => {
   try {
     const productDetails = await productSc.find();
 
-    // Helper function to upsert entities
-    const upsertEntity = async (entityId, entityName, modelName) => {
-      const existingEntry = await productSearch.findOne({
-        entityId,
-        modelName,
-      });
-      if (!existingEntry) {
-        const newEntry = new productSearch({
-          entityId,
-          entityName,
-          modelName,
-        });
-        await newEntry.save();
-      }
-    };
+    const [categories, subcategories, productTypes, brands] = await Promise.all(
+      [
+        mainCategory.find({
+          _id: { $in: productDetails.map((p) => p.categoryId) },
+        }),
+        subCategory.find({
+          _id: { $in: productDetails.map((p) => p.subCategoryId) },
+        }),
+        productType.find({
+          _id: { $in: productDetails.map((p) => p.productTypeId) },
+        }),
+        Brand.find({ _id: { $in: productDetails.map((p) => p.brand) } }),
+      ]
+    );
 
-    // Prepare an array of promises for batch processing
     const upsertPromises = productDetails.map(async (product) => {
-      // Upsert product
       await upsertEntity(product._id, product.name, "Product");
 
-      // Upsert main category if exists
-      if (product.categoryId) {
-        const category = await mainCategory.findById(product.categoryId);
-        if (category) {
-          await upsertEntity(category._id, category.name, "Category");
-        }
-      }
+      const category = categories.find((cat) =>
+        cat._id.equals(product.categoryId)
+      );
+      if (category) await upsertEntity(category._id, category.name, "Category");
 
-      // Upsert subcategory if exists
-      if (product.subCategoryId) {
-        const subcategory = await subCategory.findById(product.subCategoryId);
-        if (subcategory) {
-          await upsertEntity(subcategory._id, subcategory.name, "SubCategory");
-        }
-      }
+      const subcategory = subcategories.find((sub) =>
+        sub._id.equals(product.subCategoryId)
+      );
+      if (subcategory)
+        await upsertEntity(subcategory._id, subcategory.name, "SubCategory");
 
-      // Upsert product type if exists
-      if (product.productTypeId) {
-        const pType = await productType.findById(product.productTypeId);
-        if (pType) {
-          await upsertEntity(pType._id, pType.name, "ProductType");
-        }
-      }
+      const pType = productTypes.find((pt) =>
+        pt._id.equals(product.productTypeId)
+      );
+      if (pType) await upsertEntity(pType._id, pType.name, "ProductType");
 
-      // Upsert brand if exists
-      if (product.brandId) {
-        const brand = await Brand.findById(product.brandId);
-        if (brand) {
-          await upsertEntity(brand._id, brand.name, "Brand");
-        }
-      }
+      const brand = brands.find((br) => br._id.equals(product.brand));
+      if (brand) await upsertEntity(brand._id, brand.name, "Brand");
     });
 
-    // Execute all upsert operations in parallel
     await Promise.all(upsertPromises);
 
     return res.status(200).json({ message: "Entities saved successfully." });
@@ -285,6 +268,14 @@ const productSearchDirectory = async (req, res) => {
       .status(500)
       .json({ message: error.message + " Internal Server Error" });
   }
+};
+
+const upsertEntity = async (entityId, entityName, modelName) => {
+  await productSearch.findOneAndUpdate(
+    { entityId, modelName },
+    { entityId, entityName, modelName },
+    { upsert: true, new: true, setDefaultsOnInsert: true }
+  );
 };
 
 const getSearchDataFirst = async (req, res) => {
