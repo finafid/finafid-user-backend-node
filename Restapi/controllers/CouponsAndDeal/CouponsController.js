@@ -98,9 +98,10 @@ const applyCoupon = async (req, res) => {
 
     res.status(200).json({
       message: "Coupon applied successfully",
-      discountAmount: discountAmount,
-      finalAmount: orderAmount - discountAmount,
+      discountAmount: Math.round(discountAmount),
+      finalAmount: Math.round(orderAmount - discountAmount),
     });
+
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
