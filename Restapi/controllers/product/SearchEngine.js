@@ -282,28 +282,30 @@ const getSearchDataFirst = async (req, res) => {
   try {
     const { query } = req.query;
 
-    // Perform a case-insensitive search using a regular expression
-    const results = await productSearch.find({
-      $text: { $search: query },
-    });
+    if (!query) {
+      return res.status(400).json({ message: "Query string is required." });
+    }
 
-    console.log(results);
+    // Use a regular expression for case-insensitive and partial match search
+    const regexQuery = new RegExp(query, "i"); // 'i' makes it case-insensitive
+
+    const results = await productSearch
+      .find({
+        entityName: regexQuery,
+      })
+      .distinct("entityName");
+
     if (results.length === 0) {
       return res.status(404).json({ message: "No matching entities found." });
     }
 
-    // Use a Set to store unique entity names
-    const uniqueNames = new Set(results.map((element) => element.entityName));
-
-    // Convert the Set back to an array
-    const uniqueList = Array.from(uniqueNames);
-
-    res.status(200).json(uniqueList);
+    res.status(200).json(results);
   } catch (error) {
     console.error("Error searching for entities:", error);
     res.status(500).json({ message: error.message + " Internal Server Error" });
   }
 };
+
 
 const getSearchDataSecond = async (req, res) => {
   try {
