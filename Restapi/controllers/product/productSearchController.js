@@ -115,7 +115,13 @@ const getAllVariantsOnUser = async (req, res) => {
      query.discount = { $gte: 0, $lte: maxDiscount };
    }
 
-   const variantList = await Variant.find(query).populate("productGroup");
+   const variantList = await Variant.find(query).populate({
+     path: "productGroup",
+     model: "Product".populate({
+       path: "brand",
+       model: "Brand",
+     }),
+   });
 
    let filteredVariants = variantList;
 

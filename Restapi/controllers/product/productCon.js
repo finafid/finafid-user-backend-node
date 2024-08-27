@@ -126,7 +126,7 @@ const uploadVariants = async (
       count++;
     }
 
-    const variantName = `${productName} ${variantData.sku}`;
+    const variantName = productName + " " + "(" + variantData.sku + ")";
 
     // Create variant
     const variant = new Variant({
@@ -287,7 +287,7 @@ const updateVariants = async (req, res) => {
     const productGroupDetails = await productSc.findById(req.body.productId);
     console.log(req.body.images);
     console.log(req.body);
-    const varientName= "" + req.body.sku + productGroupDetails.name;
+    const varientName= productGroupDetails.name+" "+"(" + req.body.sku + ")"
     variantDetails.productGroup = req.body.productId;
     variantDetails.attributes = req.body.attributes;
     variantDetails.sku = req.body.sku;
@@ -345,7 +345,8 @@ const addVariants = async (req, res) => {
   try {
     const productGroupDetails = await productSc.findById(req.body.productId);
     const variantImageLinks = await getImageLinks(req.files["images[]"]);
-     const varientName= "" + req.body.sku + productGroupDetails.name;
+     const varientName =
+       productGroupDetails.name + " " + "(" + req.body.sku + ")";
     const variant = new Variant({
       name: varientName,
       productGroup: req.body.productId,
@@ -426,7 +427,8 @@ const deleteVariants = async (req, res) => {
       .json({ message: "Internal Server Error", error: error.message });
   }
 };
-const getVariantById = async (req, res) => {
+const 
+getVariantById = async (req, res) => {
   try {
  
     const variantDetails = await Variant.findOne({
@@ -480,7 +482,7 @@ const createBrand = async (req, res) => {
 
 const categoryDetails = async (req, res) => {
   try {
-    const categories = await mainCategory.find().lean().exec();
+    const categories = await mainCategory.find({}).lean().exec();
 
     const detailCategories = await Promise.all(
       categories.map(async (category) => {

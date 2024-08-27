@@ -200,6 +200,14 @@ const updateStatus = async (req, res) => {
           status: req.body.status,
         }
       )
+      .populate({
+        path: "orderItem.productId",
+        model: "Variant",
+        populate: {
+          path: "productGroup",
+          model: "Product",
+        },
+      })
       .populate("userId");
     if (!orderDetail) {
       return res.status(500).json({
@@ -513,8 +521,9 @@ const setDeliveryDate = async (req, res) => {
     });
   }
 };
-const { generateInvoice } = require("../../utils/invoiceGenerator");
+const { generateAndUploadInvoice } = require("../../utils/invoiceGenerator");
 async function invoiceGenerate(orderDetails) {
+  console.log({ orderDetails: orderDetails });
   const invoiceData = {
     invoiceNumber: "INVOICE" + Math.random().toString().slice(2, 10),
     date: new Date().toISOString().split("T")[0], // Formatted as YYYY-MM-DD
@@ -522,7 +531,7 @@ async function invoiceGenerate(orderDetails) {
     customerEmail: orderDetails.userId.email,
     customerPhoneNumber: orderDetails.userId.phone,
     customerAddress: `${orderDetails.address.houseNumber}, ${orderDetails.address.street}, ${orderDetails.address.locality}, ${orderDetails.address.city}, ${orderDetails.address.state}, ${orderDetails.address.pinCode}`,
-
+    
     items: orderDetails.orderItem.map((item) => ({
       name: item.productId.productGroup.name,
       quantity: item.itemQuantity,
@@ -538,18 +547,18 @@ async function invoiceGenerate(orderDetails) {
     ),
     total: orderDetails.totalPrice,
   };
-
+console.log({ invoiceData: invoiceData });
   const invoiceLink = await generateAndUploadInvoice(invoiceData);
-
-  // Here you can save `invoiceLink` in your database as the `invoicePath` for the order
-  // Assuming you have a function to update the order in the database:
-  // await updateOrderInvoicePath(orderDetails._id, invoiceLink);
+  console.log({ invoiceLink: invoiceLink });
+orderDetails.invoicePath = invoiceLink;
+await orderDetails.save();
 
   console.log(`Invoice generated and uploaded successfully: ${invoiceLink}`);
 }
 
 const downloadInvoice=async(req,res)=>{
   try {
+
   } catch (err) {
     return res.status(500).json({
       success: false,
