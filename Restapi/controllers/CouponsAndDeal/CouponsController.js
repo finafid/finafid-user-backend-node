@@ -182,6 +182,28 @@ const updateStatusCoupons = async (req, res) => {
     });
   }
 };
+
+const getAllCouponsOnUser=async(req,res)=>{
+  try {
+    const couponsDetails = await Coupons.find();
+    const updatedCoupons = couponsDetails.map((coupon) => {
+      return {
+        ...coupon.toObject(),
+        valid: coupon.Minimum_Purchase < req.params.totalOrderAmount,
+      };
+    });
+
+    // Send the updated coupons with the 'valid' field in the response
+    res.status(200).json(updatedCoupons);
+
+  } catch (error) {
+    console.error("Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message + " Internal Server Error",
+    });
+  }
+}
 module.exports = {
   createCoupons,
   getTheCoupon,
@@ -190,4 +212,5 @@ module.exports = {
   deleteCoupons,
   getAllCoupons,
   updateStatusCoupons,
+  getAllCouponsOnUser,
 };

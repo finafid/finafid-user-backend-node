@@ -212,6 +212,7 @@ const {
   deleteCoupons,
   getAllCoupons,
   updateStatusCoupons,
+  getAllCouponsOnUser,
 } = require("../controllers/CouponsAndDeal/CouponsController.js");
 const {
   shareReferralCode,
@@ -612,6 +613,8 @@ routs.post("/updateCoupons/:couponsId", updateCoupons);
 routs.delete("/deleteCoupons/:couponId", deleteCoupons);
 routs.get("/getAllCoupons", getAllCoupons);
 routs.post("/updateStatusCoupons/:couponId", updateStatusCoupons);
+routs.get("/getAllCouponsOnUser/:totalOrderAmount",auth, getAllCouponsOnUser);
+
 
 //referral
 routs.get("/shareReferralCode", auth, shareReferralCode);
