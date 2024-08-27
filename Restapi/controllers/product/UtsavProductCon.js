@@ -85,26 +85,34 @@ const getAllTopSellingBrand = async (req, res) => {
         const products = await Promise.all(
           element.orderItem.map(async (product) => {
             const varientDetails = await Variant.findById(product.productId);
-            const productDetails = await productSc
-              .findById(varientDetails.productGroup)
-              .populate("brand");
-              console.log({ productDetails: productDetails });
-            return productDetails;
-            
+            if (varientDetails && varientDetails.productGroup) {
+              const productDetails = await productSc
+                .findById(varientDetails.productGroup)
+                .populate("brand");
+              return productDetails;
+            } else {
+              return null; // Handle case where variant or productGroup is missing
+            }
           })
         );
 
-        for (let productDetails of products) {
-          const brandDetails = await Brand.findById(productDetails.brand);
-          const brandId = brandDetails._id.toString();
-          console.log({ brandDetails: brandDetails });
-          if (productCountMap.has(brandId)) {
-            productCountMap.get(brandId).count += 1;
-          } else {
-            productCountMap.set(brandId, {
-              brand: brandDetails,
-              count: 1,
-            });
+        // Filter out null values to avoid errors in the following code
+        const validProducts = products.filter((product) => product !== null);
+
+        for (let productDetails of validProducts) {
+          if (productDetails && productDetails.brand) {
+            const brandDetails = await Brand.findById(productDetails.brand);
+            if (brandDetails) {
+              const brandId = brandDetails._id.toString();
+              if (productCountMap.has(brandId)) {
+                productCountMap.get(brandId).count += 1;
+              } else {
+                productCountMap.set(brandId, {
+                  brand: brandDetails,
+                  count: 1,
+                });
+              }
+            }
           }
         }
       })
@@ -119,7 +127,6 @@ const getAllTopSellingBrand = async (req, res) => {
 
       if (productCountMap.has(brandId)) {
         productCountMap.get(brandId).count += 1;
-        console.log({ productCountMap: productCountMap });
       } else {
         productCountMap.set(brandId, {
           brand: brand,
@@ -132,13 +139,12 @@ const getAllTopSellingBrand = async (req, res) => {
     res.status(200).json(result);
   } catch (error) {
     console.error("Error fetching product details:", error);
-    res.status(500).json({ message: error.message + " Internal Server Error" });
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
 const getAllTopSellingProduct = async (req, res) => {
   try {
-    // Fetch all orders
     const orderDetails = await Order.find().populate({
       path: "orderItem.productId",
       populate: {
@@ -156,17 +162,25 @@ const getAllTopSellingProduct = async (req, res) => {
       orderDetails.map(async (order) => {
         await Promise.all(
           order.orderItem.map(async (item) => {
-            const productDetails = item.productId; // Already populated
+            const productDetails = item.productId;
 
-            const productId = productDetails._id.toString(); // Use the unique ID as the key
+            // Check if productDetails is not null before accessing _id
+            if (productDetails) {
+              const productId = productDetails._id.toString();
 
-            if (productCountMap.has(productId)) {
-              productCountMap.get(productId).count += 1;
+              if (productCountMap.has(productId)) {
+                productCountMap.get(productId).count += 1;
+              } else {
+                productCountMap.set(productId, {
+                  product: productDetails,
+                  count: 1,
+                });
+              }
             } else {
-              productCountMap.set(productId, {
-                product: productDetails,
-                count: 1,
-              });
+              console.error(
+                "Product details are null for an item in order:",
+                item
+              );
             }
           })
         );
@@ -182,15 +196,19 @@ const getAllTopSellingProduct = async (req, res) => {
 
     // Update the map with top-selling products
     adminSellingProductDetails.forEach((product) => {
-      const productId = product._id.toString();
+      if (product) {
+        const productId = product._id.toString();
 
-      if (productCountMap.has(productId)) {
-        productCountMap.get(productId).count += 1;
+        if (productCountMap.has(productId)) {
+          productCountMap.get(productId).count += 1;
+        } else {
+          productCountMap.set(productId, {
+            product: product,
+            count: 1,
+          });
+        }
       } else {
-        productCountMap.set(productId, {
-          product: product,
-          count: 1,
-        });
+        console.error("Top-selling product is null:", product);
       }
     });
 
@@ -199,7 +217,7 @@ const getAllTopSellingProduct = async (req, res) => {
     res.status(200).json(result);
   } catch (error) {
     console.error("Error fetching product details:", error);
-    res.status(500).json({ message: error.message + " Internal Server Error" });
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 

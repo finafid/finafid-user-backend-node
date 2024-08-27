@@ -10,6 +10,10 @@ const walletTransactionSchema = new mongoose.Schema(
       type: String,
       enum: ["credit", "debit"],
     },
+    transaction_message: {
+      type: String,
+      required: false,
+    },
     amount: {
       type: Number,
       required: true,
