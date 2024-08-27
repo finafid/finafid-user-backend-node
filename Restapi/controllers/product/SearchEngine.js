@@ -285,10 +285,7 @@ const getSearchDataFirst = async (req, res) => {
     if (!query) {
       return res.status(400).json({ message: "Query string is required." });
     }
-
-    // Use a regular expression for case-insensitive and partial match search
-    const regexQuery = new RegExp(query, "i"); // 'i' makes it case-insensitive
-
+    const regexQuery = new RegExp(query, "i"); 
     const results = await productSearch
       .find({
         entityName: regexQuery,
@@ -325,9 +322,12 @@ const getSearchDataSecond = async (req, res) => {
     // }
 
     // Perform a case-insensitive search using a regular expression
-    const entities = await productSearch.find({
-      entityName: { $regex: `${query}`, $options: "i" }, // 'i' for case-insensitive search
-    });
+     const regexQuery = new RegExp(query, "i");
+     const entities = await productSearch
+       .find({
+         entityName: regexQuery,
+       })
+       .distinct("entityName");
     if (!entities){
       return res.status(400).json({ message: "Query string is required." });
     }
