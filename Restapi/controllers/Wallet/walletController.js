@@ -3,7 +3,7 @@ const Transaction = require("./../../models/Wallet/WalletTransaction");
 const addBalance = async (req, res) => {
   try {
     const userId = req.user._id; // Assuming you have user ID in req.user._id from authentication middleware
-    const { amount, transaction_message } = req.body;
+    const { amount, description } = req.body;
     const type = amount > 0 ? "credit" : "debit";
 
     const newTransaction = new Transaction({
@@ -11,7 +11,7 @@ const addBalance = async (req, res) => {
       type,
       amount,
       date: Date.now(),
-      transaction_message,
+      transaction_message: description,
     });
     await newTransaction.save();
     let walletDetails = await Wallet.findOne({ userId });
