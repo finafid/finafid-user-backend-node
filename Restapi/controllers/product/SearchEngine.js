@@ -423,13 +423,12 @@ const getSearchDataSecond = async (req, res) => {
                 path: "variants",
                 populate: {
                   path: "productGroup",
-                  model: "Product",
+                  populate: {
+                    path: "brand",
+                  },
                 },
-                populate: {
-                  path: "productGroup.brand",
-                  model: "Brand",
-                },
-              })
+              });
+
               
             // Directly concatenate variants
             variantList = variantList.concat(detailedEntity.variants);
