@@ -10,7 +10,15 @@ const getAllUtsavProduct = async (req, res) => {
   try {
     const productDetails = await Variant.find({
       isUtsav: true,
-    }).populate("productGroup");
+    }).populate({
+      path: "productGroup",
+      populate: {
+        path: "brand",
+        model: "Brand",
+      },
+      model: "Product",
+    });
+
     res.status(200).json({ productDetails: productDetails });
   } catch (error) {
     res.status(500).json({ message: error.message + " Internal Server Error" });

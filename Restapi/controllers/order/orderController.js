@@ -531,16 +531,18 @@ async function invoiceGenerate(orderDetails) {
     customerEmail: orderDetails.userId.email,
     customerPhoneNumber: orderDetails.userId.phone,
     customerAddress: `${orderDetails.address.houseNumber}, ${orderDetails.address.street}, ${orderDetails.address.locality}, ${orderDetails.address.city}, ${orderDetails.address.state}, ${orderDetails.address.pinCode}`,
-    
+    payment_method:orderDetails.payment_method,
     items: orderDetails.orderItem.map((item) => ({
       name: item.productId.productGroup.name,
       quantity: item.itemQuantity,
+      unitPrice: item.productId.unitPrice,
+      discount: (item.productId.unitPrice - item.productId.sellingPrice),
       price: item.productId.sellingPrice,
     })),
 
     subtotal: orderDetails.subtotal,
     discount: orderDetails.discount,
-    gst: orderDetails.tax, // Assuming tax is GST, update if necessary
+    gst: orderDetails.tax,
     shipping: orderDetails.orderItem.reduce(
       (acc, item) => acc + item.productId.shippingCost,
       0
@@ -548,7 +550,9 @@ async function invoiceGenerate(orderDetails) {
     total: orderDetails.totalPrice,
   };
 console.log({ invoiceData: invoiceData });
-  const invoiceLink = await generateAndUploadInvoice(invoiceData);
+const fileName = await generateAndUploadInvoice(invoiceData);
+  const invoiceLink =
+    "https://d2w5oj0jmt3sl6.cloudfront.net/invoices/" + fileName;
   console.log({ invoiceLink: invoiceLink });
 orderDetails.invoicePath = invoiceLink;
 await orderDetails.save();

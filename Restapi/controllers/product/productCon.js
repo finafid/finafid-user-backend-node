@@ -89,6 +89,7 @@ const getAllVarients = async (req, res) => {
 const productOnId = async (req, res) => {
   try {
     const productId = req.params.productId;
+
     console.log(productId);
     const product = await productSc
       .findOne({
@@ -445,7 +446,14 @@ getVariantById = async (req, res) => {
       .find({
         productTypeId: productDetails.productTypeId,
       })
-      .populate("variants");
+      .populate({
+        path: "variants",
+        populate: {
+          path: "productGroup",
+          model: "Product",
+        },
+      })
+      .populate("brand");
     return res.status(200).json({
       success: true,
       variantDetails,
@@ -1046,9 +1054,11 @@ const deleteProductType = async (req, res) => {
 const getCategoryId = async (req, res) => {
   try {
     const categoryId = req.params.categoryId;
+    console.log(categoryId);
     const categoryDetails = await mainCategory.findById({
       _id: categoryId,
     });
+    console.log(categoryDetails);
     if (!categoryDetails) {
       return res.status(500).json({ message: "No details found" });
     }

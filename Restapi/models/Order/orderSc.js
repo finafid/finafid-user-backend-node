@@ -12,6 +12,14 @@ const orderSchema = new mongoose.Schema(
         itemQuantity: {
           type: Number,
         },
+        sellingPrice: {
+          type: Number,
+          required: false,
+        },
+        utsavPrice: {
+          type: Number,
+          required: false,
+        },
       },
     ],
     userId: {
@@ -88,7 +96,7 @@ const orderSchema = new mongoose.Schema(
       type: String,
       default: false,
     },
-    couponDiscount:{
+    couponDiscount: {
       type: Number,
       required: false,
       default: 0,

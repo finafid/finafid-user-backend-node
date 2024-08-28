@@ -60,8 +60,8 @@ const adminLogin = async (req, res) => {
         }
         const tokenObject = {
           _id: adminDetails._id,
-          fullname: adminDetails.fullname,
-          email: Admin.email,
+          fullName: adminDetails.fullName,
+          email: adminDetails.email,
         };
         const jwtToken = generateTokens(tokenObject,adminDetails);
         tokenObject.imgUrl = Admin.imgUrl;

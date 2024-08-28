@@ -352,7 +352,7 @@ const getSearchDataSecond = async (req, res) => {
                   path: "productGroup",
                   model: "Product",
                 },
-              });
+              }).populate("brand");
             // Directly concatenate variants
             variantList = variantList.concat(detailedEntity.variants);
             break;
