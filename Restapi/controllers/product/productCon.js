@@ -428,20 +428,22 @@ const deleteVariants = async (req, res) => {
       .json({ message: "Internal Server Error", error: error.message });
   }
 };
-const 
 getVariantById = async (req, res) => {
   try {
- 
-    const variantDetails = await Variant.findOne({
-      _id: req.params.variantId,
-    }).populate("productGroup");
- 
+    const variantDetails = await Variant.findById(
+      req.params.variantId
+    ).populate("productGroup");
+
     if (!variantDetails) {
       return res
-        .status(500)
-        .json({ message: "No variant found"});
+        .status(404)
+        .json({ success: false, message: "Variant not found" });
     }
-    const productDetails = await productSc.findById(variantDetails.productGroup);
+
+    const productDetails = await productSc.findById(
+      variantDetails.productGroup
+    );
+
     const productList = await productSc
       .find({
         productTypeId: productDetails.productTypeId,
@@ -450,18 +452,22 @@ getVariantById = async (req, res) => {
         path: "variants",
         populate: {
           path: "productGroup",
-          model: "Product",
+          populate: {
+            path: "brand",
+            model: "Brand",
+          },
         },
       })
       .populate("brand");
-     const suggestionProductList =[]
-      productList.forEach((element)=>{
-        suggestionProductList.push(element.variants);
-      })
+
+    const suggestionProductList = productList.reduce((acc, product) => {
+      return acc.concat(product.variants);
+    }, []);
+
     return res.status(200).json({
       success: true,
       variantDetails,
-      suggestionProductList: suggestionProductList,
+      suggestionProductList,
     });
   } catch (error) {
     return res.status(500).json({
@@ -470,6 +476,7 @@ getVariantById = async (req, res) => {
     });
   }
 };
+
 const createBrand = async (req, res) => {
   try {
     const { name, description, categoryList } = req.body;
