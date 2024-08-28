@@ -442,7 +442,7 @@ getVariantById = async (req, res) => {
         .json({ message: "No variant found"});
     }
     const productDetails = await productSc.findById(variantDetails.productGroup);
-    const suggestionProductList = await productSc
+    const productList = await productSc
       .find({
         productTypeId: productDetails.productTypeId,
       })
@@ -454,6 +454,10 @@ getVariantById = async (req, res) => {
         },
       })
       .populate("brand");
+     const suggestionProductList =[]
+      productList.forEach((element)=>{
+        suggestionProductList.push(element.variants);
+      })
     return res.status(200).json({
       success: true,
       variantDetails,
