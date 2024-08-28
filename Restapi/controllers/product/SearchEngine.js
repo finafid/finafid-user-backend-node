@@ -365,7 +365,8 @@ const getSearchDataSecond = async (req, res) => {
                   path: "productGroup",
                   model: "Product",
                 },
-              });
+              })
+              .populate("brand");;
             // Directly concatenate variants
             variantList = variantList.concat(detailedEntity.variants);
             break;
@@ -378,7 +379,8 @@ const getSearchDataSecond = async (req, res) => {
                   path: "productGroup",
                   model: "Product",
                 },
-              });
+              })
+              .populate("brand");;
             // Directly concatenate variants
             variantList = variantList.concat(detailedEntity.variants);
             console.log({ SubCategory: detailedEntity });
@@ -392,7 +394,8 @@ const getSearchDataSecond = async (req, res) => {
                   path: "productGroup",
                   model: "Product",
                 },
-              });
+              })
+              .populate("brand");;
             // Directly concatenate variants
             variantList = variantList.concat(detailedEntity.variants);
             break;
@@ -405,7 +408,8 @@ const getSearchDataSecond = async (req, res) => {
                   path: "productGroup",
                   model: "Product",
                 },
-              });
+              })
+              .populate("brand");;
             // Directly concatenate variants
             variantList = variantList.concat(detailedEntity.variants);
             break;
