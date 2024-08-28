@@ -327,14 +327,14 @@ const getSearchDataSecond = async (req, res) => {
        .find({
          entityName: regexQuery,
        })
-       .distinct("entityName");
+       
     if (!entities){
       return res.status(400).json({ message: "Query string is required." });
     }
       if (entities.length === 0) {
         return res.status(404).json({ message: "No matching entities found." });
       }
-
+      console.log(entities);
     let variantList = [];
 
     // Iterate through the results and fetch details based on modelName

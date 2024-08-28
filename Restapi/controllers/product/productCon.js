@@ -440,9 +440,16 @@ getVariantById = async (req, res) => {
         .status(500)
         .json({ message: "No variant found"});
     }
+    const productDetails = await productSc.findById(variantDetails.productGroup);
+    const suggestionProductList = await productSc
+      .find({
+        productTypeId: productDetails.productTypeId,
+      })
+      .populate("variants");
     return res.status(200).json({
       success: true,
       variantDetails,
+      suggestionProductList: suggestionProductList,
     });
   } catch (error) {
     return res.status(500).json({
