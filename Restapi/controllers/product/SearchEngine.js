@@ -346,7 +346,7 @@ const getSearchDataSecond = async (req, res) => {
           case "Product":
             detailedEntity = await productSc
               .findById(entity.entityId)
-              populate({
+              .populate({
                 path: "variants",
                 populate: {
                   path: "productGroup",
@@ -382,7 +382,7 @@ const getSearchDataSecond = async (req, res) => {
           case "SubCategory":
             detailedEntity = await productSc
               .findOne({ subCategoryId: entity.entityId })
-              populate({
+              .populate({
                 path: "variants",
                 populate: {
                   path: "productGroup",
@@ -402,7 +402,7 @@ const getSearchDataSecond = async (req, res) => {
           case "ProductType":
             detailedEntity = await productSc
               .findOne({ productTypeId: entity.entityId })
-              populate({
+              .populate({
                 path: "variants",
                 populate: {
                   path: "productGroup",
@@ -421,7 +421,7 @@ const getSearchDataSecond = async (req, res) => {
           case "Brand":
             detailedEntity = await productSc
               .findOne({ brand: entity.entityId })
-              populate({
+              .populate({
                 path: "variants",
                 populate: {
                   path: "productGroup",
