@@ -357,7 +357,7 @@ const getSearchDataSecond = async (req, res) => {
                   model: "Brand",
                 },
               })
-              .populate("brand");
+              
             
             variantList = variantList.concat(detailedEntity.variants);
             break;
@@ -370,8 +370,12 @@ const getSearchDataSecond = async (req, res) => {
                   path: "productGroup",
                   model: "Product",
                 },
+                populate: {
+                  path: "productGroup.brand",
+                  model: "Brand",
+                },
               })
-              .populate("brand");;
+             
             // Directly concatenate variants
             variantList = variantList.concat(detailedEntity.variants);
             break;
@@ -384,8 +388,12 @@ const getSearchDataSecond = async (req, res) => {
                   path: "productGroup",
                   model: "Product",
                 },
+                populate: {
+                  path: "productGroup.brand",
+                  model: "Brand",
+                },
               })
-              .populate("brand");;
+              
             // Directly concatenate variants
             variantList = variantList.concat(detailedEntity.variants);
             console.log({ SubCategory: detailedEntity });
@@ -399,8 +407,12 @@ const getSearchDataSecond = async (req, res) => {
                   path: "productGroup",
                   model: "Product",
                 },
-              })
-              .populate("brand");;
+                populate: {
+                  path: "productGroup.brand",
+                  model: "Brand",
+                },
+              });
+              
             // Directly concatenate variants
             variantList = variantList.concat(detailedEntity.variants);
             break;
@@ -413,8 +425,12 @@ const getSearchDataSecond = async (req, res) => {
                   path: "productGroup",
                   model: "Product",
                 },
+                populate: {
+                  path: "productGroup.brand",
+                  model: "Brand",
+                },
               })
-              .populate("brand");;
+              
             // Directly concatenate variants
             variantList = variantList.concat(detailedEntity.variants);
             break;
