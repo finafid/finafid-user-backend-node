@@ -350,8 +350,10 @@ const getSearchDataSecond = async (req, res) => {
                 path: "variants",
                 populate: {
                   path: "productGroup",
+                  model:"Product",
                   populate: {
                     path: "brand",
+                    model:"Brand"
                   },
                 },
               });
@@ -361,15 +363,18 @@ const getSearchDataSecond = async (req, res) => {
           case "Category":
             detailedEntity = await productSc
               .findOne({ categoryId: entity.entityId })
-              populate({
-                path: "variants",
-                populate: {
-                  path: "productGroup",
-                  populate: {
-                    path: "brand",
-                  },
-                },
-              });
+             populate({
+               path: "variants",
+               populate: {
+                 path: "productGroup",
+                 model: "Product",
+                 populate: {
+                   path: "brand",
+                   model: "Brand",
+                 },
+               },
+             });
+            
              
             // Directly concatenate variants
             variantList = variantList.concat(detailedEntity.variants);
@@ -381,11 +386,14 @@ const getSearchDataSecond = async (req, res) => {
                 path: "variants",
                 populate: {
                   path: "productGroup",
+                  model: "Product",
                   populate: {
                     path: "brand",
+                    model: "Brand",
                   },
                 },
               });
+            
               
             // Directly concatenate variants
             variantList = variantList.concat(detailedEntity.variants);
@@ -398,11 +406,14 @@ const getSearchDataSecond = async (req, res) => {
                 path: "variants",
                 populate: {
                   path: "productGroup",
+                  model: "Product",
                   populate: {
                     path: "brand",
+                    model: "Brand",
                   },
                 },
               });
+            
               
             // Directly concatenate variants
             variantList = variantList.concat(detailedEntity.variants);
@@ -410,15 +421,18 @@ const getSearchDataSecond = async (req, res) => {
           case "Brand":
             detailedEntity = await productSc
               .findOne({ brand: entity.entityId })
-              .populate({
+              populate({
                 path: "variants",
                 populate: {
                   path: "productGroup",
+                  model: "Product",
                   populate: {
                     path: "brand",
+                    model: "Brand",
                   },
                 },
               });
+            
 
               
             // Directly concatenate variants
