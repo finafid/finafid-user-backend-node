@@ -73,7 +73,7 @@ const productSchema = new Schema(
     topSellingProduct: {
       type: Boolean,
       default: false,
-      required:false
+      required: false,
     },
     variants: [
       {
@@ -84,6 +84,10 @@ const productSchema = new Schema(
     productCode: {
       type: String,
       required: true,
+    },
+    hasColorShade: {
+      type: Boolean,
+      default: false,
     },
   },
   { timestamps: true }

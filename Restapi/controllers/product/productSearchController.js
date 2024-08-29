@@ -90,6 +90,7 @@ const getAllVariantsOnUser = async (req, res) => {
       maxPrice,
       discount,
       rating,
+      price,
       productTypeId,
       subCategoryId,
       mainCategoryId,
@@ -101,6 +102,14 @@ const getAllVariantsOnUser = async (req, res) => {
     let query = {};
 
     // Price filter
+    if(price){
+      const ranges = price.split(",");
+      ranges.forEach((range) => {
+        const [min, max] = range.split("-").map(Number);
+        if (min < minPrice) minPrice = min;
+        if (max > maxPrice) maxPrice = max;
+      });
+    }
     if (maxPrice || minPrice) {
       query.sellingPrice = {};
       if (minPrice) query.sellingPrice.$gte = parseFloat(minPrice);

@@ -116,8 +116,12 @@ const variantSchema = new Schema(
       default: false,
       required: false,
     },
-    color_images: {
+    colorImage: {
       type: String,
+      required: false,
+    },
+    expiryDate: {
+      type: Date,
       required: false,
     },
     images: [

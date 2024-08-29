@@ -29,10 +29,12 @@ const productTypeSchema = new Schema(
       required: false,
       default: false,
     },
-    variation_Features: [{
-      type: String,
-      required: false,
-    }],
+    variationFeatures: [
+      {
+        type: String,
+        required: false,
+      },
+    ],
   },
   { timestamps: true }
 );

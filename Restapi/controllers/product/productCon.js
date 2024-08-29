@@ -116,7 +116,7 @@ const uploadVariants = async (
 ) => {
   const variantPromises = variants.map(async (variantData, i) => {
     let variantImageLinks = [];
-
+    console.log(variantData);
     // Collect variant images
     let count = 0;
     while (uploadedFiles[`variants[${i}][images][${count}]`]) {
@@ -126,9 +126,15 @@ const uploadVariants = async (
       variantImageLinks = [...variantImageLinks, ...imageLinks];
       count++;
     }
-
-    const variantName = productName + " " + "(" + variantData.sku + ")";
-
+    
+     let singleImageUrl = "";
+    const colorImageKey = `variants[${i}][colorImage]`;
+    console.log(colorImageKey);
+    if (uploadedFiles[colorImageKey]) {
+      console.log("GHHJGHJHJ");
+      const [imageLink] = await uploadFiles(uploadedFiles[colorImageKey]);
+      singleImageUrl = imageLink;
+    }
     // Create variant
     const variant = new Variant({
       productGroup: productId,
@@ -154,8 +160,9 @@ const uploadVariants = async (
       utsavReward: variantData.utsavReward,
       basicReward: variantData.basicReward,
       utsavDiscountType: variantData.utsavDiscountType,
-      name: variantName,
-      variantDetail: variantData.variantDetail,
+      name: variantData.name,
+      variantDetails: variantData.variantDetails,
+      colorImage: singleImageUrl,
     });
 
     await variant.save();
@@ -175,6 +182,7 @@ const createProduct = async (req, res) => {
     category,
     subCategory,
     isExpirySaleable,
+    hasColorShade,
     productType,
     brand,
     unit,
@@ -188,7 +196,7 @@ const createProduct = async (req, res) => {
   try {
     // Initialize an object to store uploaded URLs
     const uploadedFiles = {};
-
+    console.log(req.files);
     // Process all files and categorize by fieldname
     for (const file of req.files) {
       const fieldName = file.fieldname;
@@ -220,6 +228,7 @@ const createProduct = async (req, res) => {
       isCustomizable,
       hasExpiry,
       isExpirySaleable,
+      hasColorShade,
       categoryId: category,
       subCategoryId: subCategory,
       productTypeId: productType,
@@ -243,14 +252,9 @@ const createProduct = async (req, res) => {
       newProduct._id,
       name
     );
-
-    // Push all variant IDs to the product
     newProduct.variants.push(...variantIds);
-
-    // Save the updated product with all variants
     await newProduct.save();
-
-    res.status(201).json({
+    return res.status(200).json({
       success: true,
       message: "Product created successfully",
       product: newProduct,
@@ -274,7 +278,7 @@ const updateVariants = async (req, res) => {
 
     // Get the old quantity before updating the variant
     const oldQuantity = parseInt(variantDetails.quantity, 10);
-
+    console.log({body:req.body})
     let newList = [];
     if (req.body.images) {
       newList = req.body.images;
@@ -312,8 +316,8 @@ const updateVariants = async (req, res) => {
     variantDetails.utsavReward = parseFloat(req.body.utsavReward);
     variantDetails.basicReward = parseFloat(req.body.basicReward);
     variantDetails.utsavDiscountType = req.body.utsavDiscountType;
-    variantDetails.variantDetail = req.body.variantDetail;
-    variantDetails.name =varientName
+    variantDetails.variantDetails = req.body.variantDetails;
+    variantDetails.name = req.body.name;
     // Save variant details
     await variantDetails.save();
 
@@ -346,10 +350,8 @@ const addVariants = async (req, res) => {
   try {
     const productGroupDetails = await productSc.findById(req.body.productId);
     const variantImageLinks = await getImageLinks(req.files["images[]"]);
-     const varientName =
-       productGroupDetails.name + " " + "(" + req.body.sku + ")";
     const variant = new Variant({
-      name: varientName,
+      name: req.body.name,
       productGroup: req.body.productId,
       attributes: req.body.attributes,
       sku: req.body.sku,
@@ -601,7 +603,7 @@ const createSubCategory = async (req, res) => {
 };
 const createProductType = async (req, res) => {
   try {
-    const { name, description, subCategoryId, categoryId, variation_Features } =
+    const { name, description, subCategoryId, categoryId, variationFeatures } =
       req.body;
     const logoUrl = await getImageLink(req);
     const newProductType = new productType({
@@ -610,7 +612,7 @@ const createProductType = async (req, res) => {
       logoUrl,
       subCategoryId,
       categoryId,
-      variation_Features,
+      variationFeatures,
     });
     if (!newProductType) {
       res.status(500).json({ message: "Internal Server Error" });
@@ -624,7 +626,13 @@ const createProductType = async (req, res) => {
     res.status(500).json({ message: error.message + " Internal Server Error" });
   }
 };
-
+const getVariationFeature=async(req,res)=>{
+  try {
+    
+  } catch (error) {
+    res.status(500).json({ message: error.message + " Internal Server Error" });
+  }
+}
 const createCustomSearch = async (req, res) => {
   try {
     const newProductSearch = new ProductSearch({
@@ -713,6 +721,7 @@ const updateProduct = async (req, res) => {
       hasExpiry,
       category,
       subCategory,
+      hasColorShade,
       isExpirySaleable,
       productType,
       brand,
@@ -787,7 +796,7 @@ const updateProduct = async (req, res) => {
     existingProduct.variationAttributes = variationAttributes;
     existingProduct.thumbnail = singleImageUrl;
     existingProduct.otherImages = newList;
-
+    existingProduct.hasColorShade = hasColorShade;
     await existingProduct.save();
 
     res.status(200).json({
@@ -843,6 +852,9 @@ const editProductType = async (req, res) => {
     const productTypeDetails = await productType.findOne({
       _id: req.params.productTypeId,
     });
+    console.log(req.params.productTypeId);
+    console.log(productTypeDetails);
+    console.log(req.body);
     if (!productTypeDetails) {
       return res.status(500).json({ message: "No such productType found" });
     }
@@ -853,23 +865,23 @@ const editProductType = async (req, res) => {
         description,
         subCategoryId,
         categoryId,
-        variation_Features,
+        variationFeatures,
       } = req.body;
       productTypeDetails.name = name;
       productTypeDetails.description = description;
       productTypeDetails.subCategoryId = subCategoryId;
       productTypeDetails.categoryId = categoryId;
       productTypeDetails.logoUrl = logoUrl;
-       productTypeDetails.variation_Features = variation_Features;
+       productTypeDetails.variationFeatures = variationFeatures;
       await productTypeDetails.save();
     } else {
       const logoUrl = await getImageLink(req);
-      const { name, description, subCategoryId, variation_Features } = req.body;
+      const { name, description, subCategoryId, variationFeatures } = req.body;
       productTypeDetails.name = name;
       productTypeDetails.description = description;
       productTypeDetails.subCategoryId = subCategoryId;
       productTypeDetails.logoUrl = logoUrl;
-      productTypeDetails.variation_Features = variation_Features;
+      productTypeDetails.variationFeatures = variationFeatures;
       await productTypeDetails.save();
     }
     return res.status(200).json({ productTypeDetails });
