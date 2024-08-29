@@ -83,11 +83,10 @@ const getAllSearchTypeBasedOnProduct = async (req, res) => {
 };
 const getAllVariantsOnUser = async (req, res) => {
   try {
-    console.log(req.query);
     const {
       sortBy,
-      minPrice,
-      maxPrice,
+      minPrice: minPriceQuery = 0,
+      maxPrice: maxPriceQuery = Infinity,
       discount,
       rating,
       price,
@@ -99,20 +98,36 @@ const getAllVariantsOnUser = async (req, res) => {
       limit = 10, // Default to 10 items per page
     } = req.query;
 
+    console.log(req.query);
+
     let query = {};
 
-    // Price filter
-    if(price){
-      minPrice = Math.max(...price);
-      maxPrice = Math.max(...price);
-    }
-    if (maxPrice || minPrice) {
-      query.sellingPrice = {};
-      if (minPrice) query.sellingPrice.$gte = parseFloat(minPrice);
-      if (maxPrice) query.sellingPrice.$lte = parseFloat(maxPrice);
+    let minPrice = minPriceQuery;
+    let maxPrice = maxPriceQuery;
+
+    if (price) {
+      const ranges = price
+        .split(",")
+        .map((range) => range.split("-").map(Number));
+      minPrice = Math.min(...ranges.map(([min]) => min), minPrice);
+      maxPrice = Math.max(
+        ...ranges.map(([_, max]) => (isNaN(max) ? Infinity : max)),
+        maxPrice
+      );
     }
 
-    // Discount filter
+    console.log("Calculated minPrice:", minPrice);
+    console.log("Calculated maxPrice:", maxPrice);
+
+    if (minPrice !== 0 || maxPrice !== Infinity) {
+      query.sellingPrice = {};
+      if (minPrice !== 0) query.sellingPrice.$gte = parseFloat(minPrice);
+      if (maxPrice !== Infinity) query.sellingPrice.$lte = parseFloat(maxPrice);
+    }
+
+    console.log("Final query:", query);
+    
+// Discount filter
    if (discount) {
      const discountArray = discount.split(",").map(Number);
      
