@@ -98,7 +98,7 @@ const getAllVariantsOnUser = async (req, res) => {
       page = 1, // Default to the first page
       limit = 10, // Default to 10 items per page
     } = req.query;
-
+    console.log(req.query)
     let query = {};
 
     // Price filter
