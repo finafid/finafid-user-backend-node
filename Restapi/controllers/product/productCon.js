@@ -162,6 +162,7 @@ const uploadVariants = async (
       utsavDiscountType: variantData.utsavDiscountType,
       name: variantData.name,
       variantDetails: variantData.variantDetails,
+      expiryDate: variantData.expiryDate,
       colorImage: singleImageUrl,
     });
 
@@ -317,6 +318,7 @@ const updateVariants = async (req, res) => {
     variantDetails.basicReward = parseFloat(req.body.basicReward);
     variantDetails.utsavDiscountType = req.body.utsavDiscountType;
     variantDetails.variantDetails = req.body.variantDetails;
+    variantDetails.expiryDate = req.body.expiryDate;
     variantDetails.name = req.body.name;
     // Save variant details
     await variantDetails.save();
@@ -376,6 +378,7 @@ const addVariants = async (req, res) => {
       basicReward: parseFloat(req.body.basicReward),
       utsavDiscountType: req.body.utsavDiscountType,
       variantDetail: req.body.variantDetail,
+      expiryDate: req.body.expiryDate,
     });
     if (!variant) {
       return res
