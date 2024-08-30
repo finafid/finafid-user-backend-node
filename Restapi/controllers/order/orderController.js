@@ -54,7 +54,7 @@ const placeOrder = async (req, res) => {
       walletBalanceUsed: req.body.walletBalanceUsed,
       couponDiscount: req.body.couponDiscount,
     });
-    if (req.body.walletBalanceUsed >=0) {
+    if (req.body.walletBalanceUsed >0) {
       const walletDetails = await Wallet.findOne({
         userId: req.user._id,
       });
