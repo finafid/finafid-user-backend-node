@@ -73,7 +73,6 @@ const getBalance = async (req, res) => {
          balance: 0,
          transactions: [],
        });
-       await walletDetails.save();
      }
     return res.status(200).json({ walletDetails });
   } catch (error) {
