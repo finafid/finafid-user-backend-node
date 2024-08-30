@@ -102,158 +102,168 @@ const getAllVariantsOnUser = async (req, res) => {
 
     let query = {};
 
+    // Initialize minPrice and maxPrice
+    let calculatedMinPrice = Infinity;
+    let calculatedMaxPrice = 0;
 
     if (price) {
       const ranges = price
         .split(",")
         .map((range) => range.split("-").map(Number));
-      minPrice = Math.min(...ranges.map(([min]) => min), minPrice);
-      maxPrice = Math.max(
-        ...ranges.map(([_, max]) => (isNaN(max) ? Infinity : max)),
-        maxPrice
-      );
+
+      const minValues = ranges.map(([min]) => min);
+      const maxValues = ranges.map(([_, max]) => (isNaN(max) ? Infinity : max));
+
+      if (minValues.includes(0)) {
+        calculatedMinPrice = 0;
+      } else {
+        calculatedMinPrice = Math.min(...minValues);
+      }
+
+      if (maxValues.includes(Infinity)) {
+        calculatedMaxPrice = Infinity;
+      } else {
+        calculatedMaxPrice = Math.max(...maxValues);
+      }
     }
 
-    console.log("Calculated minPrice:", minPrice);
-    console.log("Calculated maxPrice:", maxPrice);
+    console.log("Calculated minPrice:", calculatedMinPrice);
+    console.log("Calculated maxPrice:", calculatedMaxPrice);
 
-    if (minPrice !== 0 || maxPrice !== Infinity) {
+    if (calculatedMinPrice !== Infinity || calculatedMaxPrice !== 0) {
       query.sellingPrice = {};
-      if (minPrice !== 0) query.sellingPrice.$gte = parseFloat(minPrice);
-      if (maxPrice !== Infinity) query.sellingPrice.$lte = parseFloat(maxPrice);
+      if (calculatedMinPrice !== Infinity)
+        query.sellingPrice.$gte = calculatedMinPrice;
+      if (calculatedMaxPrice !== 0)
+        query.sellingPrice.$lte = calculatedMaxPrice;
     }
 
-    console.log("Final query:", query);
-    
-// Discount filter
-   if (discount) {
-     const discountArray = discount.split(",").map(Number);
-     
-     const maxDiscount = Math.max(...discountArray);
-     query.discount = { $gte: 0, $lte: maxDiscount };
-   }
+    // Discount filter
+    if (discount) {
+      const discountArray = discount.split(",").map(Number);
 
-  const variantList = await Variant.find(query).populate({
-    path: "productGroup",
-    populate: {
-      path: "brand",
-      model: "Brand",
-    },
-    model: "Product",
-  });
+      const maxDiscount = Math.max(...discountArray);
+      query.discount = { $gte: 0, $lte: maxDiscount };
+    }
 
+    const variantList = await Variant.find(query).populate({
+      path: "productGroup",
+      populate: {
+        path: "brand",
+        model: "Brand",
+      },
+      model: "Product",
+    });
 
-   let filteredVariants = variantList;
+    let filteredVariants = variantList;
 
-   // Rating Filter
-   if (rating) {
-     const ratingArray = rating.split(",").map(Number);
-     const minRating = Math.min(...ratingArray);
+    // Rating Filter
+    if (rating) {
+      const ratingArray = rating.split(",").map(Number);
+      const minRating = Math.min(...ratingArray);
 
-     filteredVariants = await Promise.all(
-       filteredVariants.map(async (variant) => {
-         const review = await ReviewAndRatings.findOne({
-           productId: variant.productGroup._id,
-           rating: { $gte: minRating },
-         });
-         return review ? variant : null;
-       })
-     );
+      filteredVariants = await Promise.all(
+        filteredVariants.map(async (variant) => {
+          const review = await ReviewAndRatings.findOne({
+            productId: variant.productGroup._id,
+            rating: { $gte: minRating },
+          });
+          return review ? variant : null;
+        })
+      );
 
-     filteredVariants = filteredVariants.filter((variant) => variant !== null);
-   }
+      filteredVariants = filteredVariants.filter((variant) => variant !== null);
+    }
 
-   // Main Category Filter
-   if (mainCategoryId) {
-     filteredVariants = await Promise.all(
-       filteredVariants.map(async (variant) => {
-         const productDetails = await productSc.findById(variant.productGroup);
-         return productDetails &&
-           productDetails.categoryId.toString() === mainCategoryId
-           ? variant
-           : null;
-       })
-     );
+    // Main Category Filter
+    if (mainCategoryId) {
+      filteredVariants = await Promise.all(
+        filteredVariants.map(async (variant) => {
+          const productDetails = await productSc.findById(variant.productGroup);
+          return productDetails &&
+            productDetails.categoryId.toString() === mainCategoryId
+            ? variant
+            : null;
+        })
+      );
 
-     filteredVariants = filteredVariants.filter((variant) => variant !== null);
-   }
+      filteredVariants = filteredVariants.filter((variant) => variant !== null);
+    }
 
-   // Sub Category Filter
-   if (subCategoryId) {
-     filteredVariants = await Promise.all(
-       filteredVariants.map(async (variant) => {
-         const productDetails = await productSc.findById(variant.productGroup);
-         return productDetails &&
-           productDetails.subCategoryId.toString() === subCategoryId
-           ? variant
-           : null;
-       })
-     );
+    // Sub Category Filter
+    if (subCategoryId) {
+      filteredVariants = await Promise.all(
+        filteredVariants.map(async (variant) => {
+          const productDetails = await productSc.findById(variant.productGroup);
+          return productDetails &&
+            productDetails.subCategoryId.toString() === subCategoryId
+            ? variant
+            : null;
+        })
+      );
 
-     filteredVariants = filteredVariants.filter((variant) => variant !== null);
-   }
+      filteredVariants = filteredVariants.filter((variant) => variant !== null);
+    }
 
-   // Product Type Filter
-   if (productTypeId) {
-     filteredVariants = await Promise.all(
-       filteredVariants.map(async (variant) => {
-         const productDetails = await productSc.findById(variant.productGroup);
-         return productDetails &&
-           productDetails.productTypeId.toString() === productTypeId
-           ? variant
-           : null;
-       })
-     );
+    // Product Type Filter
+    if (productTypeId) {
+      filteredVariants = await Promise.all(
+        filteredVariants.map(async (variant) => {
+          const productDetails = await productSc.findById(variant.productGroup);
+          return productDetails &&
+            productDetails.productTypeId.toString() === productTypeId
+            ? variant
+            : null;
+        })
+      );
 
-     filteredVariants = filteredVariants.filter((variant) => variant !== null);
-   }
+      filteredVariants = filteredVariants.filter((variant) => variant !== null);
+    }
 
-   // Brand Filter
-   if (brandId) {
-     filteredVariants = await Promise.all(
-       filteredVariants.map(async (variant) => {
-         const productDetails = await productSc.findById(variant.productGroup);
-         return productDetails && productDetails.brand.toString() === brandId
-           ? variant
-           : null;
-       })
-     );
+    // Brand Filter
+    if (brandId) {
+      filteredVariants = await Promise.all(
+        filteredVariants.map(async (variant) => {
+          const productDetails = await productSc.findById(variant.productGroup);
+          return productDetails && productDetails.brand.toString() === brandId
+            ? variant
+            : null;
+        })
+      );
 
-     filteredVariants = filteredVariants.filter((variant) => variant !== null);
-   }
+      filteredVariants = filteredVariants.filter((variant) => variant !== null);
+    }
 
-   // Sorting
-   if (sortBy) {
-     let sortQuery = {};
+    // Sorting
+    if (sortBy) {
+      let sortQuery = {};
 
-     if (sortBy === "price asc") sortQuery = { key: "sellingPrice", order: 1 };
-     if (sortBy === "price desc")
-       sortQuery = { key: "sellingPrice", order: -1 };
-     if (sortBy === "discount") sortQuery = { key: "discount", order: -1 };
-     if (sortBy === "customerRatings asc")
-       sortQuery = { key: "customerRatings", order: 1 };
-     if (sortBy === "customerRatings desc")
-       sortQuery = { key: "customerRatings", order: -1 };
+      if (sortBy === "price asc") sortQuery = { key: "sellingPrice", order: 1 };
+      if (sortBy === "price desc")
+        sortQuery = { key: "sellingPrice", order: -1 };
+      if (sortBy === "discount") sortQuery = { key: "discount", order: -1 };
+      if (sortBy === "customerRatings asc")
+        sortQuery = { key: "customerRatings", order: 1 };
+      if (sortBy === "customerRatings desc")
+        sortQuery = { key: "customerRatings", order: -1 };
 
-     filteredVariants = filteredVariants.sort((a, b) => {
-       return (a[sortQuery.key] - b[sortQuery.key]) * sortQuery.order;
-     });
-   }
+      filteredVariants = filteredVariants.sort((a, b) => {
+        return (a[sortQuery.key] - b[sortQuery.key]) * sortQuery.order;
+      });
+    }
 
-   // Pagination
-   const totalVariants = filteredVariants.length;
-   const paginatedVariants = filteredVariants.slice(
-     (page - 1) * limit,
-     page * limit
-   );
+    // Pagination
+    const totalVariants = filteredVariants.length;
+    const paginatedVariants = filteredVariants.slice(
+      (page - 1) * limit,
+      page * limit
+    );
 
-   return res.status(200).json({
-     success: true,
-     totalItems: totalVariants,
-     variants: paginatedVariants,
-   });
-
-
+    return res.status(200).json({
+      success: true,
+      totalItems: totalVariants,
+      variants: paginatedVariants,
+    });
 
     // res.status(200).json({
     //   page: parseInt(page),
