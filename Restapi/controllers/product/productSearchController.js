@@ -85,8 +85,8 @@ const getAllVariantsOnUser = async (req, res) => {
   try {
     const {
       sortBy,
-      minPrice: minPriceQuery = 0,
-      maxPrice: maxPriceQuery = Infinity,
+      minPrice,
+      maxPrice,
       discount,
       rating,
       price,
@@ -100,21 +100,27 @@ const getAllVariantsOnUser = async (req, res) => {
 
     console.log(req.query);
 
-    let query = {};
-
-    let minPrice = minPriceQuery;
-    let maxPrice = maxPriceQuery;
-
     if (price) {
       const ranges = price
         .split(",")
         .map((range) => range.split("-").map(Number));
-      minPrice = Math.min(...ranges.map(([min]) => min), minPrice);
-      maxPrice = Math.max(
-        ...ranges.map(([_, max]) => (isNaN(max) ? Infinity : max)),
-        maxPrice
-      );
+
+      const minValues = ranges.map(([min]) => min);
+      const maxValues = ranges.map(([_, max]) => (isNaN(max) ? Infinity : max));
+
+      if (minValues.includes(0)) {
+        minPrice = 0;
+      } else {
+        minPrice = Math.min(...minValues);
+      }
+
+      if (maxValues.includes(Infinity)) {
+        maxPrice = Infinity;
+      } else {
+        maxPrice = Math.max(...maxValues);
+      }
     }
+
 
     console.log("Calculated minPrice:", minPrice);
     console.log("Calculated maxPrice:", maxPrice);
