@@ -48,9 +48,9 @@ async function generateAndUploadInvoice(invoiceData) {
     // Add customer details
     doc.moveDown();
     doc.fontSize(12).text(`Customer Name: ${invoiceData.customerName}`);
-    doc.text(`Customer Email: ${invoiceData.customerEmail}`);
-    doc.text(`Customer Phone: ${invoiceData.customerPhoneNumber}`);
-    doc.text(`Customer Address: ${invoiceData.customerAddress}`);
+    doc.text(`Email: ${invoiceData.customerEmail}`);
+    doc.text(`Phone: ${invoiceData.customerPhoneNumber}`);
+    doc.text(`Address: ${invoiceData.customerAddress}`);
 
     // Add a separator line
     doc.moveDown().moveTo(50, doc.y).lineTo(550, doc.y).stroke();
@@ -74,9 +74,9 @@ async function generateAndUploadInvoice(invoiceData) {
       doc
         .text(index + 1, 50, itemY)
         .text(item.name, 100, itemY)
-        .text(`₹${item.unitPrice.toFixed(2)}`, 300, itemY)
+        .text(`${item.unitPrice.toFixed(2)}`, 300, itemY)
         .text(item.quantity.toString(), 400, itemY)
-        .text(`₹${item.price.toFixed(2)}`, 450, itemY);
+        .text(`${item.price.toFixed(2)}`, 450, itemY);
       doc.moveDown();
     });
 
@@ -86,15 +86,19 @@ async function generateAndUploadInvoice(invoiceData) {
     // Add totals
     doc
       .fontSize(12)
-      .text(`Sub Total: ₹${invoiceData.subtotal.toFixed(2)}`, {
+      .text(`Sub Total: ${invoiceData.subtotal.toFixed(2)}`, {
         align: "left",
       })
-      .text(`Discount: -₹${invoiceData.discount.toFixed(2)}`, {
+      .moveDown()
+      .text(`Discount: ${invoiceData.discount.toFixed(2)}`, {
         align: "left",
       })
-      .text(`GST: ₹${invoiceData.gst.toFixed(2)}`, { align: "left" })
-      .text(`Shipping: ₹${invoiceData.shipping.toFixed(2)}`, { align: "left" })
-      .text(`Total: ₹${invoiceData.total.toFixed(2)}`, {
+      .moveDown()
+      .text(`GST: ${invoiceData.gst.toFixed(2)}`, { align: "left" })
+      .moveDown()
+      .text(`Shipping: ${invoiceData.shipping.toFixed(2)}`, { align: "left" })
+      .moveDown()
+      .text(`Total: ${invoiceData.total.toFixed(2)}`, {
         align: "left",
         font: "Helvetica-Bold",
       });

@@ -8,22 +8,37 @@ const Variant = require("../../models/product/Varient.js");
 const Order = require("../../models/Order/orderSc.js");
 const getAllUtsavProduct = async (req, res) => {
   try {
-    const productDetails = await Variant.find({
-      isUtsav: true,
-    }).populate({
-      path: "productGroup",
-      populate: {
-        path: "brand",
-        model: "Brand",
-      },
-      model: "Product",
-    });
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const productDetails = await Variant.find({ isUtsav: true })
+      .populate({
+        path: "productGroup",
+        populate: {
+          path: "brand",
+          model: "Brand",
+        },
+        model: "Product",
+      })
+      .skip(skip)
+      .limit(limit);
+    const totalCount = await Variant.countDocuments({ isUtsav: true });
+    const totalPages = Math.ceil(totalCount / limit);
 
-    res.status(200).json({ productDetails: productDetails });
+    res.status(200).json({
+      productDetails,
+      pagination: {
+        page,
+        limit,
+        totalPages,
+        totalCount,
+      },
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message + " Internal Server Error" });
+    res.status(500).json({ error: error.message });
   }
 };
+
 const getAllUtsavProductBasedOnCategory = async (req, res) => {
   try {
     const productDetails = await productSc
@@ -235,13 +250,11 @@ const makeProductTypeIsFeatured = async (req, res) => {
     const productTypeDetails = await productType.findById(productTypeId);
     console.log(productTypeDetails);
     if (!productTypeDetails) {
-      return res
-        .status(500)
-        .json({ message: " Internal Server Error" });
+      return res.status(500).json({ message: " Internal Server Error" });
     }
-    productTypeDetails.is_featured=req.body.value;
+    productTypeDetails.is_featured = req.body.value;
     await productTypeDetails.save();
-    return res.status(200).json({ message: "Completed"});
+    return res.status(200).json({ message: "Completed" });
   } catch (error) {
     console.error("Error fetching product details:", error);
     res.status(500).json({ message: error.message + " Internal Server Error" });
@@ -250,7 +263,7 @@ const makeProductTypeIsFeatured = async (req, res) => {
 const getAllFeaturedProductType = async (req, res) => {
   try {
     const productTypeDetails = await productType.find({
-      is_featured:true
+      is_featured: true,
     });
     res.status(200).json(productTypeDetails);
   } catch (error) {
