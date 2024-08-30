@@ -66,7 +66,7 @@ const placeOrder = async (req, res) => {
           type:"debit",
           transaction_message:"Balance used in Purchase" ,
           amount:req.body.walletBalanceUsed,
-          date:Date.now ,
+          date:Date.now() ,
         });
         console.log(newWalletTransaction);
         await newWalletTransaction.save();
