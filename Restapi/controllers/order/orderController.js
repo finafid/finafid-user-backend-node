@@ -12,13 +12,18 @@ const placeOrder = async (req, res) => {
   try {
     const newOrderItems = [];
 
-    req.body.orderItem.forEach((element) => {
-      const newOrderItem = {
-        productId: element.productId,
-        itemQuantity: element.itemQuantity,
-      };
-      newOrderItems.push(newOrderItem);
-    });
+   for (const element of req.body.orderItem) {
+     const variantDetails = await Variant.findById(element.productId);
+     const newOrderItem = {
+       productId: element.productId,
+       itemQuantity: element.itemQuantity,
+       unitPrice: variantDetails.unitPrice,
+       sellingPrice: variantDetails.sellingPrice,
+       utsavPrice: variantDetails.utsavPrice,
+       discount: variantDetails.unitPrice - variantDetails.sellingPrice,
+     };
+     newOrderItems.push(newOrderItem);
+   }
     let totalUtsavReward = 0;
     for (const element of newOrderItems) {
       const variantDetails = await Variant.findById(element.productId);
@@ -530,14 +535,14 @@ async function invoiceGenerate(orderDetails) {
     customerName: orderDetails.userId.fullName,
     customerEmail: orderDetails.userId.email,
     customerPhoneNumber: orderDetails.userId.phone,
-    customerAddress: `${orderDetails.address.houseNumber}, ${orderDetails.address.street}, ${orderDetails.address.locality}, ${orderDetails.address.city}, ${orderDetails.address.state}, ${orderDetails.address.pinCode}`,
-    payment_method:orderDetails.payment_method,
+    customerAddress: `${orderDetails.address.street}, ${orderDetails.address.locality}, ${orderDetails.address.city}, ${orderDetails.address.state}, ${orderDetails.address.pinCode}`,
+    payment_method: orderDetails.payment_method,
     items: orderDetails.orderItem.map((item) => ({
       name: item.productId.productGroup.name,
       quantity: item.itemQuantity,
-      unitPrice: item.productId.unitPrice,
-      discount: (item.productId.unitPrice - item.productId.sellingPrice),
-      price: item.productId.sellingPrice,
+      unitPrice: item.unitPrice,
+      discount: item.discount,
+      price: item.sellingPrice,
     })),
 
     subtotal: orderDetails.subtotal,

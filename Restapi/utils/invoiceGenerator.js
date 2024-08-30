@@ -35,12 +35,22 @@ async function generateAndUploadInvoice(invoiceData) {
     doc.moveDown();
     doc
       .fontSize(12)
-      .text(`Your order ID : ${invoiceData.invoiceNumber}`, { align: "left" });
-    doc.text(`Seller Details: Inhouse products`, { align: "left" });
+      .text(`Your order ID: ${invoiceData.invoiceNumber}`, { align: "left" });
+    doc.text(`Seller Details: Finafid Technologies`, { align: "left" });
     doc.text(`Payment Details: ${invoiceData.payment_method}`, {
       align: "right",
     });
     doc.text(`Date: ${invoiceData.date}`, { align: "right" });
+
+    // Add a separator line
+    doc.moveDown().moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+
+    // Add customer details
+    doc.moveDown();
+    doc.fontSize(12).text(`Customer Name: ${invoiceData.customerName}`);
+    doc.text(`Customer Email: ${invoiceData.customerEmail}`);
+    doc.text(`Customer Phone: ${invoiceData.customerPhoneNumber}`);
+    doc.text(`Customer Address: ${invoiceData.customerAddress}`);
 
     // Add a separator line
     doc.moveDown().moveTo(50, doc.y).lineTo(550, doc.y).stroke();
@@ -76,15 +86,15 @@ async function generateAndUploadInvoice(invoiceData) {
     // Add totals
     doc
       .fontSize(12)
-      .text(`Sub Total : ₹${invoiceData.subtotal.toFixed(2)}`, {
+      .text(`Sub Total: ₹${invoiceData.subtotal.toFixed(2)}`, {
         align: "left",
       })
-      .text(`Discount : -₹${invoiceData.discount.toFixed(2)}`, {
+      .text(`Discount: -₹${invoiceData.discount.toFixed(2)}`, {
         align: "left",
       })
-      .text(`GST : ₹${invoiceData.gst.toFixed(2)}`, { align: "left" })
-      .text(`Shipping : ₹${invoiceData.shipping.toFixed(2)}`, { align: "left" })
-      .text(`Total : ₹${invoiceData.total.toFixed(2)}`, {
+      .text(`GST: ₹${invoiceData.gst.toFixed(2)}`, { align: "left" })
+      .text(`Shipping: ₹${invoiceData.shipping.toFixed(2)}`, { align: "left" })
+      .text(`Total: ₹${invoiceData.total.toFixed(2)}`, {
         align: "left",
         font: "Helvetica-Bold",
       });
@@ -94,4 +104,4 @@ async function generateAndUploadInvoice(invoiceData) {
   });
 }
 
-module.exports = {generateAndUploadInvoice};
+module.exports = { generateAndUploadInvoice };

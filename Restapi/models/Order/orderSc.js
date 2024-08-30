@@ -12,11 +12,19 @@ const orderSchema = new mongoose.Schema(
         itemQuantity: {
           type: Number,
         },
+        unitPrice: {
+          type: Number,
+          required: false,
+        },
         sellingPrice: {
           type: Number,
           required: false,
         },
         utsavPrice: {
+          type: Number,
+          required: false,
+        },
+        discount: {
           type: Number,
           required: false,
         },
