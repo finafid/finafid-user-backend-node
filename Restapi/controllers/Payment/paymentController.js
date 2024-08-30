@@ -56,9 +56,9 @@ const verifySignature = async (req, res) => {
     const transactionDetails = await Transaction.findOne({
       razorpay_orderId: razorpay_order_id,
     });
-    const orderDetails = await Order.findById(transactionDetails.orderId);
-    orderDetails.transactionId = transactionDetails._id;
-    await orderDetails.save();
+    // const orderDetails = await Order.findById(transactionDetails.orderId);
+    // orderDetails.transactionId = transactionDetails._id;
+    // await orderDetails.save();
     transactionDetails.razorpay_payment_id = razorpay_payment_id;
     await transactionDetails.save();
     if (generatedSignature === razorpay_signature) {
