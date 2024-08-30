@@ -31,22 +31,18 @@ const addBalance = async (req, res) => {
     // Save the updated wallet
     await walletDetails.save();
 
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: "Money added successfully",
-        balance: walletDetails.balance,
-      });
+    res.status(200).json({
+      success: true,
+      message: "Money added successfully",
+      balance: walletDetails.balance,
+    });
   } catch (error) {
     console.error(error);
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "Internal server error",
-        error: error.message,
-      });
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
   }
 };
 const showTransactions = async (req, res) => {
@@ -64,21 +60,33 @@ const showTransactions = async (req, res) => {
 };
 const getBalance = async (req, res) => {
   try {
-    let walletDetails = await Wallet.findOne({
-      userId: req.user._id,
-    }).populate("transactions");
-     if (!walletDetails) {
-       walletDetails = new Wallet({
-         userId: req.user._id,
-         balance: 0,
-         transactions: [],
-       });
-     }
+    let walletDetails = await Wallet.findOne({ userId: req.user._id })
+    .populate(
+      {
+        path: "transactions",
+        model: "walletTransaction",
+        options: { limit: 0 }, // Ensure no limit is applied
+      }
+    );
+ console.log(walletDetails);
+    if (!walletDetails) {
+      walletDetails = new Wallet({
+        userId: req.user._id,
+        balance: 0,
+        transactions: [],
+      });
+    }
+
+    console.log(
+      `Number of transactions found: ${walletDetails.transactions.length}`
+    );
     return res.status(200).json({ walletDetails });
   } catch (error) {
-    res.status(500).json({ message: error.message + " Internal Server Error" });
+    // Error handling
+    res.status(500).json({ message: `${error.message} Internal Server Error` });
   }
 };
+
 module.exports = {
   addBalance,
   showTransactions,

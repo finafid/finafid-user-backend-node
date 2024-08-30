@@ -69,6 +69,7 @@ const placeOrder = async (req, res) => {
           date:Date.now ,
         });
         console.log(newWalletTransaction);
+        await newWalletTransaction.save();
         walletDetails.transactions.push(newWalletTransaction);
       await walletDetails.save();
       console.log(walletDetails);
