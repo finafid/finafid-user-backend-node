@@ -59,8 +59,11 @@ const verifySignature = async (req, res) => {
     // const orderDetails = await Order.findById(transactionDetails.orderId);
     // orderDetails.transactionId = transactionDetails._id;
     // await orderDetails.save();
-    transactionDetails.razorpay_payment_id = razorpay_payment_id;
-    await transactionDetails.save();
+    if (transactionDetails){
+       transactionDetails.razorpay_payment_id = razorpay_payment_id;
+       await transactionDetails.save();
+    }
+     
     if (generatedSignature === razorpay_signature) {
       res.status(200).json({
         success: true,
