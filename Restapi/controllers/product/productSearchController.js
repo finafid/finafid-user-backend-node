@@ -83,7 +83,7 @@ const getAllSearchTypeBasedOnProduct = async (req, res) => {
 };
 const getAllVariantsOnUser = async (req, res) => {
   try {
-    const {
+    let {
       sortBy,
       minPrice,
       maxPrice,
