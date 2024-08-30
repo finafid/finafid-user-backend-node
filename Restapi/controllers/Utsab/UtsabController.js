@@ -57,6 +57,7 @@ const addBorrowMembershipPlan = async (req, res) => {
       });
 
       await newDetails.save();
+       return res.status(200).json({ message: "Successfully done" });
     }
     memberShipDetails.amount = amount;
     memberShipDetails.due = due;
@@ -86,6 +87,7 @@ const addMembershipPlan = async (req, res) => {
       });
 
       await newDetails.save();
+       return res.status(200).json({ message: "Successfully done" });
     }
     memberShipDetails.amount = amount;
     memberShipDetails.reward = reward;

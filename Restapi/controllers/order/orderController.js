@@ -8,23 +8,23 @@ const Variant = require("../../models/product/Varient");
 const MemberShipPlan = require("../../models/Utsab/MembershipPlan");
 const referral = require("../../models/auth/referral");
 const Transaction = require("../../models/payment/paymentSc");
-const walletTransaction=require("../../models/Wallet/WalletTransaction")
+const walletTransaction = require("../../models/Wallet/WalletTransaction");
 const placeOrder = async (req, res) => {
   try {
     const newOrderItems = [];
 
-   for (const element of req.body.orderItem) {
-     const variantDetails = await Variant.findById(element.productId);
-     const newOrderItem = {
-       productId: element.productId,
-       itemQuantity: element.itemQuantity,
-       unitPrice: variantDetails.unitPrice,
-       sellingPrice: variantDetails.sellingPrice,
-       utsavPrice: variantDetails.utsavPrice,
-       discount: variantDetails.unitPrice - variantDetails.sellingPrice,
-     };
-     newOrderItems.push(newOrderItem);
-   }
+    for (const element of req.body.orderItem) {
+      const variantDetails = await Variant.findById(element.productId);
+      const newOrderItem = {
+        productId: element.productId,
+        itemQuantity: element.itemQuantity,
+        unitPrice: variantDetails.unitPrice,
+        sellingPrice: variantDetails.sellingPrice,
+        utsavPrice: variantDetails.utsavPrice,
+        discount: variantDetails.unitPrice - variantDetails.sellingPrice,
+      };
+      newOrderItems.push(newOrderItem);
+    }
     let totalUtsavReward = 0;
     for (const element of newOrderItems) {
       const variantDetails = await Variant.findById(element.productId);
@@ -55,22 +55,22 @@ const placeOrder = async (req, res) => {
       walletBalanceUsed: req.body.walletBalanceUsed,
       couponDiscount: req.body.couponDiscount,
     });
-    if (req.body.walletBalanceUsed >0) {
+    if (req.body.walletBalanceUsed > 0) {
       const walletDetails = await Wallet.findOne({
         userId: req.user._id,
       });
       walletDetails.balance =
         walletDetails.balance - req.body.walletBalanceUsed;
-        const newWalletTransaction = new walletTransaction({
-          userId:req.user._id,
-          type:"debit",
-          transaction_message:"Balance used in Purchase" ,
-          amount:req.body.walletBalanceUsed,
-          date:Date.now() ,
-        });
-        console.log(newWalletTransaction);
-        await newWalletTransaction.save();
-        walletDetails.transactions.push(newWalletTransaction);
+      const newWalletTransaction = new walletTransaction({
+        userId: req.user._id,
+        type: "debit",
+        transaction_message: "Balance used in Purchase",
+        amount: req.body.walletBalanceUsed,
+        date: Date.now(),
+      });
+      console.log(newWalletTransaction);
+      await newWalletTransaction.save();
+      walletDetails.transactions.push(newWalletTransaction);
       await walletDetails.save();
       console.log(walletDetails);
     }
@@ -248,32 +248,49 @@ const updateStatus = async (req, res) => {
         userId: orderDetail.userId,
       });
 
+
+       const planDetails = await MemberShipPlan.findOne({
+        identity: "PLAN_IDENTITY",
+      });
+
+
       const userData = await User.findById(orderDetail.userId);
       console.log({ userData: userData });
+      if (
+        userData.is_utsav == false &&
+        orderDetail.totalPrice >= planDetails.amount
+      ) {
+        userData.is_utsav = true;
+        await userData.save();
+      }
       const referralDetails = await referral.findOne({
         userId: orderDetail.userId,
       });
       console.log({ referralDetails: referralDetails });
-      const planDetails = await MemberShipPlan.findOne({
-        identity: "PLAN_IDENTITY",
-      });
+     
 
-      const referredUserData = await User.findById(referralDetails.referred_by);
-      console.log({ referredUserData: referredUserData });
-      if (
-        referralDetails &&
-        referralDetails.referred_user &&
-        referredUserData.is_utsav == true
-      ) {
-        const walletDetailsOfReferredUser = await Wallet.findOneAndUpdate({
-          userId: referralDetails.referred_by,
-        });
-        if (userData.is_utsav == false) {
-          walletDetailsOfReferredUser.balance =
-            walletDetailsOfReferredUser.balance + planDetails.reward;
-          await walletDetailsOfReferredUser.save();
-          userData.firstOrderComplete = true;
-          await userData.save();
+      if (referralDetails.referred_by) {
+        const referredUserData = await User.findById(
+          referralDetails.referred_by
+        );
+        console.log({ referredUserData: referredUserData });
+        if (
+          referralDetails &&
+          referralDetails.referred_by &&
+          referredUserData.is_utsav == true
+        ) {
+          console.log("HJKJKK")
+          const walletDetailsOfReferredUser = await Wallet.findOneAndUpdate({
+            userId: referralDetails.referred_by,
+          });
+          console.log({
+            walletDetailsOfReferredUser: walletDetailsOfReferredUser,
+          });
+            walletDetailsOfReferredUser.balance =
+              walletDetailsOfReferredUser.balance + planDetails.reward;
+            await walletDetailsOfReferredUser.save();
+            userData.firstOrderComplete = true;
+            await userData.save();       
         }
       }
       if (userData.is_utsav == true) {
@@ -574,27 +591,26 @@ async function invoiceGenerate(orderDetails) {
     ),
     total: orderDetails.totalPrice,
   };
-console.log({ invoiceData: invoiceData });
-const fileName = await generateAndUploadInvoice(invoiceData);
+  console.log({ invoiceData: invoiceData });
+  const fileName = await generateAndUploadInvoice(invoiceData);
   const invoiceLink =
     "https://d2w5oj0jmt3sl6.cloudfront.net/invoices/" + fileName;
   console.log({ invoiceLink: invoiceLink });
-orderDetails.invoicePath = invoiceLink;
-await orderDetails.save();
+  orderDetails.invoicePath = invoiceLink;
+  await orderDetails.save();
 
   console.log(`Invoice generated and uploaded successfully: ${invoiceLink}`);
 }
 
-const downloadInvoice=async(req,res)=>{
+const downloadInvoice = async (req, res) => {
   try {
-
   } catch (err) {
     return res.status(500).json({
       success: false,
       message: err.message + " internal server error",
     });
   }
-}
+};
 module.exports = {
   placeOrder,
   getOrderDetails,
