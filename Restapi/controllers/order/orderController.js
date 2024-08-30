@@ -8,6 +8,7 @@ const Variant = require("../../models/product/Varient");
 const MemberShipPlan = require("../../models/Utsab/MembershipPlan");
 const referral = require("../../models/auth/referral");
 const Transaction = require("../../models/payment/paymentSc");
+const walletTransaction=require("../../models/Wallet/WalletTransaction")
 const placeOrder = async (req, res) => {
   try {
     const newOrderItems = [];
@@ -60,6 +61,14 @@ const placeOrder = async (req, res) => {
       });
       walletDetails.balance =
         walletDetails.balance - req.body.walletBalanceUsed;
+        const newWalletTransaction = new walletTransaction({
+          userId:req.user._id,
+          type:"debit",
+          transaction_message:"Balance used in Purchase" ,
+          amount:req.body.walletBalanceUsed,
+          date:Date.now ,
+        });
+        walletDetails.transactions.push(newWalletTransaction);
       await walletDetails.save();
     }
     await newOrder.save();
