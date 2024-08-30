@@ -3,7 +3,7 @@ const Schema = mongoose.Schema;
 
 const transactionSchema = new Schema(
   {
-    orderId: { type: Schema.Types.ObjectId, ref: "Order", required: true },
+    orderId: { type: String,  required: true },
     amount: { type: Number, required: true },
     currency: { type: String, default: "INR" },
     userId: {
