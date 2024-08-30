@@ -68,8 +68,10 @@ const placeOrder = async (req, res) => {
           amount:req.body.walletBalanceUsed,
           date:Date.now ,
         });
+        console.lod(newWalletTransaction);
         walletDetails.transactions.push(newWalletTransaction);
       await walletDetails.save();
+      console.lod(walletDetails);
     }
     await newOrder.save();
     console.log(newOrder);
