@@ -54,6 +54,14 @@ const placeOrder = async (req, res) => {
       walletBalanceUsed: req.body.walletBalanceUsed,
       couponDiscount: req.body.couponDiscount,
     });
+    if (req.body.payment_method=="Wallet") {
+      const walletDetails = await Wallet.findOne({
+        userId: req.user._id,
+      });
+      walletDetails.balance =
+        walletDetails.balance - req.body.walletBalanceUsed;
+      await walletDetails.save();
+    }
     await newOrder.save();
     console.log(newOrder);
     const newTransaction = new Transaction({
