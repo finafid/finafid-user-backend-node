@@ -100,27 +100,19 @@ const getAllVariantsOnUser = async (req, res) => {
 
     console.log(req.query);
 
+    let query = {};
+
+
     if (price) {
       const ranges = price
         .split(",")
         .map((range) => range.split("-").map(Number));
-
-      const minValues = ranges.map(([min]) => min);
-      const maxValues = ranges.map(([_, max]) => (isNaN(max) ? Infinity : max));
-
-      if (minValues.includes(0)) {
-        minPrice = 0;
-      } else {
-        minPrice = Math.min(...minValues);
-      }
-
-      if (maxValues.includes(Infinity)) {
-        maxPrice = Infinity;
-      } else {
-        maxPrice = Math.max(...maxValues);
-      }
+      minPrice = Math.min(...ranges.map(([min]) => min), minPrice);
+      maxPrice = Math.max(
+        ...ranges.map(([_, max]) => (isNaN(max) ? Infinity : max)),
+        maxPrice
+      );
     }
-
 
     console.log("Calculated minPrice:", minPrice);
     console.log("Calculated maxPrice:", maxPrice);
