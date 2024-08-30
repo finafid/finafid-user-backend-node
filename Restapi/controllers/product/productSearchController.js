@@ -137,6 +137,12 @@ const getAllVariantsOnUser = async (req, res) => {
       if (calculatedMaxPrice !== 0)
         query.sellingPrice.$lte = calculatedMaxPrice;
     }
+    // Price filter
+    if (maxPrice || minPrice) {
+      query.sellingPrice = {};
+      if (minPrice) query.sellingPrice.$gte = parseFloat(minPrice);
+      if (maxPrice) query.sellingPrice.$lte = parseFloat(maxPrice);
+    }
 
     // Discount filter
     if (discount) {
