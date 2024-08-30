@@ -71,7 +71,7 @@ const placeOrder = async (req, res) => {
         console.log(newWalletTransaction);
         walletDetails.transactions.push(newWalletTransaction);
       await walletDetails.save();
-      console.lod(walletDetails);
+      console.log(walletDetails);
     }
     await newOrder.save();
     console.log(newOrder);
