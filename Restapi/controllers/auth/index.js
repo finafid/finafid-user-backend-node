@@ -40,7 +40,7 @@ const userRegistration = async (req, res) => {
   try {
     await newUser.save();
     newUser.password = undefined;
-    if (req.body.referralCode) {
+    if (req.body.referralCode!=null) {
       await redeemedReferral(referralCode, newUser._id);
     }
     return res.status(201).json({ message: "success", data: newUser });
