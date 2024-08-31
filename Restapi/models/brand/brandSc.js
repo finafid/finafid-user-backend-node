@@ -27,13 +27,20 @@ const brandSchema = new Schema({
   topSellingBrand: {
     type: Boolean,
     default: false,
-    required:false
+    required: false,
   },
   categoryList: [
     {
       type: Schema.Types.ObjectId,
       require: true,
       ref: "mainCategory",
+    },
+  ],
+  productTypeList: [
+    {
+      type: Schema.Types.ObjectId,
+      require: false,
+      ref: "ProductType",
     },
   ],
 });

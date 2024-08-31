@@ -248,13 +248,15 @@ const updateStatus = async (req, res) => {
         userId: orderDetail.userId,
       });
 
-
-       const planDetails = await MemberShipPlan.findOne({
+      const planDetails = await MemberShipPlan.findOne({
         identity: "PLAN_IDENTITY",
       });
 
-
-      const userData = await User.findById(orderDetail.userId);
+      const userData = await User.findById({
+        _id: orderDetail.userId,
+        is_Active: true,
+        blocking: false,
+      });
       console.log({ userData: userData });
       if (
         userData.is_utsav == false &&
@@ -267,7 +269,6 @@ const updateStatus = async (req, res) => {
         userId: orderDetail.userId,
       });
       console.log({ referralDetails: referralDetails });
-     
 
       if (referralDetails.referred_by) {
         const referredUserData = await User.findById(
@@ -279,18 +280,17 @@ const updateStatus = async (req, res) => {
           referralDetails.referred_by &&
           referredUserData.is_utsav == true
         ) {
-          console.log("HJKJKK")
           const walletDetailsOfReferredUser = await Wallet.findOneAndUpdate({
             userId: referralDetails.referred_by,
           });
           console.log({
             walletDetailsOfReferredUser: walletDetailsOfReferredUser,
           });
-            walletDetailsOfReferredUser.balance =
-              walletDetailsOfReferredUser.balance + planDetails.reward;
-            await walletDetailsOfReferredUser.save();
-            userData.firstOrderComplete = true;
-            await userData.save();       
+          walletDetailsOfReferredUser.balance =
+            walletDetailsOfReferredUser.balance + planDetails.reward;
+          await walletDetailsOfReferredUser.save();
+          userData.firstOrderComplete = true;
+          await userData.save();
         }
       }
       if (userData.is_utsav == true) {

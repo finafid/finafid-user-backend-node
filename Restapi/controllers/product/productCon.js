@@ -89,8 +89,7 @@ const getAllVarients = async (req, res) => {
 const productOnId = async (req, res) => {
   try {
     const productId = req.params.productId;
-
-    console.log(productId);
+    // console.log({ productId: req.params.productId });
     const product = await productSc
       .findOne({
         _id: productId,
@@ -99,7 +98,7 @@ const productOnId = async (req, res) => {
       // .populate("brand")
       .populate("variants");
 
-    console.log(product);
+    // console.log(product);
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
@@ -126,8 +125,8 @@ const uploadVariants = async (
       variantImageLinks = [...variantImageLinks, ...imageLinks];
       count++;
     }
-    
-     let singleImageUrl = "";
+
+    let singleImageUrl = "";
     const colorImageKey = `variants[${i}][colorImage]`;
     console.log(colorImageKey);
     if (uploadedFiles[colorImageKey]) {
@@ -268,7 +267,6 @@ const createProduct = async (req, res) => {
   }
 };
 
-
 const updateVariants = async (req, res) => {
   try {
     const variantId = req.params.variantId;
@@ -279,7 +277,7 @@ const updateVariants = async (req, res) => {
 
     // Get the old quantity before updating the variant
     const oldQuantity = parseInt(variantDetails.quantity, 10);
-    console.log({body:req.body})
+    console.log({ body: req.body });
     let newList = [];
     if (req.body.images) {
       newList = req.body.images;
@@ -293,7 +291,8 @@ const updateVariants = async (req, res) => {
     const productGroupDetails = await productSc.findById(req.body.productId);
     console.log(req.body.images);
     console.log(req.body);
-    const varientName= productGroupDetails.name+" "+"(" + req.body.sku + ")"
+    const varientName =
+      productGroupDetails.name + " " + "(" + req.body.sku + ")";
     variantDetails.productGroup = req.body.productId;
     variantDetails.attributes = req.body.attributes;
     variantDetails.sku = req.body.sku;
@@ -411,7 +410,7 @@ const deleteVariants = async (req, res) => {
   try {
     const variantId = req.params.variantId;
     const variantDetail = await Variant.findByIdAndDelete(variantId);
-    
+
     if (!variantDetail) {
       return res
         .status(500)
@@ -582,9 +581,9 @@ const createSubCategory = async (req, res) => {
     if (!mainCategoryDetails) {
       return res.status(500).json({ message: "Main category is not present" });
     }
-    let logoUrl=""
-    if(req.file){
-         logoUrl = await getImageLink(req);
+    let logoUrl = "";
+    if (req.file) {
+      logoUrl = await getImageLink(req);
     }
     const newSubCategory = new subCategory({
       name,
@@ -629,13 +628,12 @@ const createProductType = async (req, res) => {
     res.status(500).json({ message: error.message + " Internal Server Error" });
   }
 };
-const getVariationFeature=async(req,res)=>{
+const getVariationFeature = async (req, res) => {
   try {
-    
   } catch (error) {
     res.status(500).json({ message: error.message + " Internal Server Error" });
   }
-}
+};
 const createCustomSearch = async (req, res) => {
   try {
     const newProductSearch = new ProductSearch({
@@ -660,7 +658,6 @@ const getSearchResult = async (req, res) => {
 
 const getProductBasisOfSubcategory = async (req, res) => {
   try {
-   
     const subCategoryRecord = await productSc
       .find({
         subCategoryId: req.params.subCategoryId,
@@ -669,7 +666,6 @@ const getProductBasisOfSubcategory = async (req, res) => {
     if (!subCategoryRecord) {
       return res.status(404).json({ message: "Subcategory not found" });
     }
-  
 
     res.status(200).json({ subCategoryRecord });
   } catch (error) {
@@ -875,7 +871,7 @@ const editProductType = async (req, res) => {
       productTypeDetails.subCategoryId = subCategoryId;
       productTypeDetails.categoryId = categoryId;
       productTypeDetails.logoUrl = logoUrl;
-       productTypeDetails.variationFeatures = variationFeatures;
+      productTypeDetails.variationFeatures = variationFeatures;
       await productTypeDetails.save();
     } else {
       const logoUrl = await getImageLink(req);
@@ -1323,7 +1319,6 @@ const getFeaturedProductBasedOnCategory = async (req, res) => {
 };
 const deleteNonProductVariants = async (req, res) => {
   try {
-    
     const variantDetail = await Variant.find();
 
     if (!variantDetail) {
@@ -1332,23 +1327,23 @@ const deleteNonProductVariants = async (req, res) => {
         .json({ message: "Internal Server Error", error: error.message });
     }
 
-   for (const element of variantDetail) {
-     try {
-       const variantDetail = await Variant.findById(element._id);
-       const productDetails = await productSc.findById(
-         variantDetail.productGroup
-       );
+    for (const element of variantDetail) {
+      try {
+        const variantDetail = await Variant.findById(element._id);
+        const productDetails = await productSc.findById(
+          variantDetail.productGroup
+        );
 
-       if (!productDetails) {
-         await Variant.findByIdAndDelete(element._id);
-       }
-     } catch (error) {
-       console.error(
-         `Failed to process variant with ID ${element._id}:`,
-         error
-       );
-     }
-   }
+        if (!productDetails) {
+          await Variant.findByIdAndDelete(element._id);
+        }
+      } catch (error) {
+        console.error(
+          `Failed to process variant with ID ${element._id}:`,
+          error
+        );
+      }
+    }
     return res.status(200).json(variantDetail);
   } catch (error) {
     console.error("Error saving product:", error);

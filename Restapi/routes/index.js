@@ -129,6 +129,8 @@ const {
   addBalance,
   showTransactions,
   getBalance,
+  addBalanceFromAdmin,
+  getBalanceFromAdmin,
 } = require("../controllers/Wallet/walletController.js");
 const {
   totalIncome,
@@ -232,6 +234,7 @@ const {
   totalOrderOfUtsav,
   addBorrowMember,
   addLeader,
+  getLeaderDetails,
   getAllBorrowLIst,
   getAllLeader,
   addBorrowMembershipPlan,
@@ -304,7 +307,7 @@ const {
   searchEntityByName,
   searchAndIterate,
 } = require("../controllers/product/SearchEngine.js");
-const {}=require("../controllers/auth/GoogleLogin.js")
+const {} = require("../controllers/auth/GoogleLogin.js");
 //user Authentication
 routs.post("/register", userRegistrationValidation, userRegistration);
 routs.post("/login", userLoginValidation, userLogin);
@@ -389,7 +392,7 @@ routs.post(
   upload.single("logo"),
   editProductType
 );
-routs.post("/editBrand/:brandId", upload.single("logo"),auth, editBrand);
+routs.post("/editBrand/:brandId", upload.single("logo"), auth, editBrand);
 routs.get("/getProductById/:productId", productOnId);
 routs.post("/updateProduct/:productId", upload.any(), updateProduct);
 routs.post("/createProduct", upload.any(), auth, createProduct);
@@ -472,11 +475,11 @@ routs.post("/getOrderByStatus", auth, getOrderByStatus);
 routs.get("/getAllOrder", getAllOrder);
 routs.post("/editOrder", auth, editOrder);
 routs.get("/orderStatusDetails/:orderId", orderStatusDetails);
-   routs.post("/setDeliveryDate",  setDeliveryDate);
- routs.get("/cancelDelivery", cancelDelivery);  
- routs.get("/downloadInvoice", downloadInvoice); 
-   //Address
-   routs.post("/addAddress", auth, addAddress);
+routs.post("/setDeliveryDate", setDeliveryDate);
+routs.get("/cancelDelivery", cancelDelivery);
+routs.get("/downloadInvoice", downloadInvoice);
+//Address
+routs.post("/addAddress", auth, addAddress);
 routs.get("/getAddressOfUser", auth, getAddressOfUser);
 routs.post("/updateAddressOfUser", auth, updateAddressOfUser);
 routs.get("/deleteAddress/:addressId", auth, deleteAddress);
@@ -508,7 +511,8 @@ routs.post(
 routs.post("/addBalance", auth, addBalance);
 routs.get("/showTransactions", auth, showTransactions);
 routs.get("/getBalance", auth, getBalance);
-
+routs.post("/addBalanceFromAdmin", addBalanceFromAdmin);
+routs.get("/getBalanceFromAdmin/:userId", getBalanceFromAdmin);
 //admin dashboard
 routs.get("/getTotalIncome", totalIncome);
 routs.get("/getTotalOrder", totalOrder);
@@ -607,14 +611,13 @@ routs.get("/getDEalOfTheDayByIdOnUser/:dealId", getDEalOfTheDayByIdOnUser);
 //coupons
 
 routs.post("/createCoupons", createCoupons);
-routs.post("/applyCoupon",auth, applyCoupon);
+routs.post("/applyCoupon", auth, applyCoupon);
 routs.get("/getTheCoupon/:couponId", getTheCoupon);
 routs.post("/updateCoupons/:couponsId", updateCoupons);
 routs.delete("/deleteCoupons/:couponId", deleteCoupons);
 routs.get("/getAllCoupons", getAllCoupons);
 routs.post("/updateStatusCoupons/:couponId", updateStatusCoupons);
-routs.get("/getAllCouponsOnUser/:totalOrderAmount",auth, getAllCouponsOnUser);
-
+routs.get("/getAllCouponsOnUser/:totalOrderAmount", auth, getAllCouponsOnUser);
 
 //referral
 routs.get("/shareReferralCode", auth, shareReferralCode);
@@ -628,7 +631,9 @@ routs.get("/isUtsabApplicable", auth, isUtsabApplicable);
 routs.get("/totalOrderOfUtsav", totalOrderOfUtsav);
 routs.get("/totalSpendOfMember/:userId", totalSpendOfMemberSingle);
 routs.post("/applyForBorrowMember", auth, addBorrowMember);
-routs.get("/addLeader", auth, addLeader);
+routs.post("/addLeader/:userId", addLeader);
+
+routs.post("/getLeaderDetails/:userId", getLeaderDetails);
 routs.get("/getAllBorrowLIst", getAllBorrowLIst);
 routs.get("/getAllLeader", getAllLeader);
 routs.get("/getAllMemberList", getAllMemberList);
@@ -680,12 +685,15 @@ routs.get(
   "/getAllUtsavProductBasedOnCategory/:categoryId",
   getAllUtsavProductBasedOnCategory
 );
-routs.get("/getAllTopSellingBrand", getAllTopSellingBrand);  
-routs.get("/getAllTopSellingProduct", getAllTopSellingProduct); 
-routs.get("/getAllFeaturedProductType", getAllFeaturedProductType);  
-routs.post("/makeTopSellingProduct/:productId", makeTopSellingProduct); 
+routs.get("/getAllTopSellingBrand", getAllTopSellingBrand);
+routs.get("/getAllTopSellingProduct", getAllTopSellingProduct);
+routs.get("/getAllFeaturedProductType", getAllFeaturedProductType);
+routs.post("/makeTopSellingProduct/:productId", makeTopSellingProduct);
 routs.post("/makeTopSellingBrand/:brandId", makeTopSellingBrand);
-routs.post("/makeProductTypeIsFeatured/:productTypeId", makeProductTypeIsFeatured);
+routs.post(
+  "/makeProductTypeIsFeatured/:productTypeId",
+  makeProductTypeIsFeatured
+);
 
 //notification
 routs.post("/sendAppNotification", sendAppNotification);
@@ -708,16 +716,16 @@ routs.get("/getAllVariantsOnUser", getAllVariantsOnUser);
 //payu
 
 routs.post("/paymentResponse", paymentResponse);
-routs.post("/paymentDetail",auth, paymentDetail);
-  handlePaymentSuccess,
+routs.post("/paymentDetail", auth, paymentDetail);
+handlePaymentSuccess,
   handlePaymentFailure,
-routs.post("/success", paymentResponse); 
+  routs.post("/success", paymentResponse);
 routs.post("/failure", paymentResponse);
-    //searchengine
-    routs.get(
-      "/getAllProductInformationBasedOnProduct",
-      getAllProductInformationBasedOnProduct
-    );
+//searchengine
+routs.get(
+  "/getAllProductInformationBasedOnProduct",
+  getAllProductInformationBasedOnProduct
+);
 routs.get("/getSearchData", getSearchDataFirst);
 routs.get("/getSearchDataSecond", getSearchDataSecond);
 
@@ -735,4 +743,4 @@ routs.get("/productSearchDirectory", productSearchDirectory);
 // routs.get("/profile", authController.getProfile);
 // routs.get("/logout", authController.logout);
 
-  ((module.exports = routs));
+module.exports = routs;

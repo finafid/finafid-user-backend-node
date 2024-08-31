@@ -36,8 +36,25 @@ app.use("/ping", (req, res) => {
     message: "Welcome to Finafid",
   });
 });
-//app.use(upload.array());
-// Set up session middleware
+// const corsOptions = {
+//   origin: "http://localhost:3000",
+//   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+//   allowedHeaders: "Content-Type, Authorization",
+//   credentials: true,
+//   optionsSuccessStatus: 204,
+// };
+
+// app.use(cors(corsOptions));
+
+// app.options("*", (req, res) => {
+//   res.header("Access-Control-Allow-Origin", "http://localhost:3000");
+//   res.header(
+//     "Access-Control-Allow-Methods",
+//     "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS"
+//   );
+//   res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+//   res.sendStatus(204);
+// });
 
 app.use(
   session({

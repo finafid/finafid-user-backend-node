@@ -11,6 +11,11 @@ const leaderSchema = new mongoose.Schema(
       enum: ["pending", "approved", "rejected"],
       default: "pending",
     },
+    status: {
+      type: Boolean,
+      required:false,
+      default:false,
+    },
   },
   { timestamps: true }
 );

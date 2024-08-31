@@ -60,15 +60,14 @@ const showTransactions = async (req, res) => {
 };
 const getBalance = async (req, res) => {
   try {
-    let walletDetails = await Wallet.findOne({ userId: req.user._id })
-    .populate(
+    let walletDetails = await Wallet.findOne({ userId: req.user._id }).populate(
       {
         path: "transactions",
         model: "walletTransaction",
         options: { limit: 0 }, // Ensure no limit is applied
       }
     );
- console.log(walletDetails);
+    console.log(walletDetails);
     if (!walletDetails) {
       walletDetails = new Wallet({
         userId: req.user._id,
@@ -86,9 +85,74 @@ const getBalance = async (req, res) => {
     res.status(500).json({ message: `${error.message} Internal Server Error` });
   }
 };
+const addBalanceFromAdmin = async (req, res) => {
+  try {
+    const { amount, description, userId } = req.body;
+    const type = amount > 0 ? "credit" : "debit";
+    console.log(req.body);
+    const newTransaction = new Transaction({
+      userId,
+      type,
+      amount,
+      date: Date.now(),
+      transaction_message: description,
+    });
+    await newTransaction.save();
+    let walletDetails = await Wallet.findOne({ userId });
 
+    if (!walletDetails) {
+      // Create a new wallet if it doesn't exist
+      walletDetails = new Wallet({
+        userId,
+        balance: parseInt(amount),
+        transactions: [newTransaction],
+      });
+    }
+    console.log(walletDetails);
+    walletDetails.balance += parseInt(amount);
+    walletDetails.transactions.push(newTransaction);
+    await walletDetails.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Money added successfully",
+      balance: walletDetails.balance,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+const getBalanceFromAdmin = async (req, res) => {
+  try {
+    let walletDetails = await Wallet.findOne({
+      userId: req.params.userId,
+    }).populate({
+      path: "transactions",
+      model: "walletTransaction",
+      options: { limit: 0 },
+    });
+    if (!walletDetails) {
+      return res.status(400).json({ message: "No wallet present" });
+    }
+    return res.status(200).json({ walletDetails });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
 module.exports = {
   addBalance,
   showTransactions,
   getBalance,
+  addBalanceFromAdmin,
+  getBalanceFromAdmin,
 };

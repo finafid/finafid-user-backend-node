@@ -184,16 +184,32 @@ const totalOrderOfUtsav = async (req, res) => {
 };
 const addLeader = async (req, res) => {
   try {
-    console.log(req.user);
-    const leaderDetails = await Leader.findOne({ userId: req.user._id });
+    let leaderDetails = await Leader.findOne({ userId: req.params.userId });
     if (leaderDetails) {
-      return res.status(200).json({ message: "Already a leader" });
+       leaderDetails.status = req.body.status;
+       await leaderDetails.save()
+       return res.status(200).json({ leaderDetails });
     }
     const newLeader = new Leader({
-      userId: req.user._id,
+      userId: req.params.userId,
     });
+    newLeader.status=req.body.status;
     await newLeader.save();
     return res.status(200).json({ newLeader });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: error.message + " Internal Server Error" });
+  }
+};
+const getLeaderDetails = async (req, res) => {
+  try {
+    let leaderDetails = await Leader.findOne({ userId: req.params.userId });
+    if (leaderDetails) {
+    return res.status(200).json({ message:"" });
+    }
+    
+    return res.status(200).json({ leaderDetails: leaderDetails });
   } catch (error) {
     return res
       .status(500)
@@ -658,4 +674,5 @@ module.exports = {
   approveBorrowRequest,
   approveLeaderRequest,
   getAllApprovedLeader,
+  getLeaderDetails,
 };

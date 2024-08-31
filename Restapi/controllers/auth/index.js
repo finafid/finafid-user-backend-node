@@ -20,7 +20,7 @@ const {
 const { adminDetails } = require("../auth _admin/authAdmin");
 
 const userRegistration = async (req, res) => {
-  const { email, phone, referralCode } = req.body;
+  const { email, phone } = req.body;
   const userDetails = await User.findOne({
     $or: [
       { email, is_Active: true },
@@ -40,7 +40,7 @@ const userRegistration = async (req, res) => {
   try {
     await newUser.save();
     newUser.password = undefined;
-    if (referralCode) {
+    if (req.body.referralCode) {
       await redeemedReferral(referralCode, newUser._id);
     }
     return res.status(201).json({ message: "success", data: newUser });
