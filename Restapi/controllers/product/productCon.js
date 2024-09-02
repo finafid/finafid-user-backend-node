@@ -102,7 +102,7 @@ const productOnId = async (req, res) => {
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
-    res.status(200).json(product);
+    return res.status(200).json(product);
   } catch (err) {
     return res.status(500).json({ message: "Internal Server Error" });
   }
@@ -483,13 +483,14 @@ getVariantById = async (req, res) => {
 
 const createBrand = async (req, res) => {
   try {
-    const { name, description, categoryList } = req.body;
+    const { name, description, categoryList, productTypeList } = req.body;
     const logoUrl = await getImageLink(req);
     const newBrand = new Brand({
       name,
       description,
       logoUrl,
       categoryList,
+      productTypeList,
     });
     await newBrand.save();
 
@@ -898,23 +899,31 @@ const editBrand = async (req, res) => {
       return res.status(500).json({ message: "No such productType found" });
     }
     console.log(req.file);
-
+    console.log(req.body)
     if (!req.file) {
       const logoUrl = req.body.logo;
-      const { name, description, subCategoryId, categoryList } = req.body;
+      const {
+        name,
+        description,
+        subCategoryId,
+        categoryList,
+        productTypeList,
+      } = req.body;
       brandDetails.name = name;
       brandDetails.description = description;
       brandDetails.subCategoryId = subCategoryId;
       brandDetails.logoUrl = logoUrl;
       brandDetails.categoryList = categoryList;
+      brandDetails.productTypeList = productTypeList;
       await brandDetails.save();
     } else {
       const logoUrl = await getImageLink(req);
-      const { name, description, subCategoryId } = req.body;
+      const { name, description, subCategoryId, productTypeList } = req.body;
       brandDetails.name = name;
       brandDetails.description = description;
       brandDetails.subCategoryId = subCategoryId;
       brandDetails.logoUrl = logoUrl;
+      brandDetails.productTypeList = productTypeList;
       await brandDetails.save();
     }
 

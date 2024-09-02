@@ -291,6 +291,8 @@ const {
   getAllSearchTypeBasedOnProductType,
   getAllSearchTypeBasedOnProduct,
   getAllVariantsOnUser,
+  getProductTypesBasedOnBrand,
+  getBrandsBasedOnProductType,
 } = require("../controllers/product/productSearchController.js");
 const {
   paymentResponse,
@@ -712,10 +714,14 @@ routs.get(
   getAllSearchTypeBasedOnProduct
 );
 routs.get("/getAllVariantsOnUser", getAllVariantsOnUser);
+routs.get("/getProductTypesBasedOnBrand/:brandId", getProductTypesBasedOnBrand);  
+routs.get(
+  "/getBrandsBasedOnProductType/:productTypeId",
+  getBrandsBasedOnProductType
+); 
+    //payu
 
-//payu
-
-routs.post("/paymentResponse", paymentResponse);
+    routs.post("/paymentResponse", paymentResponse);
 routs.post("/paymentDetail", auth, paymentDetail);
 handlePaymentSuccess,
   handlePaymentFailure,

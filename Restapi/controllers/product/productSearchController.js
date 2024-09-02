@@ -282,12 +282,47 @@ const getAllVariantsOnUser = async (req, res) => {
     res.status(500).json({ message: error.message + " Internal Server Error" });
   }
 };
+const getBrandsBasedOnProductType=async(req,res)=>{
+  try {
+   const productTypeId = req.params.productTypeId; // Extract the productTypeId from the request parameters
 
+   const brandList = await Brand.find({
+     [productTypeId]: { $in: productTypeList }, // Use computed property name syntax
+   });
+    if(!brandList){
+       return res
+         .status(500)
+         .json({ message:  " Internal Server Error" });
+    }
+    return res.status(200).json({ brandList: brandList });
+  } catch (error) {
+    console.error("Error fetching variants:", error);
+    return res.status(500).json({ message: error.message + " Internal Server Error" });
+  }
+}
+const getProductTypesBasedOnBrand = async (req, res) => {
+  try {
+     const brandDetails = await Brand
+       .findById(req.params.brandId)
+       .populate("productTypeList");
+     if (!brandDetails) {
+       return res
+         .status(500)
+         .json({ message: error.message + " Internal Server Error" });
+     }
+     return res.status(200).json({ ProductTypeList: brandDetails.productTypeList});
 
+  } catch (error) {
+    console.error("Error fetching variants:", error);
+    res.status(500).json({ message: error.message + " Internal Server Error" });
+  }
+};
 
 module.exports = {
   getAllSearchTypeBasedOnSubCategory,
   getAllSearchTypeBasedOnProductType,
   getAllSearchTypeBasedOnProduct,
   getAllVariantsOnUser,
+  getProductTypesBasedOnBrand,
+  getBrandsBasedOnProductType,
 };
