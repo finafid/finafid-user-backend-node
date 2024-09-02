@@ -83,7 +83,7 @@ const getAllSearchTypeBasedOnProduct = async (req, res) => {
 };
 const getAllVariantsOnUser = async (req, res) => {
   try {
-    const {
+    let {
       sortBy,
       minPrice,
       maxPrice,
@@ -94,104 +94,194 @@ const getAllVariantsOnUser = async (req, res) => {
       subCategoryId,
       mainCategoryId,
       brandId,
-      page = 1,
-      limit = 10,
+      page = 1, // Default to the first page
+      limit = 10, // Default to 10 items per page
     } = req.query;
+
+    console.log(req.query);
 
     let query = {};
 
-    // Handle Price Range
+    // Initialize minPrice and maxPrice
+    let calculatedMinPrice = Infinity;
+    let calculatedMaxPrice = 0;
+
     if (price) {
       const ranges = price
         .split(",")
         .map((range) => range.split("-").map(Number));
+
       const minValues = ranges.map(([min]) => min);
       const maxValues = ranges.map(([_, max]) => (isNaN(max) ? Infinity : max));
 
-      const calculatedMinPrice = Math.min(...minValues);
-      const calculatedMaxPrice = Math.max(...maxValues);
+      if (minValues.includes(0)) {
+        calculatedMinPrice = 0;
+      } else {
+        calculatedMinPrice = Math.min(...minValues);
+      }
 
+      if (maxValues.includes(Infinity)) {
+        calculatedMaxPrice = Infinity;
+      } else {
+        calculatedMaxPrice = Math.max(...maxValues);
+      }
+    }
+
+    console.log("Calculated minPrice:", calculatedMinPrice);
+    console.log("Calculated maxPrice:", calculatedMaxPrice);
+
+    if (calculatedMinPrice !== Infinity || calculatedMaxPrice !== 0) {
       query.sellingPrice = {};
       if (calculatedMinPrice !== Infinity)
         query.sellingPrice.$gte = calculatedMinPrice;
-      if (calculatedMaxPrice !== Infinity)
+      if (calculatedMaxPrice !== 0)
         query.sellingPrice.$lte = calculatedMaxPrice;
-    } else if (minPrice || maxPrice) {
+    }
+    // Price filter
+    if (maxPrice || minPrice) {
       query.sellingPrice = {};
       if (minPrice) query.sellingPrice.$gte = parseFloat(minPrice);
       if (maxPrice) query.sellingPrice.$lte = parseFloat(maxPrice);
     }
 
-    // Handle Discount Filter
+    // Discount filter
     if (discount) {
       const discountArray = discount.split(",").map(Number);
+
       const maxDiscount = Math.max(...discountArray);
       query.discount = { $gte: 0, $lte: maxDiscount };
     }
 
-    // Handle Category, Subcategory, Product Type, and Brand Filters
-    if (mainCategoryId) query["productGroup.categoryId"] = mainCategoryId;
-    if (subCategoryId) query["productGroup.subCategoryId"] = subCategoryId;
-    if (productTypeId) query["productGroup.productTypeId"] = productTypeId;
-    if (brandId) query["productGroup.brand"] = brandId;
-
-    // Handle Rating Filter with Aggregate Pipeline
-    let aggregatePipeline = [
-      { $match: query },
-      {
-        $lookup: {
-          from: "reviews",
-          localField: "productGroup._id",
-          foreignField: "productId",
-          as: "reviews",
-        },
+    const variantList = await Variant.find(query).populate({
+      path: "productGroup",
+      populate: {
+        path: "brand",
+        model: "Brand",
       },
-      {
-        $addFields: {
-          avgRating: { $avg: "$reviews.rating" },
-        },
-      },
-    ];
+      model: "Product",
+    });
 
+    let filteredVariants = variantList;
+
+    // Rating Filter
     if (rating) {
-      const minRating = Math.min(...rating.split(",").map(Number));
-      aggregatePipeline.push({
-        $match: { avgRating: { $gte: minRating } },
-      });
+      const ratingArray = rating.split(",").map(Number);
+      const minRating = Math.min(...ratingArray);
+
+      filteredVariants = await Promise.all(
+        filteredVariants.map(async (variant) => {
+          const review = await ReviewAndRatings.findOne({
+            productId: variant.productGroup._id,
+            rating: { $gte: minRating },
+          });
+          return review ? variant : null;
+        })
+      );
+
+      filteredVariants = filteredVariants.filter((variant) => variant !== null);
+    }
+
+    // Main Category Filter
+    if (mainCategoryId) {
+      filteredVariants = await Promise.all(
+        filteredVariants.map(async (variant) => {
+          const productDetails = await productSc.findById(variant.productGroup);
+          return productDetails &&
+            productDetails.categoryId.toString() === mainCategoryId
+            ? variant
+            : null;
+        })
+      );
+
+      filteredVariants = filteredVariants.filter((variant) => variant !== null);
+    }
+
+    // Sub Category Filter
+    if (subCategoryId) {
+      filteredVariants = await Promise.all(
+        filteredVariants.map(async (variant) => {
+          const productDetails = await productSc.findById(variant.productGroup);
+          return productDetails &&
+            productDetails.subCategoryId.toString() === subCategoryId
+            ? variant
+            : null;
+        })
+      );
+
+      filteredVariants = filteredVariants.filter((variant) => variant !== null);
+    }
+
+    // Product Type Filter
+    if (productTypeId) {
+      filteredVariants = await Promise.all(
+        filteredVariants.map(async (variant) => {
+          const productDetails = await productSc.findById(variant.productGroup);
+          return productDetails &&
+            productDetails.productTypeId.toString() === productTypeId
+            ? variant
+            : null;
+        })
+      );
+
+      filteredVariants = filteredVariants.filter((variant) => variant !== null);
+    }
+
+    // Brand Filter
+    if (brandId) {
+      filteredVariants = await Promise.all(
+        filteredVariants.map(async (variant) => {
+          const productDetails = await productSc.findById(variant.productGroup);
+          return productDetails && productDetails.brand.toString() === brandId
+            ? variant
+            : null;
+        })
+      );
+
+      filteredVariants = filteredVariants.filter((variant) => variant !== null);
     }
 
     // Sorting
     if (sortBy) {
-      const sortFields = {
-        "price asc": { sellingPrice: 1 },
-        "price desc": { sellingPrice: -1 },
-        discount: { discount: -1 },
-        "customerRatings asc": { avgRating: 1 },
-        "customerRatings desc": { avgRating: -1 },
-      };
-      aggregatePipeline.push({ $sort: sortFields[sortBy] || {} });
+      let sortQuery = {};
+
+      if (sortBy === "price asc") sortQuery = { key: "sellingPrice", order: 1 };
+      if (sortBy === "price desc")
+        sortQuery = { key: "sellingPrice", order: -1 };
+      if (sortBy === "discount") sortQuery = { key: "discount", order: -1 };
+      if (sortBy === "customerRatings asc")
+        sortQuery = { key: "customerRatings", order: 1 };
+      if (sortBy === "customerRatings desc")
+        sortQuery = { key: "customerRatings", order: -1 };
+
+      filteredVariants = filteredVariants.sort((a, b) => {
+        return (a[sortQuery.key] - b[sortQuery.key]) * sortQuery.order;
+      });
     }
 
     // Pagination
-    aggregatePipeline.push(
-      { $skip: (page - 1) * limit },
-      { $limit: parseInt(limit) }
+    const totalVariants = filteredVariants.length;
+    const paginatedVariants = filteredVariants.slice(
+      (page - 1) * limit,
+      page * limit
     );
-
-    // Execute the Aggregate Pipeline
-    const variantList = await Variant.aggregate(aggregatePipeline).exec();
 
     return res.status(200).json({
       success: true,
-      totalItems: variantList.length,
-      variants: variantList,
+      totalItems: totalVariants,
+      variants: paginatedVariants,
     });
+
+    // res.status(200).json({
+    //   page: parseInt(page),
+    //   limit: parseInt(limit),
+    //   totalItems: varientList.length,
+    //   variants: resultVariants,
+    // });
   } catch (error) {
     console.error("Error fetching variants:", error);
     res.status(500).json({ message: error.message + " Internal Server Error" });
   }
 };
-
 const getBrandsBasedOnProductType=async(req,res)=>{
   try {
    const productTypeId = req.params.productTypeId; // Extract the productTypeId from the request parameters
