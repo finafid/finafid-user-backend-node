@@ -1274,6 +1274,9 @@ const getAllFeaturedProduct = async (req, res) => {
       populate: {
         path: "productTypeId", // Nested population
       },
+      populate: {
+        path: "brand",
+      },
     });
     if (!variantDetails) {
       return res
