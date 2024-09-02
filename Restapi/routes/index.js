@@ -714,19 +714,18 @@ routs.get(
   getAllSearchTypeBasedOnProduct
 );
 routs.get("/getAllVariantsOnUser", getAllVariantsOnUser);
-routs.get("/getProductTypesBasedOnBrand/:brandId", getProductTypesBasedOnBrand);  
+routs.get("/getProductTypesBasedOnBrand/:brandId", getProductTypesBasedOnBrand);
 routs.get(
   "/getBrandsBasedOnProductType/:productTypeId",
   getBrandsBasedOnProductType
-); 
-    //payu
+);
+//payu
 
-    routs.post("/paymentResponse", paymentResponse);
+routs.post("/paymentResponse", paymentResponse);
 routs.post("/paymentDetail", auth, paymentDetail);
-handlePaymentSuccess,
-  handlePaymentFailure,
-  routs.post("/success", paymentResponse);
-routs.post("/failure", paymentResponse);
+routs.post("/success", handlePaymentSuccess);
+routs.post("/failure", handlePaymentFailure);
+
 //searchengine
 routs.get(
   "/getAllProductInformationBasedOnProduct",
@@ -734,7 +733,6 @@ routs.get(
 );
 routs.get("/getSearchData", getSearchDataFirst);
 routs.get("/getSearchDataSecond", getSearchDataSecond);
-
 routs.get("/productSearchDirectory", productSearchDirectory);
 //routs.get("/searchAndIterate", searchAndIterate);
 //routs.get("/searchEntityByName", searchEntityByName);

@@ -287,7 +287,7 @@ const getBrandsBasedOnProductType=async(req,res)=>{
    const productTypeId = req.params.productTypeId; // Extract the productTypeId from the request parameters
 
    const brandList = await Brand.find({
-     [productTypeId]: { $in: productTypeList }, // Use computed property name syntax
+     productTypeList: { $in: [productTypeId] },
    });
     if(!brandList){
        return res
