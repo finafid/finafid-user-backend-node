@@ -84,16 +84,29 @@ const getAllSearchTypeBasedOnProduct = async (req, res) => {
 const applyFilter = async (filteredVariants, filterKey, filterValue) => {
   if (!filterValue) return filteredVariants;
 
-  return await Promise.all(
-    filteredVariants.map(async (variant) => {
-      const productDetails = await productSc.findById(variant.productGroup);
-      if (productDetails) {
-        return productDetails[filterKey].toString() === filterValue
-          ? variant
-          : null;
-      }
-    })
-  ).then((result) => result.filter((variant) => variant !== null));
+  // Extract all productGroup IDs from filteredVariants
+  const productGroupIds = filteredVariants.map(
+    (variant) => variant.productGroup
+  );
+
+  // Batch fetch all product details
+  const productDetailsMap = await productSc
+    .find({ _id: { $in: productGroupIds } })
+    .lean();
+
+  // Create a map for fast lookup
+  const productDetailsLookup = productDetailsMap.reduce((acc, product) => {
+    acc[product._id] = product;
+    return acc;
+  }, {});
+
+  // Filter the variants based on the filterKey and filterValue
+  return filteredVariants.filter((variant) => {
+    const productDetails = productDetailsLookup[variant.productGroup];
+    return (
+      productDetails && productDetails[filterKey].toString() === filterValue
+    );
+  });
 };
 
 const getAllVariantsOnUser = async (req, res) => {
@@ -145,7 +158,7 @@ const getAllVariantsOnUser = async (req, res) => {
     }
 
     // Initial fetch of variants
-    let filteredVariants = await Variant.find(query);
+    let filteredVariants = await Variant.find(query).lean();
 
     // Apply filters
     filteredVariants = await applyFilter(
@@ -165,28 +178,37 @@ const getAllVariantsOnUser = async (req, res) => {
     );
     filteredVariants = await applyFilter(filteredVariants, "brand", brandId);
 
-   const variantIds = filteredVariants.map((variant) => variant._id);
+    // If there are no filtered variants, return early
+    if (filteredVariants.length === 0) {
+      return res.status(200).json({
+        success: true,
+        totalItems: 0,
+        variants: [],
+      });
+    }
 
-   let aggregatePipeline = [
-     {
-       $match: {
-         _id: { $in: variantIds }, 
-       },
-     },
-     {
-       $lookup: {
-         from: "reviews",
-         localField: "productGroup._id",
-         foreignField: "productId",
-         as: "reviews",
-       },
-     },
-     {
-       $addFields: {
-         avgRating: { $avg: "$reviews.rating" },
-       },
-     },
-   ];
+    const variantIds = filteredVariants.map((variant) => variant._id);
+
+    let aggregatePipeline = [
+      {
+        $match: {
+          _id: { $in: variantIds },
+        },
+      },
+      {
+        $lookup: {
+          from: "reviews",
+          localField: "productGroup._id",
+          foreignField: "productId",
+          as: "reviews",
+        },
+      },
+      {
+        $addFields: {
+          avgRating: { $avg: "$reviews.rating" },
+        },
+      },
+    ];
 
     if (rating) {
       const minRating = Math.min(...rating.split(",").map(Number));
