@@ -434,17 +434,19 @@ const deleteVariants = async (req, res) => {
 };
 getVariantById = async (req, res) => {
   try {
-    const variantDetail = await Variant.findById(
+    const variantDetails = await Variant.findById(
       req.params.variantId
     ).populate("productGroup");
 
-    if (!variantDetail) {
+    if (!variantDetails) {
       return res
         .status(404)
         .json({ success: false, message: "Variant not found" });
     }
 
-    const productDetails = await productSc.findById(variantDetail.productGroup);
+    const productDetails = await productSc.findById(
+      variantDetails.productGroup
+    );
 
     const productList = await productSc
       .find({
@@ -468,7 +470,7 @@ getVariantById = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      variantDetail,
+      variantDetails,
       suggestionProductList,
     });
   } catch (error) {
