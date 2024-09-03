@@ -270,13 +270,13 @@ const createProduct = async (req, res) => {
 const updateVariants = async (req, res) => {
   try {
     const variantId = req.params.variantId;
-    const variantDetails = await Variant.findById(variantId);
-    if (!variantDetails) {
+    const variantDetail = await Variant.findById(variantId);
+    if (!variantDetail) {
       return res.status(500).json({ message: "Variant not found" });
     }
 
     // Get the old quantity before updating the variant
-    const oldQuantity = parseInt(variantDetails.quantity, 10);
+    const oldQuantity = parseInt(variantDetail.quantity, 10);
     console.log({ body: req.body });
     let newList = [];
     if (req.body.images) {
@@ -293,34 +293,34 @@ const updateVariants = async (req, res) => {
     console.log(req.body);
     const varientName =
       productGroupDetails.name + " " + "(" + req.body.sku + ")";
-    variantDetails.productGroup = req.body.productId;
-    variantDetails.attributes = req.body.attributes;
-    variantDetails.sku = req.body.sku;
-    variantDetails.quantity = parseInt(req.body.quantity, 10);
-    variantDetails.taxModel = req.body.taxModel;
-    variantDetails.isUtsav = req.body.isUtsav || false;
-    variantDetails.unitPrice = parseFloat(req.body.unitPrice);
-    variantDetails.purchasePrice = parseFloat(req.body.purchasePrice);
-    variantDetails.cod = req.body.cod || false;
-    variantDetails.images = newList;
-    variantDetails.discount = parseFloat(req.body.discount);
-    variantDetails.shippingCost = parseFloat(req.body.shippingCost);
-    variantDetails.utsavDiscount = parseFloat(req.body.utsavDiscount);
-    variantDetails.minOrderQuantity = parseInt(req.body.minOrderQuantity, 10);
-    variantDetails.discountType = req.body.discountType;
-    variantDetails.hasShippingCost = req.body.hasShippingCost;
-    variantDetails.taxPercent = parseFloat(req.body.taxPercent);
-    variantDetails.sellingPrice = parseFloat(req.body.sellingPrice);
-    variantDetails.utsavPrice = parseFloat(req.body.utsavPrice);
-    variantDetails.barCode = parseFloat(req.body.barCode);
-    variantDetails.utsavReward = parseFloat(req.body.utsavReward);
-    variantDetails.basicReward = parseFloat(req.body.basicReward);
-    variantDetails.utsavDiscountType = req.body.utsavDiscountType;
-    variantDetails.variantDetails = req.body.variantDetails;
-    variantDetails.expiryDate = req.body.expiryDate;
-    variantDetails.name = req.body.name;
+    variantDetail.productGroup = req.body.productId;
+    variantDetail.attributes = req.body.attributes;
+    variantDetail.sku = req.body.sku;
+    variantDetail.quantity = parseInt(req.body.quantity, 10);
+    variantDetail.taxModel = req.body.taxModel;
+    variantDetail.isUtsav = req.body.isUtsav || false;
+    variantDetail.unitPrice = parseFloat(req.body.unitPrice);
+    variantDetail.purchasePrice = parseFloat(req.body.purchasePrice);
+    variantDetail.cod = req.body.cod || false;
+    variantDetail.images = newList;
+    variantDetail.discount = parseFloat(req.body.discount);
+    variantDetail.shippingCost = parseFloat(req.body.shippingCost);
+    variantDetail.utsavDiscount = parseFloat(req.body.utsavDiscount);
+    variantDetail.minOrderQuantity = parseInt(req.body.minOrderQuantity, 10);
+    variantDetail.discountType = req.body.discountType;
+    variantDetail.hasShippingCost = req.body.hasShippingCost;
+    variantDetail.taxPercent = parseFloat(req.body.taxPercent);
+    variantDetail.sellingPrice = parseFloat(req.body.sellingPrice);
+    variantDetail.utsavPrice = parseFloat(req.body.utsavPrice);
+    variantDetail.barCode = parseFloat(req.body.barCode);
+    variantDetail.utsavReward = parseFloat(req.body.utsavReward);
+    variantDetail.basicReward = parseFloat(req.body.basicReward);
+    variantDetail.utsavDiscountType = req.body.utsavDiscountType;
+    variantDetail.variantDetails = req.body.variantDetails;
+    variantDetail.expiryDate = req.body.expiryDate;
+    variantDetail.name = req.body.name;
     // Save variant details
-    await variantDetails.save();
+    await variantDetail.save();
 
     const productDetails = await Product.findById(req.body.productId);
     if (!productDetails) {
@@ -376,7 +376,7 @@ const addVariants = async (req, res) => {
       utsavReward: parseFloat(req.body.utsavReward),
       basicReward: parseFloat(req.body.basicReward),
       utsavDiscountType: req.body.utsavDiscountType,
-      variantDetail: req.body.variantDetail,
+      variantDetails: req.body.variantDetails,
       expiryDate: req.body.expiryDate,
     });
     if (!variant) {
@@ -434,19 +434,17 @@ const deleteVariants = async (req, res) => {
 };
 getVariantById = async (req, res) => {
   try {
-    const variantDetails = await Variant.findById(
+    const variantDetail = await Variant.findById(
       req.params.variantId
     ).populate("productGroup");
 
-    if (!variantDetails) {
+    if (!variantDetail) {
       return res
         .status(404)
         .json({ success: false, message: "Variant not found" });
     }
 
-    const productDetails = await productSc.findById(
-      variantDetails.productGroup
-    );
+    const productDetails = await productSc.findById(variantDetail.productGroup);
 
     const productList = await productSc
       .find({
@@ -470,7 +468,7 @@ getVariantById = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      variantDetails,
+      variantDetail,
       suggestionProductList,
     });
   } catch (error) {
