@@ -285,12 +285,33 @@ const getSearchDataFirst = async (req, res) => {
     if (!query) {
       return res.status(400).json({ message: "Query string is required." });
     }
-    const regexQuery = new RegExp(query, "i"); 
-    const results = await productSearch
-      .find({
-        entityName: regexQuery,
-      })
-      .distinct("entityName");
+
+    // Split the query into tokens
+    const tokens = query.split(/\s+/).filter(Boolean);
+    const spacedQuery = tokens.join(" "); // Normal spaced query
+    const combinedQuery = tokens.join(""); // Query without spaces
+
+    // Create regex patterns
+    const regexWithSpace = new RegExp(spacedQuery, "i");
+    const regexWithoutSpace = new RegExp(combinedQuery, "i");
+
+    // Try $text search first
+    let results = await productSearch.find({
+      $text: { $search: spacedQuery },
+    });
+
+    // If no results from $text search, fallback to regex-based search
+    if (results.length === 0) {
+      results = await productSearch.find({
+        $or: [
+          { productName: regexWithSpace },
+          { productName: regexWithoutSpace },
+          { productDescription: regexWithSpace },
+          { productDescription: regexWithoutSpace },
+          // Add more fields as needed
+        ],
+      });
+    }
 
     if (results.length === 0) {
       return res.status(404).json({ message: "No matching entities found." });
@@ -302,6 +323,8 @@ const getSearchDataFirst = async (req, res) => {
     res.status(500).json({ message: error.message + " Internal Server Error" });
   }
 };
+
+
 
 
 const getSearchDataSecond = async (req, res) => {
