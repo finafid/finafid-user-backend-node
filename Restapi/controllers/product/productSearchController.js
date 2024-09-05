@@ -228,21 +228,28 @@ const getAllVariantsOnUser = async (req, res) => {
       };
       aggregatePipeline.push({ $sort: sortFields[sortBy] || {} });
     }
+const pageNumber = parseInt(page);
+const limitNumber = parseInt(limit);
 
-    // Pagination
-    aggregatePipeline.push(
-      { $skip: (page - 1) * limit },
-      { $limit: parseInt(limit) }
-    );
+// Execute aggregation pipeline and get the full result set
+const variantList = await Variant.aggregate(aggregatePipeline).exec();
 
-    // Execute the Aggregate Pipeline
-    const variantList = await Variant.aggregate(aggregatePipeline).exec();
+// Apply pagination after retrieving the full result
+const paginatedVariantList = variantList.slice(
+  (pageNumber - 1) * limitNumber,
+  pageNumber * limitNumber
+);
 
-    return res.status(200).json({
-      success: true,
-      totalItems: variantList.length,
-      variants: variantList,
-    });
+// Optionally, you can return total count and total pages for frontend pagination
+const totalItems = variantList.length;
+const totalPages = Math.ceil(totalItems / limitNumber);
+
+res.status(200).json({
+  variants: paginatedVariantList,
+  currentPage: pageNumber,
+  totalPages,
+  totalItems,
+});
   } catch (error) {
     console.error("Error fetching variants:", error);
     res.status(500).json({ message: error.message + " Internal Server Error" });
