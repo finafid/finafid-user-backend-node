@@ -1,27 +1,23 @@
-const passport = require("passport");
+const passport = require('passport');
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
+
+passport.serializeUser((user , done) => {
+    done(null , user);
+})
+passport.deserializeUser(function(user, done) {
+    done(null, user);
+});
 
 passport.use(
   new GoogleStrategy(
     {
-      clientID: "YOUR_GOOGLE_CLIENT_ID",
-      clientSecret: "YOUR_GOOGLE_CLIENT_SECRET",
-      callbackURL: "/auth/google/callback",
+      clientID: process.env.google_clientId,
+      clientSecret: process.env.google_clientSecret,
+      callbackURL: "http://localhost:3000/api/v1/auth/google/callback",
+      passReqToCallback: true,
     },
-    function (accessToken, refreshToken, profile, done) {
-      // Use profile info (mainly profile id) to check if the user is registered in your db
-      // Save user info in session or database
+    function (request, accessToken, refreshToken, profile, done) {
       return done(null, profile);
     }
   )
 );
-
-passport.serializeUser(function (user, done) {
-  done(null, user);
-});
-
-passport.deserializeUser(function (obj, done) {
-  done(null, obj);
-});
-
-module.exports = passport;

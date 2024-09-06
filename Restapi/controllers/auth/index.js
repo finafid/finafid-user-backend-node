@@ -39,18 +39,14 @@ const userRegistration = async (req, res) => {
   newUser.password = await bcrypt.hash(req.body.password, 10);
   try {
     await newUser.save();
-    newUser.password = undefined;
     if (req.body.referralCode!=null) {
       await redeemedReferral(referralCode, newUser._id);
     }
     const profilePictureUrl = `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(
       req.body.fullName || email
     )}`;
-
-    // const User = new User({
-    //   ...req.body,
-    //   imgUrl: profilePictureUrl, // Set the default profile picture
-    // });
+    newUser.imgUrl = profilePictureUrl;
+   await newUser.save();
     return res.status(201).json({ message: "success", data: newUser });
   } catch (err) {
     return res.status(500).json({ message: "error", error: err.message });

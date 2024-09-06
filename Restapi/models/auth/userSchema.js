@@ -56,6 +56,10 @@ const UserSchema = new Schema(
       required: false,
       default: false,
     },
+    googleId: {
+      type: String,
+
+    },
   },
   { timestamps: true }
 );

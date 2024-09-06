@@ -309,7 +309,10 @@ const {
   searchEntityByName,
   searchAndIterate,
 } = require("../controllers/product/SearchEngine.js");
-const {} = require("../controllers/auth/GoogleLogin.js");
+const {
+  googleCallback,
+  loginWithGoogle,
+} = require("../controllers/auth/GoogleLogin.js");
 //user Authentication
 routs.post("/register", userRegistrationValidation, userRegistration);
 routs.post("/login", userLoginValidation, userLogin);
@@ -733,13 +736,7 @@ routs.get("/productSearchDirectory", productSearchDirectory);
 //routs.get("/searchEntityByName", searchEntityByName);
 
 //google login
-// routs.get("/auth/google", authController.googleAuth);
-// routs.get(
-//   "/auth/google/callback",
-//   authController.googleAuthCallback,
-//   authController.authSuccess
-// );
-// routs.get("/profile", authController.getProfile);
-// routs.get("/logout", authController.logout);
+routs.get("/google", loginWithGoogle);
+routs.get("/google/callback", googleCallback);
 
 module.exports = routs;
