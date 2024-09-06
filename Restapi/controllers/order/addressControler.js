@@ -45,7 +45,6 @@ const getAddressOfUser = async (req, res) => {
         message: "No address is found",
       });
     }
-
     console.log(addressDetails);
     return res.status(200).json({
       success: true,
@@ -60,10 +59,7 @@ const getAddressOfUser = async (req, res) => {
 };
 const updateAddressOfUser = async (req, res) => {
   try {
-    // Extract the address id from request parameters or body, depending on your route structure
     const { addressId } = req.body;
-
-    // Find the address by its id and the user id to ensure the address belongs to the user
     const addressDetails = await Address.findOne({
       _id: addressId,
       userId: req.user._id,
@@ -75,8 +71,6 @@ const updateAddressOfUser = async (req, res) => {
         message: "Address not found",
       });
     }
-
-    // Update the address fields with data from request body
     const updatedFields = req.body;
     for (let key in updatedFields) {
       if (updatedFields.hasOwnProperty(key)) {

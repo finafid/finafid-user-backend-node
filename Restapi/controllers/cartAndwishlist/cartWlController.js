@@ -148,10 +148,9 @@ const addToCart = async (req, res) => {
         );
   
         if (existingProductIndex >= 0) {
-          // If the product exists, update the quantity
+
           userCartDetails.cartItems[existingProductIndex].itemQuantity += itemQuantity;
         } else {
-          // If the product does not exist, add it to the cart
           const newProductDetails = {
             productId,
             itemQuantity,
@@ -192,7 +191,6 @@ const getTheCart = async (req, res) => {
       });
      ;
       
-
     if (!userCartDetails) {
       return res.status(200).json({
         success: false,
@@ -270,7 +268,7 @@ const deleteFromCart = async (req, res) => {
             message: error.message + " Internal server error",
           });
     }
-  }
+  };
   const removeFromCart = async (req, res) => {
     try {
       const { productIdList } = req.body;
@@ -304,30 +302,24 @@ const deleteFromCart = async (req, res) => {
       });
     }
   };
-
 async function removeItemFromCart(productIdList, userId) {
   const userCartDetails = await cart.findOne({ UserId: userId });
 
   if (!userCartDetails) {
     return { message: "Cart not found" };
   }
-
   console.log({ userCartDetails: userCartDetails });
-
   productIdList.forEach((element) => {
     console.log(element.productId._id);
     const index = userCartDetails.cartItems.findIndex(
       (item) => item.productId.toString() === element.productId._id.toString()
     );
-
     if (index !== -1) {
       console.log(`Removing item with ID: ${element.productId._id}`);
       userCartDetails.cartItems.splice(index, 1);
     }
   });
-
   await userCartDetails.save();
-
   return { message: "Items removed from cart successfully" };
 }
 

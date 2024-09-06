@@ -43,6 +43,14 @@ const userRegistration = async (req, res) => {
     if (req.body.referralCode!=null) {
       await redeemedReferral(referralCode, newUser._id);
     }
+    const profilePictureUrl = `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(
+      req.body.fullName || email
+    )}`;
+
+    const newUser = new User({
+      ...req.body,
+      imgUrl: profilePictureUrl, // Set the default profile picture
+    });
     return res.status(201).json({ message: "success", data: newUser });
   } catch (err) {
     return res.status(500).json({ message: "error", error: err.message });
@@ -59,14 +67,16 @@ function generateTokens(tokenObject, user) {
 }
 const userLogin = async (req, res) => {
   try {
-    console.log(req.body);
-    const user = await User.findOne({ email: req.body.email, is_Active: true });
+    const user = await User.findOne({
+      email: { $regex: new RegExp(`^${req.body.email}$`, "i") },
+      is_Active: true,
+    });
+
     if (user && user.blocking == true) {
       return res
         .status(401)
         .json({ message: "Your account is permanently blocked" });
     }
-    console.log(req.body);
     if (!user) {
       return res.status(401).json({ message: "Invalid Credential" });
     }
@@ -109,8 +119,7 @@ const mailVarification = async (req, res) => {
     if (userData) {
       if (userData.email_validation == true) {
         return res.status(200).json({
-          message: "Mail Already varified",
-          err,
+          message: "Mail Already verified",
         });
       }
       User.findByIdAndUpdate({ _id: req.query.id }),
@@ -118,7 +127,7 @@ const mailVarification = async (req, res) => {
           $set: { email_validation: true },
         };
       return res.status(200).json({
-        message: "Mail varified success fully",
+        message: "Mail verified success fully",
       });
     } else {
       return res.status(500).json({
@@ -255,7 +264,7 @@ const sendMailVerificationForForgotPassword = async (req, res) => {
             <p style="margin-bottom: 10px;">Dear ${userData.fullName},</p>
             <p style="margin-bottom: 10px;">The OTP for your email is ${g_otp}.</p>
             <p style="margin-bottom: 10px;">Best regards,</p>
-            <p style="margin-bottom: 0;">The [Your Company] Team</p>
+            <p style="margin-bottom: 0;">The Finafid Team</p>
         </div>`;
 
     await sendMail(userData.email, "Email Verification", msg);
@@ -317,7 +326,7 @@ const varifyOtp = async (req, res) => {
     );
     return res.status(200).json({
       success: true,
-      message: "Account varified succesfully",
+      message: "Account verified successfully",
     });
   } catch (error) {
     return res.status(500).json({

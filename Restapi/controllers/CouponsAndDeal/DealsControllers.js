@@ -884,5 +884,4 @@ module.exports = {
   getFlashDealByIdOnUser,
   getFeaturedDealByIdOnUser,
   getDEalOfTheDayByIdOnUser,
-
 };

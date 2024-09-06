@@ -87,51 +87,9 @@ const placeOrder = async (req, res) => {
     await newOrder.save();
     console.log({ newOrder: newOrder });
     await updateStatusDetails(newOrder._id);
-    // // Authenticate with Shiprocket
-    // await authenticate();
-    // const userDetails=await User.findOne({
-    //   _id:req.user.id
-    // })
-    // // Prepare order data for Shiprocket
-    // const shiprocketOrderData = {
-    //   order_id: newOrder._id,
-    //   order_date: new Date().toISOString(),
-    //   pickup_location: "Default Pickup Location", // Change this as per your configuration
-    //   billing_customer_name: userDetails.fullName,
-
-    //   billing_address: req.body.address.street,
-    //   billing_city: req.body.address.city,
-    //   billing_pincode: req.body.address.pinCode,
-    //   billing_state: req.body.address.state,
-    //   billing_country: "India", // Adjust based on your requirements
-    //   billing_email: req.user.email,
-    //   billing_phone: req.user.phone,
-    //   shipping_is_billing: true, // Adjust if shipping address is different
-    //   order_items: newOrderItems.map((item) => ({
-    //     name: "Product Name", // Fetch actual product name from database
-    //     sku: item.productId,
-    //     units: item.itemQuantity,
-    //     selling_price: item.unitPrice, // Fetch actual unit price from database
-    //     discount: "", // If any
-    //     tax: "", // If any
-    //     hsn: "", // If any
-    //   })),
-    //   payment_method: "Prepaid", // Change as per your configuration
-    //   sub_total: grandTotal,
-    //   length: 10, // Adjust based on your product dimensions
-    //   breadth: 10, // Adjust based on your product dimensions
-    //   height: 10, // Adjust based on your product dimensions
-    //   weight: 1, // Adjust based on your product weight
-    // };
-
-    // // Create order in Shiprocket
-    // const shiprocketResponse = await createOrder(shiprocketOrderData);
-    // console.log("Shiprocket Order Response:", shiprocketResponse);
-
     return res.status(201).json({
       message: "Successfully created order and Shiprocket order",
       newOrder,
-      //shiprocketResponse,
       success: true,
     });
   } catch (error) {
@@ -397,7 +355,8 @@ const getAllOrder = async (req, res) => {
           path: "productGroup",
           model: "Product",
         },
-      });
+      })
+      .sort({ createdAt: -1 });
 
     // Calculate status counts
     const statusCount = {};
@@ -471,12 +430,12 @@ const editOrder = async (req, res) => {
     await orderDetails.save();
     return res.status(500).json({
       success: true,
-      message: "updated succesfully",
+      message: "updated successfully",
     });
   } catch (err) {
     return res.status(500).json({
       success: false,
-      message: error.message + "internal server error",
+      message: err.message + " internal server error",
     });
   }
 };
@@ -604,6 +563,16 @@ async function invoiceGenerate(orderDetails) {
 
 const downloadInvoice = async (req, res) => {
   try {
+    const orderDetails=await order.findById(req.params.orderId)
+    if(!orderDetails){
+        return res.status(500).json({
+      success: false,
+      message: " No order details",
+    });
+    }
+    return res.status(200).json({invoicePath:
+      orderDetails.invoicePath
+    });
   } catch (err) {
     return res.status(500).json({
       success: false,

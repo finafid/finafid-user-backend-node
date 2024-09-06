@@ -2,7 +2,7 @@ const Wallet = require("../../models/Wallet/wallet");
 const Transaction = require("./../../models/Wallet/WalletTransaction");
 const addBalance = async (req, res) => {
   try {
-    const userId = req.user._id; // Assuming you have user ID in req.user._id from authentication middleware
+    const userId = req.user._id; 
     const { amount, description } = req.body;
     const type = amount > 0 ? "credit" : "debit";
 
@@ -15,20 +15,15 @@ const addBalance = async (req, res) => {
     });
     await newTransaction.save();
     let walletDetails = await Wallet.findOne({ userId });
-
     if (!walletDetails) {
-      // Create a new wallet if it doesn't exist
       walletDetails = new Wallet({
         userId,
         balance: amount,
         transactions: [newTransaction],
       });
     }
-
-    // Add money to the wallet
     walletDetails.balance += amount;
     walletDetails.transactions.push(newTransaction);
-    // Save the updated wallet
     await walletDetails.save();
 
     res.status(200).json({
@@ -51,9 +46,9 @@ const showTransactions = async (req, res) => {
       userId: req.user._id,
     }).populate("transactions");
     if (!walletDetails) {
-      res.status(400).json({ message: "No transaction " });
+      return res.status(400).json({ message: "No transaction " });
     }
-    res.status(200).json({ message: " Transaction details", walletDetails });
+    return res.status(200).json({ message: " Transaction details", walletDetails });
   } catch (error) {
     res.status(500).json({ message: error.message + " Internal Server Error" });
   }

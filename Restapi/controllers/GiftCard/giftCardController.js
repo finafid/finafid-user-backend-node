@@ -50,7 +50,7 @@ const createGiftCard = async (req, res) => {
       message,
     } = req.body;
 
-    const code = req.user._id.toString() + "giftno" + Date.now();
+    const code = req.user._id.toString() + "giftNo" + Date.now();
     const Activation_Date = new Date();
     const Expiration_Date = new Date(Activation_Date);
     Expiration_Date.setDate(Expiration_Date.getDate() + 90);
@@ -60,7 +60,7 @@ const createGiftCard = async (req, res) => {
     if (walletDetails.balance < value) {
       return res.status(400).json({ message: "Not enough amount in Wallet" });
     }
-    walletDetails.balance = walletDetails.balance - value;
+    walletDetails.balance = (walletDetails.balance - value);
     await walletDetails.save();
     const newGiftCard = new GiftCard({
       Code: code,
@@ -78,9 +78,9 @@ const createGiftCard = async (req, res) => {
       message,
     });
     await newGiftCard.save();
-    res
+    return res
       .status(200)
-      .json({ message: "Successfully created giftcard", newGiftCard });
+      .json({ message: "Successfully created giftCard", newGiftCard });
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -90,19 +90,18 @@ const createGiftCard = async (req, res) => {
 };
 const getGiftCardDetails = async (req, res) => {
   try {
-    const giftCardId = req.params.giftCardId;
     const giftCardDetails = await GiftCard.findOne({
-      _id: giftCardId,
+      _id: req.params.giftCardId,
     })
       .populate("templateId")
       .populate("Issuer_Information");
     if (!giftCardDetails) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
         message: "No gift card Present",
       });
     }
-    res.status(200).json(giftCardDetails);
+    return res.status(200).json(giftCardDetails);
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -112,18 +111,20 @@ const getGiftCardDetails = async (req, res) => {
 };
 const getGiftCardByUser = async (req, res) => {
   try {
+    const currentDate=Date.now()
     const userDetails = await GiftCard.find({
       Issuer_Information: req.user._id,
+      Expiration_Date: { $gt: currentDate },
     })
       .populate("templateId")
       .populate("Issuer_Information");
     if (!userDetails) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
         message: "No gift card Present",
       });
     }
-    res.status(200).json(userDetails);
+    return res.status(200).json(userDetails);
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -141,7 +142,7 @@ const redeemGiftcard = async (req, res) => {
     if (!giftCardDetails) {
       res.status(500).json({
         success: false,
-        message: " Invalid Giftcard",
+        message: " Invalid GiftCard",
       });
     }
     const walletDetails = await Wallet.findOne({
@@ -149,9 +150,9 @@ const redeemGiftcard = async (req, res) => {
     });
     walletDetails.balance = walletDetails.balance + giftCardDetails.Value;
     await walletDetails.save();
-    res.status(500).json({
+    res.status(200).json({
       success: true,
-      message: "Giftcard reedemed successfully",
+      message: "GiftCard redeemed successfully",
     });
   } catch (error) {
     res.status(500).json({
@@ -171,7 +172,7 @@ const createGiftCardTemplate = async (req, res) => {
     if (!newGiftCardTemplate) {
       res.status(500).json({
         success: false,
-        message: " No such Giftcard",
+        message: " No such GiftCard",
       });
     }
     await newGiftCardTemplate.save();
@@ -189,10 +190,16 @@ const createGiftCardTemplate = async (req, res) => {
 const getAllTemplates = async (req, res) => {
   try {
     const allTemplates = await GiftCardTemplate.find();
-    return res.status(200).json({
-      success: true,
-      allTemplates,
-    });
+    if (!allTemplates){
+       return res.status(500).json({
+         success: false,
+         message:"No template available",
+       });
+    }
+      return res.status(200).json({
+        success: true,
+        allTemplates,
+      });
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -279,7 +286,7 @@ const getAllGiftCard = async (req, res) => {
     if (!newGiftCardTemplate) {
       res.status(500).json({
         success: false,
-        message: " No such Giftcard",
+        message: " No such GiftCard",
       });
     }
 

@@ -285,7 +285,10 @@ const getSearchDataFirst = async (req, res) => {
     if (!query) {
       return res.status(400).json({ message: "Query string is required." });
     }
-    const regexQuery = new RegExp(query, "i");
+
+    // Create a case-insensitive regex pattern with added flexibility for fuzzy matching
+    const regexQuery = new RegExp(query.split("").join(".*"), "i");
+
     const results = await productSearch
       .find({
         entityName: regexQuery,
@@ -302,6 +305,7 @@ const getSearchDataFirst = async (req, res) => {
     res.status(500).json({ message: error.message + " Internal Server Error" });
   }
 };
+
 
 const getSearchDataSecond = async (req, res) => {
   try {

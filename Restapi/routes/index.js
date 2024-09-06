@@ -437,13 +437,11 @@ routs.get(
   deleteVariants
 );
 routs.post("/updateProduct", upload.single("logo"), auth, updateProduct);
-
 routs.post("/activeProduct/:categoryId", activeProduct);
 routs.post("/featuredMainCategory/:categoryId", featuredMainCategory);
 routs.post("/featuredSubCategory/:categoryId", featuredSubCategory);
 routs.post("/featuredBrand/:categoryId", featuredBrand);
 routs.post("/featuredProduct/:categoryId", featuredProduct);
-
 routs.get("/getAllFeaturedBrand", getAllFeaturedBrand);
 routs.get("/getAllFeaturedCategory", getAllFeaturedCategory);
 routs.get("/getAllFeaturedSubCategory", getAllFeaturedSubCategory);
@@ -479,7 +477,7 @@ routs.post("/editOrder", auth, editOrder);
 routs.get("/orderStatusDetails/:orderId", orderStatusDetails);
 routs.post("/setDeliveryDate", setDeliveryDate);
 routs.get("/cancelDelivery", cancelDelivery);
-routs.get("/downloadInvoice", downloadInvoice);
+routs.get("/downloadInvoice/:orderId", downloadInvoice);
 //Address
 routs.post("/addAddress", auth, addAddress);
 routs.get("/getAddressOfUser", auth, getAddressOfUser);

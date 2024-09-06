@@ -63,7 +63,10 @@ const getAllProduct = async (req, res) => {
       .populate({
         path: "variants",
       });
-    res.json(product);
+      if (!product){
+         return res.status(500).json({ message:"No product "});
+      }
+      return res.status(200).json(product);
   } catch (err) {
     return res.status(500).json({ message: "error", error: err.message });
   }
@@ -668,7 +671,7 @@ const getProductBasisOfSubcategory = async (req, res) => {
       return res.status(404).json({ message: "Subcategory not found" });
     }
 
-    res.status(200).json({ subCategoryRecord });
+    return res.status(200).json({ subCategoryRecord });
   } catch (error) {
     res.status(500).json({ message: error.message + " Internal Server Error" });
   }
@@ -948,9 +951,8 @@ const deleteProduct = async (req, res) => {
 };
 const getProductTypeBasedOnSubCategory = async (req, res) => {
   try {
-    const subCategoryId = req.params.subCategoryId;
     const productTypeList = await productType.find({
-      subCategoryId: subCategoryId,
+      subCategoryId: req.params.subCategoryId,
     });
     if (!productTypeList) {
       return res.status(500).json({ message: "No list found" });
@@ -989,7 +991,7 @@ const getBrand = async (req, res) => {
   try {
     const brandList = await Brand.find();
     if (!brandList) {
-      return res.status(500).json({ message: "Brandlist is not present" });
+      return res.status(500).json({ message: "BrandList is not present" });
     }
     return res.status(200).json({ brandList });
   } catch (error) {
@@ -1012,9 +1014,8 @@ const totalProductOfBrand = async (req, res) => {
 };
 const getBrandById = async (req, res) => {
   try {
-    const brandId = req.params.brandId;
     const brandDetails = await Brand.findById({
-      _id: brandId,
+      _id: req.params.brandId,
     });
     console.log(brandDetails);
     if (!brandDetails) {
@@ -1027,9 +1028,8 @@ const getBrandById = async (req, res) => {
 };
 const deleteBrand = async (req, res) => {
   try {
-    const brandId = req.params.brandId;
     const brandDetails = await Brand.findByIdAndDelete({
-      _id: brandId,
+      _id: req.params.brandId,
     });
     if (!brandDetails) {
       return res.status(500).json({ message: " Internal Server Error" });
@@ -1041,9 +1041,8 @@ const deleteBrand = async (req, res) => {
 };
 const deleteCategory = async (req, res) => {
   try {
-    const categoryId = req.params.categoryId;
     const categoryDetails = await mainCategory.findByIdAndDelete({
-      _id: categoryId,
+      _id: req.params.categoryId,
     });
     if (!categoryDetails) {
       return res.status(500).json({ message: "no details found" });
@@ -1055,10 +1054,8 @@ const deleteCategory = async (req, res) => {
 };
 const deleteSubCategory = async (req, res) => {
   try {
-    const subCategoryId = req.params.subCategoryId;
-    console.log(subCategoryId);
     const subCategoryDetails = await subCategory.findByIdAndDelete({
-      _id: subCategoryId,
+      _id: req.params.subCategoryId,
     });
     if (!subCategoryDetails) {
       return res.status(500).json({ message: "no details found" });
@@ -1070,9 +1067,8 @@ const deleteSubCategory = async (req, res) => {
 };
 const deleteProductType = async (req, res) => {
   try {
-    const productTypeId = req.params.productTypeId;
     const productTypeDetails = await productType.findByIdAndDelete({
-      _id: productTypeId,
+      _id: req.params.productTypeId,
     });
     if (!productTypeDetails) {
       return res.status(500).json({ message: "no details found" });
@@ -1084,10 +1080,8 @@ const deleteProductType = async (req, res) => {
 };
 const getCategoryId = async (req, res) => {
   try {
-    const categoryId = req.params.categoryId;
-    console.log(categoryId);
     const categoryDetails = await mainCategory.findById({
-      _id: categoryId,
+      _id: req.params.categoryId,
     });
     console.log(categoryDetails);
     if (!categoryDetails) {
@@ -1100,9 +1094,8 @@ const getCategoryId = async (req, res) => {
 };
 const getProductTypeById = async (req, res) => {
   try {
-    const productTypeId = req.params.productTypeId;
     const productTypeDetails = await productType.findById({
-      _id: productTypeId,
+      _id: req.params.productTypeId,
     });
     if (!productTypeDetails) {
       return res.status(500).json({ message: "no details found" });
@@ -1114,9 +1107,8 @@ const getProductTypeById = async (req, res) => {
 };
 const getSubCategoryId = async (req, res) => {
   try {
-    const subCategoryId = req.params.subcategoryId;
     const subCategoryIdDetails = await subCategory.findById({
-      _id: subCategoryId,
+      _id: req.params.subcategoryId,
     });
     if (!subCategoryIdDetails) {
       return res.status(500).json({ message: "no details found" });
@@ -1214,7 +1206,6 @@ const activeProduct = async (req, res) => {
     if (!details) {
       return res.status(500).json({ message: "No varient" });
     }
-
     return res.status(200).json({ message: "Done" });
   } catch (error) {
     res.status(500).json({ message: error.message + " Internal Server Error" });
@@ -1279,9 +1270,7 @@ const getAllFeaturedProduct = async (req, res) => {
       },
     });
     if (!variantDetails) {
-      return res
-        .status(500)
-        .json({ message: error.message + " Internal Server Error" });
+      return res.status(500).json({ message: "No variantDetails" });
     }
     return res.status(200).json({ variantDetails });
   } catch (error) {
@@ -1293,7 +1282,7 @@ const brandBasedOnCategory = async (req, res) => {
     const brandDetails = await Brand.find({
       categoryList: { $in: [req.params.categoryId] },
     });
-    res.status(200).json({ brandDetails });
+    return res.status(200).json({ brandDetails });
   } catch (error) {
     res.status(500).json({ message: error.message + " Internal Server Error" });
   }
@@ -1312,6 +1301,11 @@ const getFeaturedProductBasedOnCategory = async (req, res) => {
           model: "Product",
         },
       });
+      if(!productList){
+       return  res
+          .status(500)
+          .json({ message:  "No product found" });
+      }
     const variantList = [];
     productList.forEach((element) => {
       if (Array.isArray(element.variants)) {
@@ -1323,10 +1317,9 @@ const getFeaturedProductBasedOnCategory = async (req, res) => {
     const filteredVariants = variantList.filter(
       (variant) => variant.is_featured === true
     );
-
     return res.status(200).json({ productList: filteredVariants });
   } catch (error) {
-    res.status(500).json({ message: error.message + " Internal Server Error" });
+   return  res.status(500).json({ message: error.message + " Internal Server Error" });
   }
 };
 const deleteNonProductVariants = async (req, res) => {
