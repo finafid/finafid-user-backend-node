@@ -47,10 +47,10 @@ const userRegistration = async (req, res) => {
       req.body.fullName || email
     )}`;
 
-    const newUser = new User({
-      ...req.body,
-      imgUrl: profilePictureUrl, // Set the default profile picture
-    });
+    // const User = new User({
+    //   ...req.body,
+    //   imgUrl: profilePictureUrl, // Set the default profile picture
+    // });
     return res.status(201).json({ message: "success", data: newUser });
   } catch (err) {
     return res.status(500).json({ message: "error", error: err.message });
