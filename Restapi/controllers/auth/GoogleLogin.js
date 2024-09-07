@@ -89,7 +89,7 @@ const googleCallback = async (req, res) => {
       fullname: user.fullname,
       email: user.email,
     };
-
+    console.log({payload:payload});
     // Generate a JWT token
 
     const token = await generateTokens(payload);
