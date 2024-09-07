@@ -94,9 +94,8 @@ const googleCallback = async (req, res) => {
 
     const token = await generateTokens(payload);
 
-    const accessToken = "Bearer " + token.accessToken;
-     const refreshToken = "Bearer " + token.refreshToken;
-    const redirectUrl = `https://finafid.com/auth/callback?success=true&message=User%20Logged%20in%20Successfully&accessToken=${accessToken}&refreshToken=${refreshToken}`;
+
+    const redirectUrl = `https://finafid.com/auth/callback?success=true&message=User%20Logged%20in%20Successfully&accessToken=${token.accessToken}&refreshToken=${token.refreshToken}`;
 
     return res.redirect(redirectUrl);
   } catch (error) {
