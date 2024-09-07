@@ -85,7 +85,7 @@ const userLogin = async (req, res) => {
     }
     const tokenObject = {
       _id: user._id,
-      fullname: user.fullname,
+      fullname: user.fullName,
       email: user.email,
     };
     const jwtToken = generateTokens(tokenObject, user);

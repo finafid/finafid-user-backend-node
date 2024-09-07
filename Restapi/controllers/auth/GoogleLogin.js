@@ -86,13 +86,14 @@ const googleCallback = async (req, res) => {
     // Create a payload to store in JWT
     const payload = {
       _id: user._id,
-      fullname: user.fullname,
+      fullname: user.fullName,
       email: user.email,
     };
     console.log({payload:payload});
     // Generate a JWT token
 
     const token = await generateTokens(payload);
+
     const accessToken = "Bearer " + token.accessToken;
      const refreshToken = "Bearer " + token.refreshToken;
     const redirectUrl = `https://finafid.com/auth/callback?success=true&message=User%20Logged%20in%20Successfully&accessToken=${accessToken}&refreshToken=${refreshToken}`;
