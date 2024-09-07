@@ -91,8 +91,11 @@ const googleCallback = async (req, res) => {
     };
 
     // Generate a JWT token
+
     const token = await generateTokens(payload);
-    const redirectUrl = `https://finafid.com/auth/callback?success=true&message=User%20Logged%20in%20Successfully&accessToken=${token.accessToken}&refreshToken=${token.refreshToken}`;
+    const accessToken = "Bearer " + token.accessToken;
+     const refreshToken = "Bearer " + token.refreshToken;
+    const redirectUrl = `https://finafid.com/auth/callback?success=true&message=User%20Logged%20in%20Successfully&accessToken=${accessToken}&refreshToken=${refreshToken}`;
 
     return res.redirect(redirectUrl);
   } catch (error) {
