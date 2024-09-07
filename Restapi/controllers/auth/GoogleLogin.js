@@ -85,11 +85,9 @@ const googleCallback = async (req, res) => {
 
     // Create a payload to store in JWT
     const payload = {
-      user: {
         _id: user._id,
         email: data.email,
         fullname: data.name,
-      },
     };
 
     // Generate a JWT token
