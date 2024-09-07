@@ -1,5 +1,5 @@
 const { google } = require("googleapis");
-const User=require("../../models/auth/userSchema")
+const User = require("../../models/auth/userSchema");
 const oauth2Client = new google.auth.OAuth2(
   process.env.google_clientId,
   process.env.google_clientSecret,
@@ -72,8 +72,8 @@ const googleCallback = async (req, res) => {
         email: data.email,
         googleId: data.id,
         email_validation: data.verified_email,
-        phone:90909090,
-        password:"Google123"
+        phone: 90909090,
+        password: "Google123",
       }).save();
     } else {
       // Update the Google ID if it doesn't exist
@@ -94,17 +94,11 @@ const googleCallback = async (req, res) => {
 
     // Generate a JWT token
     const token = await generateTokens(payload);
+    const redirectUrl = `http://finafid.com/auth/callback?success=true&message=User%20Logged%20in%20Successfully&accessToken=${token.accessToken}&refreshToken=${token.refreshToken}`;
 
-    return res.status(200).send({
-      success: true,
-      message: "User Logged in Successfully",
-      token,
-    });
+    return res.redirect(redirectUrl);
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    return res.redirect("http://finafid.com/auth/callback?success=false");
   }
 };
 module.exports = {
