@@ -16,12 +16,6 @@ const paymentDetail = async (req, res) => {
     const { amount, orderId } = req.body;
     const orderDetails = await Order.findById(orderId);
     const userDetails = await User.findById(req.user._id);
-    // const txnid = "" + orderDetails.transactionId;
-    // console.log(orderDetails.transactionId);
-    console.log(PAYU_BASE_URL);
-    console.log(PAYU_MERCHANT_SALT);
-    console.log(PAYU_MERCHANT_KEY);
-
     const txnid = "" + orderId;
     console.log(txnid);
     const hashString = `${PAYU_MERCHANT_KEY}|${txnid}|${amount}|Order|${userDetails.fullName}|${userDetails.email}|||||||||||${PAYU_MERCHANT_SALT}`;
@@ -129,7 +123,7 @@ const handlePaymentSuccess = async (txnid, orderDetails, res) => {
     await removeItemFromCart(updatedOrder.orderItem, updatedOrder.userId);
 
     // Render the success page
-    res.render("paymentSuccess");
+    return res.render("paymentSuccess");
   } catch (error) {
     console.error("Error handling payment success:", error);
     res.status(500).send("Internal Server Error");
@@ -140,7 +134,7 @@ const handlePaymentFailure = async (txnid, res) => {
     await Order.findOneAndUpdate({ _id: txnid }, { status: "Failed" });
 
     // Render the failure page
-    res.render("paymentFailure");
+    return res.render("paymentFailure");
   } catch (error) {
     console.error("Error handling payment failure:", error);
     res.status(500).send("Internal Server Error");
