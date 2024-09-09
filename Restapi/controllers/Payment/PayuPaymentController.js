@@ -125,7 +125,7 @@ const handlePaymentSuccess = async (txnid, orderDetails, res) => {
     // Render the success page
     return res.render("paymentSuccess");
   } catch (error) {
-    res.status(500).send("Internal Server Error");
+    return res.status(500).send("Internal Server Error");
   }
 };
 const handlePaymentFailure = async (txnid, res) => {
@@ -136,7 +136,7 @@ const handlePaymentFailure = async (txnid, res) => {
     return res.render("paymentFailure");
   } catch (error) {
     console.error("Error handling payment failure:", error);
-    res.status(500).send("Internal Server Error");
+    return res.status(500).send("Internal Server Error");
   }
 };
 
