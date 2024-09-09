@@ -721,8 +721,8 @@ routs.get(
 
 routs.post("/paymentResponse", paymentResponse);
 routs.post("/paymentDetail", auth, paymentDetail);
-routs.post("/success", handlePaymentSuccess);
-routs.post("/failure", handlePaymentFailure);
+routs.post("/success", paymentResponse);
+routs.post("/failure", paymentResponse);
 
 //searchengine
 routs.get(
