@@ -98,7 +98,7 @@ const paymentResponse = async (req, res) => {
       res.status(400).send("Payment verification failed");
     }
   } catch (error) {
-    console.error("Error processing payment response:", error);
+
     res.status(500).send("Internal Server Error");
   }
 };
@@ -125,7 +125,6 @@ const handlePaymentSuccess = async (txnid, orderDetails, res) => {
     // Render the success page
     return res.render("paymentSuccess");
   } catch (error) {
-    console.error("Error handling payment success:", error);
     res.status(500).send("Internal Server Error");
   }
 };
