@@ -407,33 +407,52 @@ const logout = async (req, res) => {
   }
 };
 
+// const userDetails = async (req, res) => {
+//   try {
+//     const user = await User.findById({ _id: req.user._id }).select("-password");
+//     if (!user) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
+//     const cartDetails = await Cart.findOne({ UserId: req.user._id }).lean();
+//     const wishListDetails = await WishList.findOne({
+//       UserId: req.user._id,
+//     }).lean();
+//     user.cartDetails = cartDetails;
+//     user.wishListDetails = wishListDetails;
+//     user[cartDetails] = cartDetails;
+//     user[wishListDetails] = wishListDetails;
+//     res.status(200).json(user);
+//   } catch (error) {
+//     res.status(500).json({ message: error.message + " Internal Server Error" });
+//   }
+// };
 const userDetails = async (req, res) => {
   try {
-    console.log(req.user);
-    const user = await User.findById({ _id: req.user._id }).select("-password");
+    const userPromise = User.findById({ _id: req.user._id })
+      .select("-password")
+      .lean();
+    const cartPromise = Cart.findOne({ UserId: req.user._id }).lean();
+    const wishListPromise = WishList.findOne({ UserId: req.user._id }).lean();
+
+    const [user, cartDetails, wishListDetails] = await Promise.all([
+      userPromise,
+      cartPromise,
+      wishListPromise,
+    ]);
+
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    // user.password = undefined;
-    const cartDetails = await Cart.findOne({ UserId: req.user._id }).lean();
-    // if(!cartDetails){
-    //     return res.status(404).json({ message: 'No cart not found' });
-    // }
-    const wishListDetails = await WishList.findOne({
-      UserId: req.user._id,
-    }).lean();
-    // if(!wishListDetails){
-    //     return res.status(404).json({ message: 'No wishList Details not found' });
-    // }
-    user.cartDetails = cartDetails;
-    user.wishListDetails = wishListDetails;
-    user[cartDetails] = cartDetails;
-    user[wishListDetails] = wishListDetails;
+
+    user.cartDetails = cartDetails || {};
+    user.wishListDetails = wishListDetails || {};
+
     res.status(200).json(user);
   } catch (error) {
     res.status(500).json({ message: error.message + " Internal Server Error" });
   }
 };
+
 const renewToken = async (req, res) => {
   try {
   } catch (error) {

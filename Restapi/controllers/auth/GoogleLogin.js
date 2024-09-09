@@ -74,6 +74,9 @@ const googleCallback = async (req, res) => {
         email_validation: data.verified_email,
         phone: 90909090,
         password: "Google123",
+        imgUrl: `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(
+          data.name || email
+        )}`,
       }).save();
     } else {
       // Update the Google ID if it doesn't exist
