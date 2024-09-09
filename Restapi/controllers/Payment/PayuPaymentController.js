@@ -84,7 +84,7 @@ const paymentResponse = async (req, res) => {
         await updateStatusDetails(updatedOrder._id, "Confirmed");
         await removeItemFromCart(updatedOrder.orderItem, updatedOrder.userId);
 
-        res.render("paymentSuccess");
+        return res.render("paymentSuccess");
       } else {
         // const updatedOrder = await Order.findOneAndUpdate(
         //   { _id: txnid },
@@ -92,7 +92,7 @@ const paymentResponse = async (req, res) => {
         //   { new: true }
         // );
 
-        res.render("paymentFailure");
+        return res.render("paymentFailure");
       }
     } else {
       res.status(400).send("Payment verification failed");
