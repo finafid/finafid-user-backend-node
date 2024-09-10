@@ -435,41 +435,93 @@ const deleteVariants = async (req, res) => {
       .json({ message: "Internal Server Error", error: error.message });
   }
 };
-getVariantById = async (req, res) => {
+// getVariantById = async (req, res) => {
+//   try {
+//     const variantDetails = await Variant.findById(
+//       req.params.variantId
+//     ).populate("productGroup");
+
+//     if (!variantDetails) {
+//       return res
+//         .status(404)
+//         .json({ success: false, message: "Variant not found" });
+//     }
+
+//     const productDetails = await productSc.findById(
+//       variantDetails.productGroup
+//     );
+
+//     const productList = await productSc
+//       .find({
+//         productTypeId: productDetails.productTypeId,
+//       })
+//       .populate({
+//         path: "variants",
+//         populate: {
+//           path: "productGroup",
+//           populate: {
+//             path: "brand",
+//             model: "Brand",
+//           },
+//         },
+//       })
+//       .populate("brand");
+
+//     const suggestionProductList = productList.reduce((acc, product) => {
+//       return acc.concat(product.variants);
+//     }, []);
+
+//     return res.status(200).json({
+//       success: true,
+//       variantDetails,
+//       suggestionProductList,
+//     });
+//   } catch (error) {
+//     return res.status(500).json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// };
+const getVariantById = async (req, res) => {
   try {
     const variantDetails = await Variant.findById(
       req.params.variantId
     ).populate("productGroup");
 
     if (!variantDetails) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Variant not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Variant not found",
+      });
     }
 
-    const productDetails = await productSc.findById(
-      variantDetails.productGroup
-    );
-
-    const productList = await productSc
-      .find({
-        productTypeId: productDetails.productTypeId,
-      })
-      .populate({
-        path: "variants",
-        populate: {
-          path: "productGroup",
+    // Fetch product details and product list in parallel
+    const [productDetails, productList] = await Promise.all([
+      productSc.findById(variantDetails.productGroup),
+      productSc
+        .find({
+          productTypeId: variantDetails.productGroup.productTypeId,
+        })
+        .populate({
+          path: "variants",
           populate: {
-            path: "brand",
-            model: "Brand",
+            path: "productGroup",
+            select: "brand", // Only selecting necessary fields
+            populate: {
+              path: "brand",
+              model: "Brand",
+              select: "name", // Only selecting necessary fields
+            },
           },
-        },
-      })
-      .populate("brand");
+        })
+        .populate("brand", "name"), // Populating only necessary fields
+    ]);
 
-    const suggestionProductList = productList.reduce((acc, product) => {
-      return acc.concat(product.variants);
-    }, []);
+    // Use flatMap instead of reduce for better readability
+    const suggestionProductList = productList.flatMap(
+      (product) => product.variants
+    );
 
     return res.status(200).json({
       success: true,
