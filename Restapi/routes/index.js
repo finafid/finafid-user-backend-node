@@ -75,6 +75,7 @@ const {
   brandBasedOnCategory,
   getFeaturedProductBasedOnCategory,
   deleteNonProductVariants,
+  suggestionProductList,
 } = require("../controllers/product/productCon");
 const {
   addToWishlist,
@@ -407,6 +408,7 @@ routs.get("/deleteSubCategory/:subCategoryId", auth, deleteSubCategory);
 routs.get("/deleteProductType/:productTypeId", auth, deleteProductType);
 routs.get("/getCategoryId/:categoryId", getCategoryId);
 routs.get("/getSubCategoryId/:subcategoryId", getSubCategoryId);
+routs.get("/suggestionProductList/:variantId", suggestionProductList);
 routs.post(
   "/editSubCategory/:subCategoryId",
   upload.single("logo"),

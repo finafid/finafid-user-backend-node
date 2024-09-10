@@ -495,8 +495,29 @@ const getVariantById = async (req, res) => {
         message: "Variant not found",
       });
     }
+    return res.status(200).json({
+      success: true,
+      variantDetails,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+const suggestionProductList=async(req,res)=>{
+  try {
+    const variantDetails = await Variant.findById(
+      req.params.variantId
+    ).populate("productGroup");
 
-    // Fetch product details and product list in parallel
+    if (!variantDetails) {
+      return res.status(404).json({
+        success: false,
+        message: "Variant not found",
+      });
+    }
     const [productDetails, productList] = await Promise.all([
       productSc.findById(variantDetails.productGroup),
       productSc
@@ -518,14 +539,13 @@ const getVariantById = async (req, res) => {
         .populate("brand", "name"), // Populating only necessary fields
     ]);
 
-    // Use flatMap instead of reduce for better readability
     const suggestionProductList = productList.flatMap(
       (product) => product.variants
     );
 
     return res.status(200).json({
       success: true,
-      variantDetails,
+
       suggestionProductList,
     });
   } catch (error) {
@@ -534,7 +554,7 @@ const getVariantById = async (req, res) => {
       message: error.message,
     });
   }
-};
+}
 
 const createBrand = async (req, res) => {
   try {
@@ -1459,4 +1479,5 @@ module.exports = {
   brandBasedOnCategory,
   getFeaturedProductBasedOnCategory,
   deleteNonProductVariants,
+  suggestionProductList,
 };
