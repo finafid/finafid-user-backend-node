@@ -50,9 +50,6 @@ const paymentResponse = async (req, res) => {
     let { txnid, status, amount, email, firstname, productinfo, hash } =
       req.body;
 
-    // Log the incoming payment data for debugging
-    console.log(req.body);
-
     if (
       !txnid ||
       !status ||

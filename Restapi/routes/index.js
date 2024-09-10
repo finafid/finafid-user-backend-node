@@ -456,7 +456,6 @@ routs.get(
   getFeaturedProductBasedOnCategory
 );
 routs.get("/brandBasedOnCategory/:categoryId", brandBasedOnCategory);
-
 routs.get("/deleteNonProductVariants", deleteNonProductVariants);
 //Wishlist
 routs.post("/addToWishlist", auth, addToWishlist);

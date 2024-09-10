@@ -233,9 +233,8 @@ const limitNumber = parseInt(limit);
 
 // Execute aggregation pipeline and get the full result set
 const variantList = await Variant.aggregate(aggregatePipeline).exec();
-
-// Apply pagination after retrieving the full result
-const paginatedVariantList = variantList.slice(
+const sortedVariantList = variantList.sort((a, b) => b.quantity - a.quantity);
+const paginatedVariantList = sortedVariantList.slice(
   (pageNumber - 1) * limitNumber,
   pageNumber * limitNumber
 );
