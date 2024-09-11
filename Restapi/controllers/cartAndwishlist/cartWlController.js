@@ -117,55 +117,62 @@ const deleteFromWishlist = async (req, res) => {
     });
   }
 };
-
+const variants=require("../../models/product/Varient")
 const addToCart = async (req, res) => {
     try {
       const { productId, itemQuantity = 1 } = req.body;
       const userCartDetails = await cart.findOne({ UserId: req.user._id });
   
-      if (!userCartDetails) {
-        // If the user does not have a cart, create a new cart with the product
-        const newProductDetails = {
-          productId,
-          itemQuantity,
-        };
-  
-        const newCart = new cart({
-          UserId: req.user._id,
-          cartItems: [newProductDetails],
+      const productDetails = await variants.findById(productId);
+      if (!productDetails || productDetails.quantity===0){
+        return res.status(400).json({
+          success: false,
+          message: " Product is out of stock",
         });
-        await newCart.save();
-        await newCart.populate("cartItems.productId");
-  
-        return res.status(200).json({
-          products: newCart.cartItems,
-          message: "Item added successfully",
-        });
-      } else {
-        // Check if the product already exists in the cart
-        const existingProductIndex = userCartDetails.cartItems.findIndex(
-          (item) => item.productId.toString() === productId
-        );
-  
-        if (existingProductIndex >= 0) {
-
-          userCartDetails.cartItems[existingProductIndex].itemQuantity += itemQuantity;
-        } else {
+      }
+        if (!userCartDetails) {
+          // If the user does not have a cart, create a new cart with the product
           const newProductDetails = {
             productId,
             itemQuantity,
           };
-          userCartDetails.cartItems.push(newProductDetails);
+
+          const newCart = new cart({
+            UserId: req.user._id,
+            cartItems: [newProductDetails],
+          });
+          await newCart.save();
+          await newCart.populate("cartItems.productId");
+
+          return res.status(200).json({
+            products: newCart.cartItems,
+            message: "Item added successfully",
+          });
+        } else {
+          // Check if the product already exists in the cart
+          const existingProductIndex = userCartDetails.cartItems.findIndex(
+            (item) => item.productId.toString() === productId
+          );
+
+          if (existingProductIndex >= 0) {
+            userCartDetails.cartItems[existingProductIndex].itemQuantity +=
+              itemQuantity;
+          } else {
+            const newProductDetails = {
+              productId,
+              itemQuantity,
+            };
+            userCartDetails.cartItems.push(newProductDetails);
+          }
+
+          await userCartDetails.save();
+          await userCartDetails.populate("cartItems.productId");
+
+          return res.status(200).json({
+            products: userCartDetails.cartItems,
+            message: "Item added successfully",
+          });
         }
-  
-        await userCartDetails.save();
-        await userCartDetails.populate("cartItems.productId");
-  
-        return res.status(200).json({
-          products: userCartDetails.cartItems,
-          message: "Item added successfully",
-        });
-      }
     } catch (error) {
       return res.status(500).json({
         success: false,
