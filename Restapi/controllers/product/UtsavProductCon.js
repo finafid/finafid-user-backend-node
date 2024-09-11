@@ -168,7 +168,12 @@ const getAllTopSellingBrand = async (req, res) => {
 
 const getAllTopSellingProduct = async (req, res) => {
   try {
-    const orderDetails = await Order.find().populate({
+    const orderDetails = await Order.find(
+    { $or: [
+              { payment_complete: true },
+              { payment_method: { $in: ["COD", "Wallet"] } },
+            ],}
+    ).populate({
       path: "orderItem.productId",
       populate: {
         path: "productGroup",
@@ -177,7 +182,7 @@ const getAllTopSellingProduct = async (req, res) => {
         },
       },
     });
-
+    
     let productCountMap = new Map();
 
     // Process orders and products
@@ -210,14 +215,12 @@ const getAllTopSellingProduct = async (req, res) => {
       })
     );
 
-    // Fetch top-selling products and populate brand
     const adminSellingProductDetails = await productSc
       .find({
         topSellingProduct: true,
       })
       .populate("brand");
 
-    // Update the map with top-selling products
     adminSellingProductDetails.forEach((product) => {
       if (product) {
         const productId = product._id.toString();
@@ -235,7 +238,6 @@ const getAllTopSellingProduct = async (req, res) => {
       }
     });
 
-    // Convert the map to an array for the response
     const result = Array.from(productCountMap.values());
     res.status(200).json(result);
   } catch (error) {
