@@ -528,11 +528,11 @@ const suggestionProductList=async(req,res)=>{
           path: "variants",
           populate: {
             path: "productGroup",
-            select: "brand", // Only selecting necessary fields
+            select: "brand", 
             populate: {
               path: "brand",
               model: "Brand",
-              select: "name", // Only selecting necessary fields
+              select: "name", 
             },
           },
         })
@@ -545,7 +545,6 @@ const suggestionProductList=async(req,res)=>{
 
     return res.status(200).json({
       success: true,
-
       suggestionProductList,
     });
   } catch (error) {

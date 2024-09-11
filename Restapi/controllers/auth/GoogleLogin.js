@@ -63,7 +63,10 @@ const googleCallback = async (req, res) => {
     const { data } = await oauth2.userinfo.get();
 
     // Check if the user already exists
-    let user = await User.findOne({ email: data.email }).select("-password");
+    let user = await User.findOne({ email: data.email, 
+      is_Active:true }).select(
+      "-password"
+    );
 
     // If the user doesn't exist, create a new one; otherwise, log in
     if (!user) {
