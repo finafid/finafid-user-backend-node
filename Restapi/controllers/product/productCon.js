@@ -292,8 +292,11 @@ const updateVariants = async (req, res) => {
       newList = await getImageLinks(req.files["images[]"]);
     }
     const productGroupDetails = await productSc.findById(req.body.productId);
-    console.log(req.body.images);
-    console.log(req.body);
+    let singleImageUrl=""
+  if (uploadedFiles[colorImageKey]) {
+    const [imageLink] = await uploadFiles(uploadedFiles[colorImageKey]);
+    singleImageUrl = imageLink;
+  }
     const varientName =
       productGroupDetails.name + " " + "(" + req.body.sku + ")";
     variantDetail.productGroup = req.body.productId;
@@ -322,6 +325,7 @@ const updateVariants = async (req, res) => {
     variantDetail.variantDetails = req.body.variantDetails;
     variantDetail.expiryDate = req.body.expiryDate;
     variantDetail.name = req.body.name;
+    variantDetail.colorImage = singleImageUrl;
     // Save variant details
     await variantDetail.save();
 
