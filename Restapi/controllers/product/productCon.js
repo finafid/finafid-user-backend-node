@@ -133,10 +133,10 @@ const uploadVariants = async (
     const colorImageKey = `variants[${i}][colorImage]`;
     console.log(colorImageKey);
     if (uploadedFiles[colorImageKey]) {
-      console.log("GHHJGHJHJ");
       const [imageLink] = await uploadFiles(uploadedFiles[colorImageKey]);
       singleImageUrl = imageLink;
     }
+    console.log(singleImageUrl);
     // Create variant
     const variant = new Variant({
       productGroup: productId,
