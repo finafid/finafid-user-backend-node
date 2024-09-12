@@ -33,6 +33,7 @@ const bannerSchema = new Schema({
       "Hero",
       "Small Rectangle",
       "Tinybar",
+      "Landscape",
     ],
   },
   details: {
