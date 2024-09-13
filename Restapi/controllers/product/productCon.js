@@ -129,14 +129,14 @@ const uploadVariants = async (
       count++;
     }
 
-    // let singleImageUrl = "";
-    // const colorImageKey = `variants[${i}][colorImage]`;
-    // console.log(colorImageKey);
-    // if (uploadedFiles[colorImageKey]) {
-    //   const [imageLink] = await uploadFiles(uploadedFiles[colorImageKey]);
-    //   singleImageUrl = imageLink;
-    // }
-    // console.log(singleImageUrl);
+    let singleImageUrl = "";
+    const colorImageKey = `variants[${i}][colorImage]`;
+    console.log(colorImageKey);
+    if (uploadedFiles[colorImageKey]) {
+      const [imageLink] = await uploadFiles(uploadedFiles[colorImageKey]);
+      singleImageUrl = imageLink;
+    }
+    console.log(singleImageUrl);
     // Create variant
     const variant = new Variant({
       productGroup: productId,
@@ -165,7 +165,7 @@ const uploadVariants = async (
       name: variantData.name,
       variantDetails: variantData.variantDetails,
       expiryDate: variantData.expiryDate,
-      // colorImage: singleImageUrl,
+      colorImage: singleImageUrl,
     });
 
     await variant.save();
@@ -292,13 +292,13 @@ const updateVariants = async (req, res) => {
       newList = await getImageLinks(req.files["images[]"]);
     }
     const productGroupDetails = await productSc.findById(req.body.productId);
-    let singleImageUrl=""
-  if (uploadedFiles[colorImageKey]) {
-    const [imageLink] = await uploadFiles(uploadedFiles[colorImageKey]);
-    singleImageUrl = imageLink;
-  }
-    const varientName =
-      productGroupDetails.name + " " + "(" + req.body.sku + ")";
+  //   let singleImageUrl=""
+  // if (uploadedFiles[colorImageKey]) {
+  //   const [imageLink] = await uploadFiles(uploadedFiles[colorImageKey]);
+  //   singleImageUrl = imageLink;
+  // }
+  //   const varientName =
+  //     productGroupDetails.name + " " + "(" + req.body.sku + ")";
     variantDetail.productGroup = req.body.productId;
     variantDetail.attributes = req.body.attributes;
     variantDetail.sku = req.body.sku;
@@ -325,7 +325,7 @@ const updateVariants = async (req, res) => {
     variantDetail.variantDetails = req.body.variantDetails;
     variantDetail.expiryDate = req.body.expiryDate;
     variantDetail.name = req.body.name;
-    variantDetail.colorImage = singleImageUrl;
+   // variantDetail.colorImage = singleImageUrl;
     // Save variant details
     await variantDetail.save();
 
