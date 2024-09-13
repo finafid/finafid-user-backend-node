@@ -136,7 +136,7 @@ const uploadVariants = async (
     //   const [imageLink] = await uploadFiles(uploadedFiles[colorImageKey]);
     //   singleImageUrl = imageLink;
     // }
-    console.log(singleImageUrl);
+    // console.log(singleImageUrl);
     // Create variant
     const variant = new Variant({
       productGroup: productId,
@@ -165,7 +165,7 @@ const uploadVariants = async (
       name: variantData.name,
       variantDetails: variantData.variantDetails,
       expiryDate: variantData.expiryDate,
-      colorImage: singleImageUrl,
+      // colorImage: singleImageUrl,
     });
 
     await variant.save();
