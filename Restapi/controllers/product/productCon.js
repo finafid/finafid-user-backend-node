@@ -129,13 +129,13 @@ const uploadVariants = async (
       count++;
     }
 
-    let singleImageUrl = "";
-    const colorImageKey = `variants[${i}][colorImage]`;
-    console.log(colorImageKey);
-    if (uploadedFiles[colorImageKey]) {
-      const [imageLink] = await uploadFiles(uploadedFiles[colorImageKey]);
-      singleImageUrl = imageLink;
-    }
+    // let singleImageUrl = "";
+    // const colorImageKey = `variants[${i}][colorImage]`;
+    // console.log(colorImageKey);
+    // if (uploadedFiles[colorImageKey]) {
+    //   const [imageLink] = await uploadFiles(uploadedFiles[colorImageKey]);
+    //   singleImageUrl = imageLink;
+    // }
     console.log(singleImageUrl);
     // Create variant
     const variant = new Variant({
