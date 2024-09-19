@@ -135,7 +135,7 @@ const getGiftCardByUser = async (req, res) => {
 const redeemGiftCard = async (req, res) => {
   try {
     const giftCardDetails = await GiftCard.findOne({
-      code: req.body.code,
+      Code: req.body.code,
       Status: "active",
       // "recipientInformation.email": req.user.email,
     });
@@ -150,10 +150,13 @@ const redeemGiftCard = async (req, res) => {
     });
     walletDetails.balance = walletDetails.balance + giftCardDetails.Value;
     await walletDetails.save();
+    giftCardDetails.Status = "redeemed";
+    await giftCardDetails.save();
     return res.status(200).json({
       success: true,
       message: "GiftCard redeemed successfully",
     });
+    
   } catch (error) {
     res.status(500).json({
       success: false,
