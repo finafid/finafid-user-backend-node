@@ -136,11 +136,11 @@ const redeemGiftCard = async (req, res) => {
   try {
     const giftCardDetails = await GiftCard.findOne({
       code: req.body.code,
-      status: "active",
+      Status: "active",
       // "recipientInformation.email": req.user.email,
     });
     if (!giftCardDetails) {
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: " Invalid GiftCard",
       });
@@ -150,7 +150,7 @@ const redeemGiftCard = async (req, res) => {
     });
     walletDetails.balance = walletDetails.balance + giftCardDetails.Value;
     await walletDetails.save();
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "GiftCard redeemed successfully",
     });
