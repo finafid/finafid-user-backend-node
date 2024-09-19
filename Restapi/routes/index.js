@@ -111,6 +111,7 @@ const {
   editTemplateId,
   getTemplateId,
   getAllGiftCard,
+  redeemGiftCard,
 } = require("../controllers/GiftCard/giftCardController");
 const auth = require("../middlewares/Auth");
 const {
@@ -314,6 +315,13 @@ const {
   googleCallback,
   loginWithGoogle,
 } = require("../controllers/auth/GoogleLogin.js");
+const {
+  createFashionCategory,
+  editFashionCategory,
+  deleteFashionCategory,
+  getFashionCategoryById,
+  getBlogsFashionCategoryById,
+}=require("../controllers/FashionController/fashionCategoryController.js")
 //user Authentication
 routs.post("/register", userRegistrationValidation, userRegistration);
 routs.post("/login", userLoginValidation, userLogin);
@@ -511,6 +519,7 @@ routs.post(
   upload.single("template"),
   editTemplateId
 );
+routs.post("/redeemGiftCard", auth, redeemGiftCard);
 //wallet
 routs.post("/addBalance", auth, addBalance);
 routs.get("/showTransactions", auth, showTransactions);
@@ -739,5 +748,10 @@ routs.get("/productSearchDirectory", productSearchDirectory);
 //google login
 routs.get("/google", loginWithGoogle);
 routs.get("/google/callback", googleCallback);
+//fashion Category
+routs.post("/createFashionCategory", createFashionCategory);
+routs.post("/editFashionCategory/:fashionCategoryId", editFashionCategory);
+routs.get("/deleteFashionCategory/:fashionCategoryId", deleteFashionCategory);
+routs.get("/getFashionCategoryById/:fashionCategoryId", getFashionCategoryById);
 
 module.exports = routs;

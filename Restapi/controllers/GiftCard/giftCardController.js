@@ -132,7 +132,7 @@ const getGiftCardByUser = async (req, res) => {
     });
   }
 };
-const redeemGiftcard = async (req, res) => {
+const redeemGiftCard = async (req, res) => {
   try {
     const giftCardDetails = await GiftCard.findOne({
       code: req.body.code,
@@ -301,15 +301,29 @@ const getAllGiftCard = async (req, res) => {
     });
   }
 };
+const sendGiftCard=async(req,res)=>{
+  try {
+      const giftCardDetails = await GiftCard.findOne({
+        _id: req.params.giftCardId,
+      });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message + " Internal Server Error",
+    });
+  }
+}
+
 module.exports = {
   createGiftCard,
   getGiftCardDetails,
   getGiftCardByUser,
-  redeemGiftcard,
+  redeemGiftCard,
   createGiftCardTemplate,
   getAllTemplates,
   deleteTemplate,
   editTemplateId,
   getTemplateId,
   getAllGiftCard,
+  sendGiftCard,
 };
