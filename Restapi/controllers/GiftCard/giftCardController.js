@@ -137,7 +137,7 @@ const redeemGiftCard = async (req, res) => {
     const giftCardDetails = await GiftCard.findOne({
       code: req.body.code,
       status: "active",
-      "recipientInformation.phoneNumber": req.body.phoneNumber,
+      // "recipientInformation.email": req.user.email,
     });
     if (!giftCardDetails) {
       res.status(500).json({
