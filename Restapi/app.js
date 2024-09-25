@@ -70,6 +70,6 @@ app.use(passport.session());
 
 app.use("/api/v1", routs);
 
-app.listen(port, () => {
+app.listen(port,'0.0.0.0', () => {
   console.log(`Server is running in port ${port}`);
 });
