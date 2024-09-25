@@ -63,7 +63,7 @@ app.use(
     saveUninitialized: true,
   })
 );
-
+app.set("trust proxy", 1);
 // Initialize passport
 app.use(passport.initialize());
 app.use(passport.session());
