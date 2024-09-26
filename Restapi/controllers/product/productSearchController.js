@@ -228,27 +228,39 @@ const getAllVariantsOnUser = async (req, res) => {
       };
       aggregatePipeline.push({ $sort: sortFields[sortBy] || {} });
     }
-const pageNumber = parseInt(page);
-const limitNumber = parseInt(limit);
+    const pageNumber = parseInt(page);
+    const limitNumber = parseInt(limit);
 
-// Execute aggregation pipeline and get the full result set
-const variantList = await Variant.aggregate(aggregatePipeline).exec();
-const sortedVariantList = variantList.sort((a, b) => b.quantity - a.quantity);
-const paginatedVariantList = sortedVariantList.slice(
-  (pageNumber - 1) * limitNumber,
-  pageNumber * limitNumber
-);
+    // Execute aggregation pipeline and get the full result set
+    const variantList = await Variant.aggregate(aggregatePipeline).exec();
 
-// Optionally, you can return total count and total pages for frontend pagination
-const totalItems = variantList.length;
-const totalPages = Math.ceil(totalItems / limitNumber);
+    // Manually populate `productGroup.brand` after aggregation
+    await Variant.populate(variantList, {
+      path: "productGroup",
+      populate: {
+        path: "brand",
+        model: "Brand",
+      },
+    });
 
-res.status(200).json({
-  variants: paginatedVariantList,
-  currentPage: pageNumber,
-  totalPages,
-  totalItems,
-});
+    const sortedVariantList = variantList.sort(
+      (a, b) => b.quantity - a.quantity
+    );
+    const paginatedVariantList = sortedVariantList.slice(
+      (pageNumber - 1) * limitNumber,
+      pageNumber * limitNumber
+    );
+
+    // Optionally, you can return total count and total pages for frontend pagination
+    const totalItems = variantList.length;
+    const totalPages = Math.ceil(totalItems / limitNumber);
+
+    res.status(200).json({
+      variants: paginatedVariantList,
+      currentPage: pageNumber,
+      totalPages,
+      totalItems,
+    });
   } catch (error) {
     console.error("Error fetching variants:", error);
     res.status(500).json({ message: error.message + " Internal Server Error" });
