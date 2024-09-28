@@ -200,7 +200,7 @@ const updateStatus = async (req, res) => {
     }
     
    if (req.body.status == "Confirmed") {
-     const msg = (
+     const msg = `(
        <div style="font-family: Arial, sans-serif; color: #333; background-color: #f9f9f9; padding: 20px;">
          <p style="margin-bottom: 10px;">Dear ${userData.fullName},</p>
          <p style="margin-bottom: 10px;">
@@ -230,7 +230,7 @@ const updateStatus = async (req, res) => {
          <p style="margin-bottom: 10px;">Best regards,</p>
          <p style="margin-bottom: 0;">The Finafid Team</p>
        </div>
-     );
+     )`;
 
      const mail = await sendMail(
        userData.email,
