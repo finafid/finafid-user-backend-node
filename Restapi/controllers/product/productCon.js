@@ -99,7 +99,8 @@ const productOnId = async (req, res) => {
       })
       // .populate("productTypeId")
       // .populate("brand")
-      .populate("variants");
+      .populate("variants")
+      .populate("brand");
 
     // console.log(product);
     if (!product) {

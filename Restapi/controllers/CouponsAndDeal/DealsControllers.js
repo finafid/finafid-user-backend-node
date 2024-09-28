@@ -783,19 +783,19 @@ const getFlashDealByIdOnUser = async (req, res) => {
 };
 const getFeaturedDealByIdOnUser = async (req, res) => {
   try {
-    const dealDetails = await FeaturedDeal.findOne({
-      _id: req.params.dealId,
-    }).populate({
-      path: "products",
-      populate: {
-        path: "productGroup",
-        model: "Product", // Adjust to your actual model name
-      },
-      populate: {
-        path: "brand",
-        model: "Brand",
-      },
-    });
+   const dealDetails = await FeaturedDeal.findOne({
+     _id: req.params.dealId,
+   }).populate({
+     path: "products",
+     populate: {
+       path: "productGroup",
+       populate: {
+         path: "brand", // populate brand inside productGroup
+         model: "Brand", // adjust the model if necessary
+       },
+     },
+   });
+
     if (!dealDetails) {
       return res.status(500).json({
         success: false,
