@@ -1,21 +1,35 @@
-const FashionCategory = require("../../models/Finafid_Fashion/fashionCategory");
+const FashionBlog = require("../../models/Finafid_Fashion/Blog");
 const {
   generateStringOfImageList,
   compressAndResizeImage,
 } = require("../../utils/fileUpload");
-const getImageLink = async (req, res) => {
+const getMediaLink = async (req, res) => {
   try {
-    const inputImagePath = await req.file.buffer;
-    const extension = req.file.originalname.split(".").pop();
-    const width = 800;
-    const compressionQuality = 0;
-    const imageBuffer = await compressAndResizeImage(
-      inputImagePath,
-      extension,
-      width,
-      compressionQuality
-    );
+    const inputMediaPath = await req.file.buffer;
+    const extension = req.file.originalname.split(".").pop().toLowerCase();
+    const allowedImageExtensions = ["jpg", "jpeg", "png"];
+    const allowedVideoExtensions = ["mp4", "mov", "avi"];
 
+    // Determine if the file is an image or a video
+    let mediaBuffer;
+    if (allowedImageExtensions.includes(extension)) {
+      // Process image
+      const width = 800;
+      const compressionQuality = 0;
+      mediaBuffer = await compressAndResizeImage(
+        inputMediaPath,
+        extension,
+        width,
+        compressionQuality
+      );
+    } else if (allowedVideoExtensions.includes(extension)) {
+      // Handle video upload (no compression here, just use the buffer directly)
+      mediaBuffer = inputMediaPath; // Use the file buffer directly for video
+    } else {
+      throw new Error("Unsupported file type");
+    }
+
+    // Generate a new file name
     req.file.originalname =
       req.file.originalname.split(".")[0].split(" ").join("-") +
       "-" +
@@ -23,32 +37,39 @@ const getImageLink = async (req, res) => {
       "." +
       extension;
 
-    await generateStringOfImageList(imageBuffer, req.file.originalname, res);
+    // Assuming you have a similar method for video upload or use the same for both
+    await generateStringOfImageList(mediaBuffer, req.file.originalname, res);
 
-    const imgUrl =
+    const mediaUrl =
       "https://d2w5oj0jmt3sl6.cloudfront.net/" + req.file.originalname;
 
-    return imgUrl;
+    return mediaUrl;
   } catch (error) {
-    console.error("Error in getImageLink:", error);
+    console.error("Error in getMediaLink:", error);
   }
 };
-const createFashionCategory = async (req, res) => {
+
+const createBlog = async (req, res) => {
   try {
-    const { name, description } = req.body;
+    const { name, description, userName } = req.body;
     let logoUrl = "";
-    if (req.file) {
-      logoUrl = await getImageLink(req);
+    if (uploadedFiles[blogMedia]) {
+      logoUrl = await getMediaLink(req);
     }
-    const newFashionCategory = new FashionCategory({
+    if (uploadedFiles[userImage]) {
+      const [imageLink] = await getMediaLink(uploadedFiles[colorImageKey]);
+      singleImageUrl = imageLink;
+    }
+    const newFashionBlog = new FashionBlog({
       name,
       description,
       logoUrl,
+      userName,
     });
-    if (!newFashionCategory) {
+    if (!newFashionBlog) {
       return res.status(500).json({ message: "Cannot create" });
     }
-    await newFashionCategory.save();
+    await newFashionBlog.save();
     return res.status(200).json({ message: " Successfully created" });
   } catch (error) {
     return res
@@ -56,9 +77,9 @@ const createFashionCategory = async (req, res) => {
       .json({ message: error.message + " Internal Server Error" });
   }
 };
-const editFashionCategory = async (req, res) => {
+const editFashionBlog = async (req, res) => {
   try {
-    const fashionCategoryDetails = await FashionCategory.findById(
+    const fashionCategoryDetails = await FashionBlog.findById(
       req.params.fashionCategoryId
     );
     let newLogoUrl = "";
@@ -80,9 +101,9 @@ const editFashionCategory = async (req, res) => {
       .json({ message: error.message + " Internal Server Error" });
   }
 };
-const deleteFashionCategory = async (req, res) => {
+const deleteFashionBlog = async (req, res) => {
   try {
-    const fashionCategoryDetails = await FashionCategory.findByIdAndDelete(
+    const fashionCategoryDetails = await FashionBlog.findByIdAndDelete(
       req.params.fashionCategoryId
     );
 
@@ -100,9 +121,9 @@ const deleteFashionCategory = async (req, res) => {
   }
 };
 
-const getFashionCategoryById = async (req, res) => {
+const getFashionBlogById = async (req, res) => {
   try {
-    const fashionCategoryDetails = await FashionCategory.findById(
+    const fashionCategoryDetails = await FashionBlog.findById(
       req.params.fashionCategoryId
     );
     if (!fashionCategoryDetails) {
@@ -117,7 +138,7 @@ const getFashionCategoryById = async (req, res) => {
       .json({ message: error.message + " Internal Server Error" });
   }
 };
-const getBlogsFashionCategoryById = async (req, res) => {
+const getBlogsFashionCategoryUser = async (req, res) => {
   try {
   } catch (error) {
     return res
@@ -126,9 +147,9 @@ const getBlogsFashionCategoryById = async (req, res) => {
   }
 };
 module.exports = {
-  createFashionCategory,
-  editFashionCategory,
-  deleteFashionCategory,
-  getFashionCategoryById,
-  getBlogsFashionCategoryById,
+  createBlog,
+  editFashionBlog,
+  deleteFashionBlog,
+  getFashionBlogById,
+  getBlogsFashionCategoryUser,
 };

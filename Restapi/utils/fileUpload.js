@@ -54,6 +54,29 @@ const upload = multer({
 });
 
 
+// async function generateStringOfImageList(body, key, res) {
+//   try {
+//     const params = {
+//       Bucket: process.env.bucket_name,
+//       Key: key,
+//       Body: body,
+//     };
+
+//     s3.upload(params, (err, data) => {
+//       if (err) {
+//         console.log(err);
+//         console.log(data);
+//         return res.status(500).json({
+//           success: false,
+//           message: "Error uploading file",
+//         });
+//       }
+//     });
+//   } catch {
+//     console.error(error);
+//     throw new Error("Failed to upload image to S3");
+//   }
+// }
 async function generateStringOfImageList(body, key, res) {
   try {
     const params = {
@@ -62,21 +85,18 @@ async function generateStringOfImageList(body, key, res) {
       Body: body,
     };
 
-    s3.upload(params, (err, data) => {
-      if (err) {
-        console.log(err);
-        console.log(data);
-        return res.status(500).json({
-          success: false,
-          message: "Error uploading file",
-        });
-      }
+    const data = await s3.upload(params).promise();
+
+    return data;
+  } catch (error) {
+    console.error("Error uploading to S3:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error uploading file",
     });
-  } catch {
-    console.error(error);
-    throw new Error("Failed to upload image to S3");
   }
 }
+
 const mime = require("mime-types");
 
 const uploadImageToS3 = async (buffer, fileName) => {

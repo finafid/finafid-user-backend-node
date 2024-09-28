@@ -156,7 +156,7 @@ const redeemGiftCard = async (req, res) => {
       success: true,
       message: "GiftCard redeemed successfully",
     });
-    
+
   } catch (error) {
     res.status(500).json({
       success: false,

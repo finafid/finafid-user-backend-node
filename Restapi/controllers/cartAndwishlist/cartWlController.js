@@ -58,7 +58,11 @@ const getTheWishlist = async (req, res) => {
         path: "productIdList",
         populate: {
           path: "productGroup",
-          model: "Product", 
+          model: "Product",
+        },
+        populate: {
+          path: "brand",
+          model: "Brand",
         },
       });
      

@@ -81,7 +81,7 @@ const userLogin = async (req, res) => {
     if (!isPassEqual) {
       return res
         .status(401)
-        .json({ message: "Auth failed,Invalid Email and Password" });
+        .json({ message: "Invalid Email or Password" });
     }
     const tokenObject = {
       _id: user._id,
@@ -647,7 +647,19 @@ const validAccessToken = async (req, res) => {
     res.status(401).json({ message: error.message });
   }
 };
-
+const { sendSMS } = require("../../middlewares/message");
+const changePhoneNumber=async(req,res)=>{
+  try {
+    const templateDetails = await template.findOne({
+      unique_string: "Sign-up OTP",
+    });
+    const message = templateDetails.messageTemplate;
+    const responseDetails = await sendSMS(message,phoneNumber, templateDetails.templateId,);
+    return res.status(200).send(responseDetails);
+  } catch (error) {
+    res.status(401).json({ message: error.message });
+  }
+}
 module.exports = {
   userRegistration,
   userLogin,
@@ -666,4 +678,5 @@ module.exports = {
   deleteUserAccountFromUser,
   verify_Refresh_Token,
   validAccessToken,
+  changePhoneNumber,
 };

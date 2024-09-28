@@ -198,6 +198,46 @@ const updateStatus = async (req, res) => {
         message: "No order till now",
       });
     }
+    
+   if (req.body.status == "Confirmed") {
+     const msg = (
+       <div style="font-family: Arial, sans-serif; color: #333; background-color: #f9f9f9; padding: 20px;">
+         <p style="margin-bottom: 10px;">Dear ${userData.fullName},</p>
+         <p style="margin-bottom: 10px;">
+           Thank you for shopping with us! Your order has been successfully
+           placed.
+         </p>
+         <p style="margin-bottom: 10px;">Here are your order details:</p>
+         <ul style="margin-bottom: 10px;">
+           <li>
+             <strong>Order ID:</strong> ${orderDetail._id}
+           </li>
+           <li>
+             <strong>Total Amount:</strong> ${orderDetail.totalPrice}
+           </li>
+           <li>
+             <strong>Delivery Address:</strong> ${orderDetail.address}
+           </li>
+         </ul>
+         <p style="margin-bottom: 10px;">
+           We will notify you once your order is shipped. You can track your
+           order in your account.
+         </p>
+         <p style="margin-bottom: 10px;">
+           If you have any questions, feel free to reach out to us at
+           support@finafid.com.
+         </p>
+         <p style="margin-bottom: 10px;">Best regards,</p>
+         <p style="margin-bottom: 0;">The Finafid Team</p>
+       </div>
+     );
+
+     const mail = await sendMail(
+       userData.email,
+       "Order Successfully Completed",
+       msg
+     );
+   }
     if (req.body.status == "Shipping") {
       await invoiceGenerate(orderDetail);
     }

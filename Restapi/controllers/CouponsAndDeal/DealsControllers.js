@@ -791,6 +791,10 @@ const getFeaturedDealByIdOnUser = async (req, res) => {
         path: "productGroup",
         model: "Product", // Adjust to your actual model name
       },
+      populate: {
+        path: "brand",
+        model: "Brand",
+      },
     });
     if (!dealDetails) {
       return res.status(500).json({
