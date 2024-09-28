@@ -490,15 +490,7 @@ const getVariantById = async (req, res) => {
   try {
     const variantDetails = await Variant.findById(
       req.params.variantId
-    ).populate({
-      path: "productGroup",
-      select: "brand",
-      populate: {
-        path: "brand",
-        model: "Brand",
-        select: "name",
-      },
-    })
+    ).populate("productGroup");
     if (!variantDetails) {
       return res.status(404).json({
         success: false,
