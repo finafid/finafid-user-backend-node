@@ -9,6 +9,11 @@ const MemberShipPlan = require("../../models/Utsab/MembershipPlan");
 const referral = require("../../models/auth/referral");
 const Transaction = require("../../models/payment/paymentSc");
 const walletTransaction = require("../../models/Wallet/WalletTransaction");
+const {
+  sendMail,
+  oneMinuteExpiry,
+  threeMinuteExpiry,
+} = require("../../utils/mailer");
 const placeOrder = async (req, res) => {
   try {
     const newOrderItems = [];
