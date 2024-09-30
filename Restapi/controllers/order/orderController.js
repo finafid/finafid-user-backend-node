@@ -203,7 +203,7 @@ const updateStatus = async (req, res) => {
         message: "No order till now",
       });
     }
-    
+       const userData = await User.findById(orderDetail.userId);
    if (req.body.status == "Confirmed") {
      const msg = `(
        <div style="font-family: Arial, sans-serif; color: #333; background-color: #f9f9f9; padding: 20px;">
