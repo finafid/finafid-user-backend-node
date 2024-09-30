@@ -38,8 +38,11 @@ const placeOrder = async (req, res) => {
 
     const userData = await User.findById(req.user._id);
     console.log(req.body);
-    const newDate=Date.now();
-    const expectedDeliveryDate = newDate.setDate(newDate.getDate() + 6);
+    const newDate = new Date(); // Create a new Date object
+    newDate.setDate(newDate.getDate() + 6); // Add 6 days to the current date
+
+    const expectedDeliveryDate = newDate; // This will store the updated date
+
     const newOrder = new order({
       orderItem: newOrderItems,
       userId: req.user._id,
