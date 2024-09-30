@@ -754,4 +754,5 @@ routs.post("/editFashionCategory/:fashionCategoryId", editFashionCategory);
 routs.get("/deleteFashionCategory/:fashionCategoryId", deleteFashionCategory);
 routs.get("/getFashionCategoryById/:fashionCategoryId", getFashionCategoryById);
 
+
 module.exports = routs;

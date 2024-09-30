@@ -80,7 +80,7 @@ const createBlog = async (req, res) => {
 const editFashionBlog = async (req, res) => {
   try {
     const fashionCategoryDetails = await FashionBlog.findById(
-      req.params.fashionCategoryId
+      req.params.fashionBlogId
     );
     let newLogoUrl = "";
     if (req.file) {

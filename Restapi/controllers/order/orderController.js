@@ -38,7 +38,8 @@ const placeOrder = async (req, res) => {
 
     const userData = await User.findById(req.user._id);
     console.log(req.body);
-
+    const newDate=Date.now();
+    const expectedDeliveryDate = newDate.setDate(newDate.getDate() + 6);
     const newOrder = new order({
       orderItem: newOrderItems,
       userId: req.user._id,
@@ -54,6 +55,7 @@ const placeOrder = async (req, res) => {
       is_utsab: userData.is_utsav,
       walletBalanceUsed: req.body.walletBalanceUsed,
       couponDiscount: req.body.couponDiscount,
+      expectedDeliveryDate: expectedDeliveryDate,
     });
     if (req.body.walletBalanceUsed > 0) {
       const walletDetails = await Wallet.findOne({
