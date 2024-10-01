@@ -301,50 +301,51 @@ const updateStatus = async (req, res) => {
             let walletDetailsOfReferredUser = await Wallet.findOne({
               userId: referralDetails.referred_by,
             });
-            if (walletDetailsOfReferredUser) {
+            if (walletDetailsOfReferredUser && userData.firstOrderComplete==false) {
               console.log({ walletDetailsOfReferredUser });
 
               // Update referred user's wallet balance
               walletDetailsOfReferredUser.balance += planDetails.reward;
               const newWalletTransaction = new walletTransaction({
-                userId: req.user._id,
-                type: "Credit",
+                userId: referralDetails.referred_by,
+                type: "credit",
                 transaction_message: "Referral Reward",
                 amount: planDetails.reward,
                 date: Date.now(),
               });
               console.log(newWalletTransaction);
               await newWalletTransaction.save();
-              walletDetails.transactions.push(newWalletTransaction);
-              await walletDetails.save();
+              walletDetailsOfReferredUser.transactions.push(
+                newWalletTransaction
+              );
               await walletDetailsOfReferredUser.save();
               userData.firstOrderComplete = true;
               await userData.save();
             }
+            else if (
+              walletDetailsOfReferredUser &&
+              userData.firstOrderComplete == true &&
+              userData.is_utsav === true 
+            ) {
+               walletDetailsOfReferredUser.balance += orderDetail.utsavReward;
+               const newWalletTransaction = new walletTransaction({
+                 userId: referralDetails.referred_by,
+                 type: "credit",
+                 transaction_message: "Referral Reward",
+                 amount: orderDetail.utsavReward,
+                 date: Date.now(),
+               });
+               await newWalletTransaction.save();
+               walletDetailsOfReferredUser.transactions.push(newWalletTransaction);
+               await walletDetailsOfReferredUser.save();
+            }
           }
         }
-
-        if (userData.is_utsav === true && walletDetails) {
-          walletDetails.balance += orderDetail.utsavReward;
-           const newWalletTransaction = new walletTransaction({
-             userId: req.user._id,
-             type: "Credit",
-             transaction_message: "Referral Reward",
-             amount: orderDetail.utsavReward,
-             date: Date.now(),
-           });
-           await newWalletTransaction.save();
-           walletDetails.transactions.push(newWalletTransaction);
-           await walletDetails.save();
-           await walletDetailsOfReferredUser.save();
-          await walletDetails.save();
-        }
-
         // Add basic reward to the user's wallet
         walletDetails.balance += orderDetail.basicReward;
         const newWalletTransaction = new walletTransaction({
-          userId: req.user._id,
-          type: "Credit",
+          userId: userData._id,
+          type: "credit",
           transaction_message: "Referral Reward",
           amount: orderDetail.basicReward,
           date: Date.now(),
@@ -352,7 +353,6 @@ const updateStatus = async (req, res) => {
         await newWalletTransaction.save();
         walletDetails.transactions.push(newWalletTransaction);
         await walletDetails.save();
-        await walletDetailsOfReferredUser.save();
         return res.status(200).json({
           message: "Rewards processed successfully",
           success: true,
