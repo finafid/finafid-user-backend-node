@@ -54,6 +54,12 @@ const userRegistration = async (req, res) => {
     if (referralCode != null) {
       await redeemedReferral(referralCode, newUser._id);
     }
+    const walletDetails = new Wallet({
+      userId: newUser._id,
+      balance: 0,
+      transactions: [],
+    });
+     await walletDetails.save();
     return res
       .status(201)
       .json({ message: "Registration successful", data: newUser });

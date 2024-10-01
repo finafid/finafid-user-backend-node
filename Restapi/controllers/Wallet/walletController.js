@@ -1,8 +1,9 @@
 const Wallet = require("../../models/Wallet/wallet");
 const Transaction = require("./../../models/Wallet/WalletTransaction");
+const User = require("../../models/auth/userSchema");
 const addBalance = async (req, res) => {
   try {
-    const userId = req.user._id; 
+    const userId = req.user._id;
     const { amount, description } = req.body;
     const type = amount > 0 ? "credit" : "debit";
 
@@ -48,7 +49,9 @@ const showTransactions = async (req, res) => {
     if (!walletDetails) {
       return res.status(400).json({ message: "No transaction " });
     }
-    return res.status(200).json({ message: " Transaction details", walletDetails });
+    return res
+      .status(200)
+      .json({ message: " Transaction details", walletDetails });
   } catch (error) {
     res.status(500).json({ message: error.message + " Internal Server Error" });
   }
@@ -145,10 +148,40 @@ const getBalanceFromAdmin = async (req, res) => {
     });
   }
 };
+const addWallet = async (req, res) => {
+  try {
+    const userList = await User.find();
+    userList.forEach(async (element) => {
+      let walletDetails = await Wallet.findOne({
+        userId: element._id,
+      });
+     console.log(walletDetails);
+      if (!walletDetails) {
+        walletDetails = new Wallet({
+          userId: element._id,
+          balance: 0,
+          transactions: [],
+        });
+        await walletDetails.save();
+      }
+    });
+    return res.status(200).json({
+      message:"Done"
+    })
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
 module.exports = {
   addBalance,
   showTransactions,
   getBalance,
   addBalanceFromAdmin,
   getBalanceFromAdmin,
+  addWallet,
 };
