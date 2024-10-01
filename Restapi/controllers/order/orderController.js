@@ -9,6 +9,8 @@ const MemberShipPlan = require("../../models/Utsab/MembershipPlan");
 const referral = require("../../models/auth/referral");
 const Transaction = require("../../models/payment/paymentSc");
 const walletTransaction = require("../../models/Wallet/WalletTransaction");
+const mongoose = require("mongoose");
+const ObjectId = mongoose.Types.ObjectId;
 const {
   sendMail,
   oneMinuteExpiry,
@@ -208,9 +210,9 @@ const updateStatus = async (req, res) => {
         message: "No order till now",
       });
     }
-       const userData = await User.findById(orderDetail.userId);
-   if (req.body.status == "Confirmed") {
-     const msg = `(
+    const userData = await User.findById(orderDetail.userId);
+    if (req.body.status == "Confirmed") {
+      const msg = `(
        <div style="font-family: Arial, sans-serif; color: #333; background-color: #f9f9f9; padding: 20px;">
          <p style="margin-bottom: 10px;">Dear ${userData.fullName},</p>
          <p style="margin-bottom: 10px;">
@@ -242,73 +244,101 @@ const updateStatus = async (req, res) => {
        </div>
      )`;
 
-     const mail = await sendMail(
-       userData.email,
-       "Order Successfully Completed",
-       msg
-     );
-   }
+      const mail = await sendMail(
+        userData.email,
+        "Order Successfully Completed",
+        msg
+      );
+    }
     if (req.body.status == "Shipping") {
       await invoiceGenerate(orderDetail);
     }
     if (req.body.status == "Completed") {
-      const walletDetails = await Wallet.findOne({
-        userId: orderDetail.userId,
-      });
+      try {
+        console.log(orderDetail.userId._id);
+       const walletDetails = await Wallet.findOne({
+         userId: new ObjectId(orderDetail.userId._id),
+       });
+        console.log({ walletDetails });
 
-      const planDetails = await MemberShipPlan.findOne({
-        identity: "PLAN_IDENTITY",
-      });
+        const planDetails = await MemberShipPlan.findOne({
+          identity: "PLAN_IDENTITY",
+        });
+        console.log({ planDetails });
 
-      const userData = await User.findById({
-        _id: orderDetail.userId,
-        is_Active: true,
-        blocking: false,
-      });
-      console.log({ userData: userData });
-      if (
-        userData.is_utsav == false &&
-        orderDetail.totalPrice >= planDetails.amount
-      ) {
-        userData.is_utsav = true;
-        await userData.save();
-      }
-      const referralDetails = await referral.findOne({
-        userId: orderDetail.userId,
-      });
-      console.log({ referralDetails: referralDetails });
+        const userData = await User.findOne({
+          _id: orderDetail.userId,
+          is_Active: true,
+          blocking: false,
+        });
+        console.log({ userData });
 
-      if (referralDetails.referred_by) {
-        const referredUserData = await User.findById(
-          referralDetails.referred_by
-        );
-        console.log({ referredUserData: referredUserData });
+        if (!walletDetails || !planDetails || !userData) {
+          return res.status(404).json({
+            message: "Required details not found",
+            success: false,
+          });
+        }
         if (
-          referralDetails &&
-          referralDetails.referred_by &&
-          referredUserData.is_utsav == true
+          userData.is_utsav === false &&
+          orderDetail.totalPrice >= planDetails.amount
         ) {
-          const walletDetailsOfReferredUser = await Wallet.findOneAndUpdate({
-            userId: referralDetails.referred_by,
-          });
-          console.log({
-            walletDetailsOfReferredUser: walletDetailsOfReferredUser,
-          });
-          walletDetailsOfReferredUser.balance =
-            walletDetailsOfReferredUser.balance + planDetails.reward;
-          await walletDetailsOfReferredUser.save();
-          userData.firstOrderComplete = true;
+          userData.is_utsav = true;
           await userData.save();
         }
-      }
-      if (userData.is_utsav == true) {
-        walletDetailsOfReferredUser.balance =
-          walletDetailsOfReferredUser.balance + orderDetail.utsavReward;
-        await walletDetailsOfReferredUser.save();
-      }
 
-      walletDetails.balance = walletDetails.balance + orderDetail.basicReward;
-      await walletDetails.save();
+        const referralDetails = await referral.findOne({
+          userId: orderDetail.userId,
+        });
+        console.log({ referralDetails });
+
+        // If there is a referral and referred_by exists, handle referred user rewards
+        if (referralDetails && referralDetails.referred_by) {
+          const referredUserData = await User.findById(
+            referralDetails.referred_by
+          );
+          console.log({ referredUserData });
+
+          if (referredUserData && referredUserData.is_utsav === true) {
+            let walletDetailsOfReferredUser = await Wallet.findOne({
+              userId: referralDetails.referred_by,
+            });
+            if (walletDetailsOfReferredUser) {
+              console.log({ walletDetailsOfReferredUser });
+
+              // Update referred user's wallet balance
+              walletDetailsOfReferredUser.balance += planDetails.reward;
+              await walletDetailsOfReferredUser.save();
+
+              // Mark that the user's first order is complete
+              userData.firstOrderComplete = true;
+              await userData.save();
+            }
+          }
+        }
+
+        // Additional reward for the user if they are Utsav
+        if (userData.is_utsav === true && walletDetails) {
+          walletDetails.balance += orderDetail.utsavReward;
+          await walletDetails.save();
+        }
+
+        // Add basic reward to the user's wallet
+        walletDetails.balance += orderDetail.basicReward;
+        await walletDetails.save();
+
+        return res.status(200).json({
+          message: "Rewards processed successfully",
+          success: true,
+        });
+      } catch (err) {
+        console.error("Error processing rewards:", err.message);
+        return res.status(500).json({
+          message: "Internal server error",
+          success: false,
+          error: err.message,
+        });
+      }
     }
 
     const statusDetails = await orderStatus.findOne({
@@ -613,16 +643,14 @@ async function invoiceGenerate(orderDetails) {
 
 const downloadInvoice = async (req, res) => {
   try {
-    const orderDetails=await order.findById(req.params.orderId)
-    if(!orderDetails){
-        return res.status(500).json({
-      success: false,
-      message: " No order details",
-    });
+    const orderDetails = await order.findById(req.params.orderId);
+    if (!orderDetails) {
+      return res.status(500).json({
+        success: false,
+        message: " No order details",
+      });
     }
-    return res.status(200).json({invoicePath:
-      orderDetails.invoicePath
-    });
+    return res.status(200).json({ invoicePath: orderDetails.invoicePath });
   } catch (err) {
     return res.status(500).json({
       success: false,

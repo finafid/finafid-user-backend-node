@@ -27,31 +27,44 @@ const userRegistration = async (req, res) => {
       { phone, is_Active: true },
     ],
   });
-  console.log(userDetails);
   if (userDetails) {
     return res.status(400).json({
-      message: "Account is already Register",
+      message: "Account is already registered",
       success: false,
     });
   }
-  const newUser = new User(req.body);
 
+  const newUser = new User(req.body);
   newUser.password = await bcrypt.hash(req.body.password, 10);
+
   try {
-    await newUser.save();
-    if (req.body.referralCode!=null) {
-      await redeemedReferral(referralCode, newUser._id);
+    const seed = req.body.fullName || email;
+    if (!seed) {
+      return res.status(400).json({
+        message:
+          "Full name or email is required for profile picture generation.",
+        success: false,
+      });
     }
     const profilePictureUrl = `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(
-      req.body.fullName || email
+      seed
     )}`;
     newUser.imgUrl = profilePictureUrl;
-   await newUser.save();
-    return res.status(201).json({ message: "success", data: newUser });
+    await newUser.save();
+    if (referralCode != null) {
+      await redeemedReferral(referralCode, newUser._id);
+    }
+    return res
+      .status(201)
+      .json({ message: "Registration successful", data: newUser });
   } catch (err) {
-    return res.status(500).json({ message: "error", error: err.message });
+    console.error("Error during registration:", err.message);
+    return res
+      .status(500)
+      .json({ message: "Registration failed", error: err.message });
   }
 };
+
 function generateTokens(tokenObject, user) {
   const accessToken = jwt.sign(tokenObject, process.env.SECRET, {
     expiresIn: "7d",
