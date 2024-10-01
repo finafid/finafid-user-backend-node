@@ -133,6 +133,7 @@ const {
   getBalance,
   addBalanceFromAdmin,
   getBalanceFromAdmin,
+  addWallet,
 } = require("../controllers/Wallet/walletController.js");
 const {
   totalIncome,
@@ -488,7 +489,7 @@ routs.get("/getAllOrder", getAllOrder);
 routs.post("/editOrder", auth, editOrder);
 routs.get("/orderStatusDetails/:orderId", orderStatusDetails);
 routs.post("/setDeliveryDate", setDeliveryDate);
-routs.get("/cancelDelivery", cancelDelivery);
+routs.get("/cancelDelivery/:orderId", cancelDelivery);
 routs.get("/downloadInvoice/:orderId", downloadInvoice);
 //Address
 routs.post("/addAddress", auth, addAddress);
@@ -526,6 +527,7 @@ routs.get("/showTransactions", auth, showTransactions);
 routs.get("/getBalance", auth, getBalance);
 routs.post("/addBalanceFromAdmin", addBalanceFromAdmin);
 routs.get("/getBalanceFromAdmin/:userId", getBalanceFromAdmin);
+routs.get("/addWallet", addWallet);
 //admin dashboard
 routs.get("/getTotalIncome", totalIncome);
 routs.get("/getTotalOrder", totalOrder);
