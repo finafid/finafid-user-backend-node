@@ -597,7 +597,7 @@ const cancelDelivery = async (req, res) => {
         message: "No order found",
       });
     }
-    orderDetails.orderStatus = "Canceled";
+    orderDetails.status = "Canceled";
     await orderDetails.save();
     return res.status(200).json({
       success: true,
