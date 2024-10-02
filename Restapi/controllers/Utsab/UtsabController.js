@@ -525,15 +525,25 @@ const getMemberById = async (req, res) => {
       );
     }
 
-    return res.status(200).json({
-      userData: userData,
-      address: address,
-      walletTransactionDetails: walletTransactionDetails,
-      referralDetails: {
-        ...referralDetails._doc,
-        referred_user: membersWithDetails,
-      },
-    });
+   const response = {};
+
+   if (userData) {
+     response.userData = userData;
+   }
+   if (address) {
+     response.address = address;
+   }
+   if (walletTransactionDetails) {
+     response.walletTransactionDetails = walletTransactionDetails;
+   }
+   if (referralDetails) {
+     response.referralDetails = {
+       ...referralDetails._doc,
+       referred_user: membersWithDetails,
+     };
+   }
+
+   return res.status(200).json(response);
   } catch (error) {
     return res
       .status(500)
