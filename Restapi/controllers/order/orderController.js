@@ -212,7 +212,7 @@ const updateStatus = async (req, res) => {
     }
     const userData = await User.findById(orderDetail.userId);
     if (req.body.status == "Confirmed") {
-      const msg = `(
+      const msg = `
        <div style="font-family: Arial, sans-serif; color: #333; background-color: #f9f9f9; padding: 20px;">
          <p style="margin-bottom: 10px;">Dear ${userData.fullName},</p>
          <p style="margin-bottom: 10px;">
@@ -228,7 +228,7 @@ const updateStatus = async (req, res) => {
              <strong>Total Amount:</strong> ${orderDetail.totalPrice}
            </li>
            <li>
-             <strong>Delivery Address:</strong> ${orderDetail.address}
+             <strong>Delivery Address:</strong> ${JSON.stringify(orderDetail.address)}
            </li>
          </ul>
          <p style="margin-bottom: 10px;">
@@ -242,7 +242,7 @@ const updateStatus = async (req, res) => {
          <p style="margin-bottom: 10px;">Best regards,</p>
          <p style="margin-bottom: 0;">The Finafid Team</p>
        </div>
-     )`;
+     `;
 
       const mail = await sendMail(
         userData.email,

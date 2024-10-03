@@ -322,7 +322,14 @@ const {
   deleteFashionCategory,
   getFashionCategoryById,
   getBlogsFashionCategoryById,
-}=require("../controllers/FashionController/fashionCategoryController.js")
+} = require("../controllers/FashionController/fashionCategoryController.js");
+const {
+  createBlog,
+  editFashionBlog,
+  deleteFashionBlog,
+  getFashionBlogById,
+  getBlogsFashionCategoryUser,
+} = require("../controllers/FashionController/FashionBlogController.js");
 //user Authentication
 routs.post("/register", userRegistrationValidation, userRegistration);
 routs.post("/login", userLoginValidation, userLogin);
@@ -756,5 +763,14 @@ routs.post("/editFashionCategory/:fashionCategoryId", editFashionCategory);
 routs.get("/deleteFashionCategory/:fashionCategoryId", deleteFashionCategory);
 routs.get("/getFashionCategoryById/:fashionCategoryId", getFashionCategoryById);
 
+//fashion Blog
+routs.post("/createBlog", createBlog);
+routs.post("/editFashionBlog/:fashionCategoryId", editFashionBlog);
+routs.get("/deleteFashionBlog/:fashionCategoryId", deleteFashionBlog);
+routs.get("/getFashionBlogById/:fashionCategoryId", getFashionBlogById);
+routs.get(
+  "/getBlogsFashionCategoryUser/:fashionCategoryId",
+  getBlogsFashionCategoryUser
+);
 
 module.exports = routs;
