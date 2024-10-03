@@ -758,7 +758,11 @@ routs.get("/productSearchDirectory", productSearchDirectory);
 routs.get("/google", loginWithGoogle);
 routs.get("/google/callback", googleCallback);
 //fashion Category
-routs.post("/createFashionCategory", createFashionCategory);
+routs.post(
+  "/createFashionCategory",
+  upload.single("logoImg"),
+  createFashionCategory
+);
 routs.post("/editFashionCategory/:fashionCategoryId", editFashionCategory);
 routs.get("/deleteFashionCategory/:fashionCategoryId", deleteFashionCategory);
 routs.get("/getFashionCategoryById/:fashionCategoryId", getFashionCategoryById);
