@@ -670,9 +670,8 @@ async function invoiceGenerate(orderDetails) {
 const downloadInvoice = async (req, res) => {
   try {
     const orderDetails = await order.findById(req.params.orderId);
-    if (!orderDetails) {
-      return res.status(500).json({
-        success: false,
+    if (!orderDetails && !orderDetails.invoicePath) {
+      return res.status(400).json({
         message: " No order details",
       });
     }

@@ -49,24 +49,27 @@ const addToWishlist = async (req, res) => {
 
 const getTheWishlist = async (req, res) => {
   try {
-    const userData = req.user;
     const userDetails = await wishList
       .findOne({
-        UserId: userData._id,
+        UserId: req.user._id,
       })
       .populate({
         path: "productIdList",
-        populate: {
-          path: "productGroup",
-          model: "Product",
-        },
-        populate: {
-          path: "brand",
-          model: "Brand",
-        },
+        populate: [
+          {
+            path: "productGroup",
+            model: "Product",
+            populate: {
+              path: "brand",
+              model: "Brand",
+            },
+          },
+        ],
       });
-     
-    return res.status(200).json(userDetails);
+if (!userDetails){
+  return res.status(401).json({message:"No item found"});
+}
+ return res.status(200).json(userDetails);
   } catch (error) {
     return res.status(500).json({
       success: false,
