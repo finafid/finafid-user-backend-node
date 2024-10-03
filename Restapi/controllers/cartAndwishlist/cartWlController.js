@@ -66,9 +66,9 @@ const getTheWishlist = async (req, res) => {
           },
         ],
       });
-if (!userDetails){
-  return res.status(401).json({message:"No item found"});
-}
+// if (!userDetails){
+//   return res.status(401).json({message:"No item found"});
+// }
  return res.status(200).json(userDetails);
   } catch (error) {
     return res.status(500).json({

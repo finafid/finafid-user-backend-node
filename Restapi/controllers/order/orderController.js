@@ -228,7 +228,7 @@ const updateStatus = async (req, res) => {
              <strong>Total Amount:</strong> ${orderDetail.totalPrice}
            </li>
            <li>
-             <strong>Delivery Address:</strong> ${JSON.stringify(orderDetail.address)}
+             <strong>Delivery Address:</strong> ${orderDetail.address.receiverName}, ${orderDetail.address.street}, ${orderDetail.address.locality}, ${orderDetail.address.city}, ${orderDetail.address.state}, ${orderDetail.address.pinCode}
            </li>
          </ul>
          <p style="margin-bottom: 10px;">
