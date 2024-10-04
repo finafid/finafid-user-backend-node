@@ -13,6 +13,11 @@ const fashionBlogSchema = new schema(
       type: String,
       required: true,
     },
+    fashionCategory: {
+      type: schema.Types.ObjectId,
+      ref: "FashionCategory",
+      required: false,
+    },
     userName: {
       type: String,
     },

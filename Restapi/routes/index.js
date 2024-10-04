@@ -322,6 +322,7 @@ const {
   deleteFashionCategory,
   getFashionCategoryById,
   getBlogsFashionCategoryById,
+  getAllFashionCategory,
 } = require("../controllers/FashionController/fashionCategoryController.js");
 const {
   createBlog,
@@ -329,6 +330,7 @@ const {
   deleteFashionBlog,
   getFashionBlogById,
   getBlogsFashionCategoryUser,
+  getAllFashionBlog,
 } = require("../controllers/FashionController/FashionBlogController.js");
 //user Authentication
 routs.post("/register", userRegistrationValidation, userRegistration);
@@ -763,18 +765,22 @@ routs.post(
   upload.single("logoImg"),
   createFashionCategory
 );
-routs.post("/editFashionCategory/:fashionCategoryId", editFashionCategory);
+routs.post(
+  "/editFashionCategory/:fashionCategoryId",
+  upload.single("logoImg"),
+  editFashionCategory
+);
 routs.get("/deleteFashionCategory/:fashionCategoryId", deleteFashionCategory);
 routs.get("/getFashionCategoryById/:fashionCategoryId", getFashionCategoryById);
-
+routs.get("/getAllFashionCategory", getAllFashionCategory);
 //fashion Blog
-routs.post("/createBlog", createBlog);
-routs.post("/editFashionBlog/:fashionCategoryId", editFashionBlog);
-routs.get("/deleteFashionBlog/:fashionCategoryId", deleteFashionBlog);
-routs.get("/getFashionBlogById/:fashionCategoryId", getFashionBlogById);
+routs.post("/createBlog", upload.any(), createBlog);
+routs.post("/editFashionBlog/:fashionBlogId", upload.any(), editFashionBlog);
+routs.get("/deleteFashionBlog/:fashionBlogId", deleteFashionBlog);
+routs.get("/getFashionBlogById/:fashionBlogId", getFashionBlogById);
 routs.get(
-  "/getBlogsFashionCategoryUser/:fashionCategoryId",
+  "/getBlogsByFashionCategory/:fashionCategoryId",
   getBlogsFashionCategoryUser
 );
-
+routs.get("/getAllFashionBlog", getAllFashionBlog);
 module.exports = routs;

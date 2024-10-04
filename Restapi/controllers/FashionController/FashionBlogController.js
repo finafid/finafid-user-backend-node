@@ -51,20 +51,23 @@ const getMediaLink = async (req, res) => {
 
 const createBlog = async (req, res) => {
   try {
-    const { name, description, userName } = req.body;
+    const { name, description, userName, fashionCategory } = req.body;
     let logoUrl = "";
     if (uploadedFiles[blogMedia]) {
       logoUrl = await getMediaLink(req);
     }
+    let userLogo=""
     if (uploadedFiles[userImage]) {
       const [imageLink] = await getMediaLink(uploadedFiles[colorImageKey]);
-      singleImageUrl = imageLink;
+      userLogo = imageLink;
     }
     const newFashionBlog = new FashionBlog({
       name,
       description,
       logoUrl,
       userName,
+      fashionCategory,
+      userLogo,
     });
     if (!newFashionBlog) {
       return res.status(500).json({ message: "Cannot create" });
@@ -145,11 +148,20 @@ const getBlogsFashionCategoryUser = async (req, res) => {
       .status(500)
       .json({ message: error.message + " Internal Server Error" });
   }
-};
+};const getAllFashionBlog=async(req,res)=>{
+  try {
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: error.message + " Internal Server Error" });
+  }
+}
 module.exports = {
   createBlog,
   editFashionBlog,
   deleteFashionBlog,
   getFashionBlogById,
   getBlogsFashionCategoryUser,
+  getAllFashionBlog,
+
 };

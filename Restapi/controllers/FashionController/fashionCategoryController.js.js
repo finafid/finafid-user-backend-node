@@ -35,8 +35,10 @@ const getImageLink = async (req, res) => {
 };
 const createFashionCategory = async (req, res) => {
   try {
+     console.log("nkjwkdjqo");
     const { name, description } = req.body;
     let logoUrl = "";
+    console.log(req.file)
     if (req.file) {
       logoUrl = await getImageLink(req);
     }
@@ -125,10 +127,24 @@ const getBlogsFashionCategoryById = async (req, res) => {
       .json({ message: error.message + " Internal Server Error" });
   }
 };
+const getAllFashionCategory=async(req,res)=>{
+  try {
+    const fashionCategoryList = await FashionCategory.find();
+    if (!fashionCategoryList) {
+      return res.status(404).json({ message: "Fashion category not found" });
+    }
+    return res.status(200).json({ fashionCategoryList: fashionCategoryList });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: error.message + " Internal Server Error" });
+  }
+}
 module.exports = {
   createFashionCategory,
   editFashionCategory,
   deleteFashionCategory,
   getFashionCategoryById,
   getBlogsFashionCategoryById,
+  getAllFashionCategory,
 };
