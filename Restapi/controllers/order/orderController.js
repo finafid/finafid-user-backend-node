@@ -67,6 +67,7 @@ const placeOrder = async (req, res) => {
       couponDiscount: req.body.couponDiscount,
       utsavDiscount: req.body.utsavDiscount,
       expectedDeliveryDate: expectedDeliveryDate,
+      shippingCost: req.body.shippingCost,
     });
     if (req.body.walletBalanceUsed > 0) {
       const walletDetails = await Wallet.findOne({

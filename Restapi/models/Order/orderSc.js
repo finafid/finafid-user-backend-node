@@ -109,7 +109,12 @@ const orderSchema = new mongoose.Schema(
       required: false,
       default: 0,
     },
-     utsavDiscount: {
+    utsavDiscount: {
+      type: Number,
+      required: false,
+      default: 0,
+    },
+    shippingCost: {
       type: Number,
       required: false,
       default: 0,
