@@ -1,12 +1,14 @@
+const { populate } = require("../../models/auth/userSchema");
 const FashionBlog = require("../../models/Finafid_Fashion/Blog");
 const {
   generateStringOfImageList,
   compressAndResizeImage,
+  uploadFiles,
 } = require("../../utils/fileUpload");
-const getMediaLink = async (req, res) => {
+const getMediaLink = async (file, res) => {
   try {
-    const inputMediaPath = await req.file.buffer;
-    const extension = req.file.originalname.split(".").pop().toLowerCase();
+    const inputMediaPath = file.buffer; // Access the buffer directly
+    const extension = file.originalname.split(".").pop().toLowerCase();
     const allowedImageExtensions = ["jpg", "jpeg", "png"];
     const allowedVideoExtensions = ["mp4", "mov", "avi"];
 
@@ -15,7 +17,7 @@ const getMediaLink = async (req, res) => {
     if (allowedImageExtensions.includes(extension)) {
       // Process image
       const width = 800;
-      const compressionQuality = 0;
+      const compressionQuality = 0; // Set compression quality (0 is highest compression)
       mediaBuffer = await compressAndResizeImage(
         inputMediaPath,
         extension,
@@ -30,56 +32,66 @@ const getMediaLink = async (req, res) => {
     }
 
     // Generate a new file name
-    req.file.originalname =
-      req.file.originalname.split(".")[0].split(" ").join("-") +
-      "-" +
-      Date.now() +
-      "." +
-      extension;
+    const timestamp = Date.now();
+    const cleanFileName = file.originalname.split(".")[0].split(" ").join("-");
+    const finalFileName = `${cleanFileName}-${timestamp}.${extension}`;
 
-    // Assuming you have a similar method for video upload or use the same for both
-    await generateStringOfImageList(mediaBuffer, req.file.originalname, res);
+    // Upload the processed image or video to the server (e.g., AWS S3 or another cloud service)
+    await generateStringOfImageList(mediaBuffer, finalFileName, res); // Adjust function for both images and videos
 
-    const mediaUrl =
-      "https://d2w5oj0jmt3sl6.cloudfront.net/" + req.file.originalname;
+    const mediaUrl = `https://d2w5oj0jmt3sl6.cloudfront.net/${finalFileName}`; // Adjust the path as per your cloud provider
 
     return mediaUrl;
   } catch (error) {
     console.error("Error in getMediaLink:", error);
+    res.status(500).json({ message: "File processing failed" });
+    throw error; // To signal the error in the calling function
   }
 };
 
 const createBlog = async (req, res) => {
   try {
-    const { name, description, userName, fashionCategory } = req.body;
+    const { caption, productList, userName, fashionCategory } = req.body;
+
     let logoUrl = "";
-    if (uploadedFiles[blogMedia]) {
-      logoUrl = await getMediaLink(req);
+    let userLogo = "";
+
+    // Access the files correctly
+    if (req.files["logoUrl"] && req.files["logoUrl"][0]) {
+      console.log("Uploading logoUrl...");
+      logoUrl = await getMediaLink(req.files["logoUrl"][0]); // Accessing first file in the array
     }
-    let userLogo=""
-    if (uploadedFiles[userImage]) {
-      const [imageLink] = await getMediaLink(uploadedFiles[colorImageKey]);
+
+    if (req.files["userLogo"] && req.files["userLogo"][0]) {
+      console.log("Uploading userLogo...");
+      const [imageLink] = await getMediaLink(req.files["userLogo"][0]); // Accessing first file in the array
       userLogo = imageLink;
     }
+
+    console.log({ logoUrl, userLogo });
+
     const newFashionBlog = new FashionBlog({
-      name,
-      description,
+      caption,
+      productList,
       logoUrl,
       userName,
       fashionCategory,
       userLogo,
     });
+
     if (!newFashionBlog) {
       return res.status(500).json({ message: "Cannot create" });
     }
+
     await newFashionBlog.save();
-    return res.status(200).json({ message: " Successfully created" });
+    return res.status(200).json({ message: "Successfully created" });
   } catch (error) {
     return res
       .status(500)
       .json({ message: error.message + " Internal Server Error" });
   }
 };
+
 const editFashionBlog = async (req, res) => {
   try {
     const fashionCategoryDetails = await FashionBlog.findById(
@@ -92,9 +104,11 @@ const editFashionBlog = async (req, res) => {
       await fashionCategoryDetails.save();
     }
     if (req.body) {
-      const { name, description } = req.body;
-      fashionCategoryDetails.name = name;
-      fashionCategoryDetails.description = description;
+      const { caption, productList, userName, fashionCategory } = req.body;
+      fashionCategoryDetails.caption = caption;
+      fashionCategoryDetails.productList = productList;
+       fashionCategoryDetails.userName = userName;
+       fashionCategoryDetails.fashionCategory = fashionCategory;
       await fashionCategoryDetails.save();
     }
     return res.status(200).json({ message: " Successfully edited" });
@@ -150,6 +164,15 @@ const getBlogsFashionCategoryUser = async (req, res) => {
   }
 };const getAllFashionBlog=async(req,res)=>{
   try {
+      const fashionBlogDetails = await FashionBlog.find().populate(
+        "productList"
+      );
+      if (!fashionBlogDetails) {
+        return res.status(404).json({ message: "Fashion category not found" });
+      }
+      return res
+        .status(200)
+        .json({ fashionCategoryDetails: fashionBlogDetails });
   } catch (error) {
     return res
       .status(500)

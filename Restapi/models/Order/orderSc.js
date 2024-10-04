@@ -109,6 +109,11 @@ const orderSchema = new mongoose.Schema(
       required: false,
       default: 0,
     },
+     utsavDiscount: {
+      type: Number,
+      required: false,
+      default: 0,
+    },
     status: {
       type: String,
       required: true,

@@ -2,14 +2,16 @@ const mongoose = require("mongoose");
 const schema = mongoose.Schema;
 const fashionBlogSchema = new schema(
   {
-    title: {
+    caption: {
       type: String,
       required: true,
     },
-    description: {
-      type: String,
-    },
-    image: {
+    productList:[ {
+      type: schema.Types.ObjectId,
+      ref: "",
+      required: false,
+    }],
+    logoUrl: {
       type: String,
       required: true,
     },

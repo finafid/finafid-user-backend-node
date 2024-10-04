@@ -65,6 +65,7 @@ const placeOrder = async (req, res) => {
       is_utsab: userData.is_utsav,
       walletBalanceUsed: req.body.walletBalanceUsed,
       couponDiscount: req.body.couponDiscount,
+      utsavDiscount: req.body.utsavDiscount,
       expectedDeliveryDate: expectedDeliveryDate,
     });
     if (req.body.walletBalanceUsed > 0) {
