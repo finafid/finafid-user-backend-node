@@ -12,6 +12,7 @@ const BlackList = require("../../models/auth/blackList");
 const Cart = require("../../models/productBag/cartSc");
 const WishList = require("../../models/productBag/wishListSc");
 const Admin = require("../../models/Auth admin/adminSchema");
+const Wallet=require("../../models/Wallet/wallet")
 const { redeemedReferral } = require("../../controllers/auth/referralCon");
 const {
   generateStringOfImageList,
