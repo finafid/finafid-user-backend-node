@@ -231,10 +231,17 @@ const getAllVariantsOnUser = async (req, res) => {
     const pageNumber = parseInt(page);
     const limitNumber = parseInt(limit);
 
-    // Execute aggregation pipeline and get the full result set
-    const variantList = await Variant.aggregate(aggregatePipeline).exec();
+const variantList = await Variant.aggregate(aggregatePipeline).exec();
 
-    // Manually populate `productGroup.brand` after aggregation
+// Use Map to filter unique productGroupId
+const uniqueVariantList = Array.from(
+  new Map(
+    variantList.map((variant) => [variant.productGroup, variant])
+  ).values()
+);
+
+console.log(uniqueVariantList);
+
     await Variant.populate(variantList, {
       path: "productGroup",
       populate: {
