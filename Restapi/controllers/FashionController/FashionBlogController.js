@@ -97,20 +97,35 @@ const editFashionBlog = async (req, res) => {
     const fashionCategoryDetails = await FashionBlog.findById(
       req.params.fashionBlogId
     );
-    let newLogoUrl = "";
-    if (req.file) {
-      newLogoUrl = await getImageLink(req);
-      fashionCategoryDetails.logoUrl = newLogoUrl;
+    let logoUrl = "";
+    let userLogo = "";
+
+    if (req.files["logoUrl"] && req.files["logoUrl"][0]) {
+      console.log("Uploading logoUrl...");
+      logoUrl = await getMediaLink(req.files["logoUrl"][0]); // Accessing first file in the array
+    }
+
+    if (req.files["userLogo"] && req.files["userLogo"][0]) {
+      console.log("Uploading userLogo...");
+      const [imageLink] = await getMediaLink(req.files["userLogo"][0]); // Accessing first file in the array
+      userLogo = imageLink;
+    }
+    if (logoUrl.length!==0){
+      fashionCategoryDetails.logoUrl = logoUrl;
       await fashionCategoryDetails.save();
     }
-    if (req.body) {
-      const { caption, productList, userName, fashionCategory } = req.body;
-      fashionCategoryDetails.caption = caption;
-      fashionCategoryDetails.productList = productList;
-       fashionCategoryDetails.userName = userName;
-       fashionCategoryDetails.fashionCategory = fashionCategory;
-      await fashionCategoryDetails.save();
+    if (userLogo.length !== 0){
+       fashionCategoryDetails.userLogo = userLogo;
+       await fashionCategoryDetails.save();
     }
+      if (req.body) {
+        const { caption, productList, userName, fashionCategory } = req.body;
+        fashionCategoryDetails.caption = caption;
+        fashionCategoryDetails.productList = productList;
+        fashionCategoryDetails.userName = userName;
+        fashionCategoryDetails.fashionCategory = fashionCategory;
+        await fashionCategoryDetails.save();
+      }
     return res.status(200).json({ message: " Successfully edited" });
   } catch (error) {
     return res
@@ -164,9 +179,7 @@ const getBlogsFashionCategoryUser = async (req, res) => {
   }
 };const getAllFashionBlog=async(req,res)=>{
   try {
-      const fashionBlogDetails = await FashionBlog.find().populate(
-        "productList"
-      );
+      const fashionBlogDetails = await FashionBlog.find().populate("productList");
       if (!fashionBlogDetails) {
         return res.status(404).json({ message: "Fashion category not found" });
       }

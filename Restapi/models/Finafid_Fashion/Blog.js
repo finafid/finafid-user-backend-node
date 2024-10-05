@@ -6,11 +6,13 @@ const fashionBlogSchema = new schema(
       type: String,
       required: true,
     },
-    productList:[ {
-      type: schema.Types.ObjectId,
-      ref: "",
-      required: false,
-    }],
+    productList: [
+      {
+        type: schema.Types.ObjectId,
+        ref: "Variant",
+        required: false,
+      },
+    ],
     logoUrl: {
       type: String,
       required: true,
