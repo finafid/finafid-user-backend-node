@@ -236,7 +236,7 @@ const variantList = await Variant.aggregate(aggregatePipeline).exec();
 // Use Map to filter unique productGroupId
 const uniqueVariantList = Array.from(
   new Map(
-    variantList.map((variant) => [variant.productGroup, variant])
+    variantList.map((variant) => [variant.productGroup._id, variant])
   ).values()
 );
 
