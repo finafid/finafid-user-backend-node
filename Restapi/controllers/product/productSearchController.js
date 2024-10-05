@@ -236,13 +236,13 @@ const variantList = await Variant.aggregate(aggregatePipeline).exec();
 // Use Map to filter unique productGroupId
 const uniqueVariantList = Array.from(
   new Map(
-    variantList.map((variant) => [variant.productGroup._id, variant])
+    variantList.map((variant) => [variant.productGroup.toString(), variant])
   ).values()
 );
 
 console.log(uniqueVariantList);
 
-    await Variant.populate(variantList, {
+    await Variant.populate(uniqueVariantList, {
       path: "productGroup",
       populate: {
         path: "brand",
@@ -250,7 +250,7 @@ console.log(uniqueVariantList);
       },
     });
 
-    const sortedVariantList = variantList.sort(
+    const sortedVariantList = uniqueVariantList.sort(
       (a, b) => b.quantity - a.quantity
     );
     const paginatedVariantList = sortedVariantList.slice(
