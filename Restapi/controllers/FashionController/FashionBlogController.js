@@ -153,7 +153,7 @@ const getFashionBlogById = async (req, res) => {
   try {
     const fashionCategoryDetails = await FashionBlog.findById(
       req.params.fashionBlogId
-    ).populate("fashionCategory");
+    )
     if (!fashionCategoryDetails) {
       return res.status(404).json({ message: "Fashion category not found" });
     }
