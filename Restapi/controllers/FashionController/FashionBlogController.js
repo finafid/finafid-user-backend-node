@@ -59,12 +59,12 @@ const createBlog = async (req, res) => {
     // Access the files correctly
     if (req.files["logoUrl"] && req.files["logoUrl"][0]) {
       console.log("Uploading logoUrl...");
-      logoUrl = await getMediaLink(req.files["logoUrl"][0]); // Accessing first file in the array
+      logoUrl = await getMediaLink(req.files["logoUrl"][0]); 
     }
 
     if (req.files["userLogo"] && req.files["userLogo"][0]) {
       console.log("Uploading userLogo...");
-      userLogo = await getMediaLink(req.files["userLogo"][0]); // Accessing first file in the array
+      userLogo = await getMediaLink(req.files["userLogo"][0]); 
     }
     const newFashionBlog = new FashionBlog({
       caption,
@@ -153,8 +153,7 @@ const getFashionBlogById = async (req, res) => {
   try {
     const fashionCategoryDetails = await FashionBlog.findById(
       req.params.fashionBlogId
-    ).populate("productList")
-      .populate("fashionCategory");
+    ).populate("fashionCategory");
     if (!fashionCategoryDetails) {
       return res.status(404).json({ message: "Fashion category not found" });
     }
