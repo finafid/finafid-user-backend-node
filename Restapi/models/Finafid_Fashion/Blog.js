@@ -25,7 +25,7 @@ const fashionBlogSchema = new schema(
     userName: {
       type: String,
     },
-    profileImg: {
+    userLogo: {
       type: String,
     },
   },

@@ -136,7 +136,7 @@ const editFashionBlog = async (req, res) => {
 const deleteFashionBlog = async (req, res) => {
   try {
     const fashionCategoryDetails = await FashionBlog.findByIdAndDelete(
-      req.params.fashionCategoryId
+      req.params.fashionBlogId
     );
 
     if (!fashionCategoryDetails) {
