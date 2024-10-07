@@ -64,12 +64,8 @@ const createBlog = async (req, res) => {
 
     if (req.files["userLogo"] && req.files["userLogo"][0]) {
       console.log("Uploading userLogo...");
-      const [imageLink] = await getMediaLink(req.files["userLogo"][0]); // Accessing first file in the array
-      userLogo = imageLink;
+      userLogo = await getMediaLink(req.files["userLogo"][0]); // Accessing first file in the array
     }
-
-    console.log({ logoUrl, userLogo });
-
     const newFashionBlog = new FashionBlog({
       caption,
       productList,
