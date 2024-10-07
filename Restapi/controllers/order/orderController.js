@@ -656,10 +656,9 @@ async function invoiceGenerate(orderDetails) {
     subtotal: orderDetails.subtotal,
     discount: orderDetails.discount,
     gst: orderDetails.tax,
-    shipping: orderDetails.orderItem.reduce(
-      (acc, item) => acc + item.productId.shippingCost,
-      0
-    ),
+    couponDiscount: orderDetails.couponDiscount,
+    utsavDiscount: orderDetails.utsavDiscount,
+    shipping: orderDetails.shippingCost,
     total: orderDetails.totalPrice,
   };
   console.log({ invoiceData: invoiceData });

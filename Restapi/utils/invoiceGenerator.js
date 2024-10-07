@@ -35,8 +35,12 @@ async function generateAndUploadInvoice(invoiceData) {
     doc.moveDown();
     doc
       .fontSize(12)
-      .text(`Your order ID: ${invoiceData.invoiceNumber}`, { align: "left" });
-    doc.text(`Seller Details: Finafid Technologies`, { align: "left" });
+      .text(`Your Invoice ID: ${invoiceData.invoiceNumber}`, { align: "left" });
+    doc.text(`Seller Details: Finafid Technologies  Pvt Ltd`, {
+      align: "left",
+    });
+    doc.text(`GST Number: 19AAECF2320D1Z5`, { align: "left" });
+    doc.text(`SIN NUmber: U72900WB2020PTC239330`, { align: "left" });
     doc.text(`Payment Details: ${invoiceData.payment_method}`, {
       align: "right",
     });
@@ -81,29 +85,77 @@ async function generateAndUploadInvoice(invoiceData) {
     });
 
     // Add a separator line before the totals
+    // Move to a new line and draw a line across the document
+    // Move to a new line and draw a line across the document
     doc.moveDown().moveTo(50, doc.y).lineTo(550, doc.y).stroke();
 
-    // Add totals
+    doc.moveDown(2);
+
+    // Define x-coordinates for the labels and values
+    const labelX = 50; // x-coordinate for the labels
+    const valueX = 450; // x-coordinate for the values
+
+    // Define a y-coordinate to start the alignment
+    let currentY = doc.y;
+
+    // Set the details in one line
     doc
       .fontSize(12)
-      .text(`Sub Total: ${invoiceData.subtotal.toFixed(2)}`, {
-        align: "left",
-      })
-      .moveDown()
-      .text(`Discount: ${invoiceData.discount.toFixed(2)}`, {
-        align: "left",
-      })
-      .moveDown()
-      .text(`GST: ${invoiceData.gst.toFixed(2)}`, { align: "left" })
-      .moveDown()
-      .text(`Shipping: ${invoiceData.shipping.toFixed(2)}`, { align: "left" })
-      .moveDown()
-      .text(`Total: ${invoiceData.total.toFixed(2)}`, {
-        align: "left",
-        font: "Helvetica-Bold",
+      .text("Sub Total", labelX, currentY) // Label for Sub Total
+      .text(`${invoiceData.subtotal.toFixed(2)}`, valueX, currentY, {
+        align: "right",
+      }); // Value for Sub Total
+
+    // Move down to the next line
+    currentY += 20;
+
+    doc
+      .text("Discount", labelX, currentY)
+      .text(`${invoiceData.discount.toFixed(2)}`, valueX, currentY, {
+        align: "right",
       });
 
-    // Finalize the PDF
+    currentY += 20;
+
+    doc
+      .text("GST(incl)", labelX, currentY)
+      .text(`${invoiceData.gst.toFixed(2)}`, valueX, currentY, {
+        align: "right",
+      });
+
+    currentY += 20;
+
+    doc
+      .text("Utsav Discount", labelX, currentY)
+      .text(`${invoiceData.utsavDiscount.toFixed(2)}`, valueX, currentY, {
+        align: "right",
+      });
+
+    currentY += 20;
+
+    doc
+      .text("Coupon Discount", labelX, currentY)
+      .text(`${invoiceData.couponDiscount.toFixed(2)}`, valueX, currentY, {
+        align: "right",
+      });
+
+    currentY += 20;
+
+    doc
+      .text("Shipping Fee", labelX, currentY)
+      .text(`${invoiceData.shipping.toFixed(2)}`, valueX, currentY, {
+        align: "right",
+      });
+
+    currentY += 20;
+
+    doc
+      .font("Helvetica-Bold")
+      .text("Total:", labelX, currentY)
+      .text(`${invoiceData.total.toFixed(2)}`, valueX, currentY, {
+        align: "right",
+      });
+
     doc.end();
   });
 }
