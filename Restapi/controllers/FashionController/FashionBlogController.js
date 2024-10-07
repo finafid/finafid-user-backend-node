@@ -103,8 +103,8 @@ const editFashionBlog = async (req, res) => {
 
     if (req.files["userLogo"] && req.files["userLogo"][0]) {
       console.log("Uploading userLogo...");
-      const [imageLink] = await getMediaLink(req.files["userLogo"][0]); // Accessing first file in the array
-      userLogo = imageLink;
+      const userLogo = await getMediaLink(req.files["userLogo"][0]); // Accessing first file in the array
+  
     }
     if (logoUrl.length!==0){
       fashionCategoryDetails.logoUrl = logoUrl;
