@@ -179,7 +179,9 @@ const getBlogsFashionCategoryUser = async (req, res) => {
   }
 };const getAllFashionBlog=async(req,res)=>{
   try {
-      const fashionBlogDetails = await FashionBlog.find().populate("productList");
+      const fashionBlogDetails = await FashionBlog.find()
+        .populate("productList")
+        .populate("fashionCategory");
       if (!fashionBlogDetails) {
         return res.status(404).json({ message: "Fashion category not found" });
       }

@@ -239,9 +239,6 @@ const uniqueVariantList = Array.from(
     variantList.map((variant) => [variant.productGroup.toString(), variant])
   ).values()
 );
-
-console.log(uniqueVariantList);
-
     await Variant.populate(uniqueVariantList, {
       path: "productGroup",
       populate: {
