@@ -156,8 +156,9 @@ const deleteFashionBlog = async (req, res) => {
 const getFashionBlogById = async (req, res) => {
   try {
     const fashionCategoryDetails = await FashionBlog.findById(
-      req.params.fashionCategoryId
-    );
+      req.params.fashionBlogId
+    ).populate("productList")
+      .populate("fashionCategory");
     if (!fashionCategoryDetails) {
       return res.status(404).json({ message: "Fashion category not found" });
     }
@@ -172,6 +173,7 @@ const getFashionBlogById = async (req, res) => {
 };
 const getBlogsFashionCategoryUser = async (req, res) => {
   try {
+
   } catch (error) {
     return res
       .status(500)
