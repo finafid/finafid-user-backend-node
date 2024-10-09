@@ -35,7 +35,7 @@ const shareReferralCode = async (req, res) => {
       });
     }
     const referralLink =
-      "https://finafid.com/auth" + "?referralCode="+referralCode.code;
+      "https://finafid.com/designer" + "?referralCode=" + referralCode.code;
     
     return res.status(200).json({ referralLink: referralLink });
   } catch (error) {

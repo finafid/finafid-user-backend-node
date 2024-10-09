@@ -415,6 +415,8 @@ const getAllMemberList = async (req, res) => {
   try {
     const memberList = await User.find({
       is_utsav: true,
+      is_Active: true,
+      blocking:false
     });
 
     if (!memberList || memberList.length === 0) {
