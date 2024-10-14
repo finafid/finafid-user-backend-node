@@ -37,8 +37,6 @@ const shareReferralCode = async (req, res) => {
     const referralLink = `https://finafid.com/designer/${encodeURIComponent(
       referralCode.code
     )}`;
-
-    
     return res.status(200).json({ referralLink: referralLink });
   } catch (error) {
     res.status(500).json({ message: error.message + " Internal Server Error" });

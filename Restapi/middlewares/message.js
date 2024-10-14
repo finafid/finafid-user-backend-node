@@ -23,6 +23,7 @@ async function sendSMS(message, phoneNumber, templateId) {
   };
 
   try {
+    console.log(requestBody);
     const response = await axios.post(url, requestBody, {
       headers: {
         "Content-Type": "application/json",

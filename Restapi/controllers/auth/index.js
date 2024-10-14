@@ -133,6 +133,7 @@ const mailVarification = async (req, res) => {
     }
     const userData = await User.findOne({ _id: req.query.id });
     if (userData) {
+
       if (userData.email_validation == true) {
         return res.status(200).json({
           message: "Mail Already verified",
@@ -196,7 +197,9 @@ const sendMailVarification = async (req, res) => {
     console.log(g_otp);
     const cDate = new Date();
     const oldOtpData = await Otp.findOne({ email: userData.email });
-
+    const templateId = "1007057794784985885";
+    const message = `Welcome to FINAFID. Your OTP for signup is ${g_otp} Expires in 10 mins. Do not share this OTP with anyone.`;
+    const responseDetails = await sendSMS(message, userData.phoneNumber, templateId);
     if (oldOtpData) {
       const sendNextOtp = await oneMinuteExpiry(oldOtpData.timestamp);
       if (!sendNextOtp) {
@@ -257,6 +260,7 @@ const sendMailVerificationForForgotPassword = async (req, res) => {
     }
     const g_otp = await genOtp();
     console.log(g_otp);
+
     const cDate = new Date();
     const oldOtpData = await Otp.findOne({ email: userData.email });
 
@@ -670,11 +674,14 @@ const validAccessToken = async (req, res) => {
 const { sendSMS } = require("../../middlewares/message");
 const changePhoneNumber=async(req,res)=>{
   try {
-    const templateDetails = await template.findOne({
-      unique_string: "Sign-up OTP",
-    });
-    const message = templateDetails.messageTemplate;
-    const responseDetails = await sendSMS(message,phoneNumber, templateDetails.templateId,);
+    // const templateDetails = await template.findOne({
+    //   unique_string: "Sign-up OTP",
+    // });
+    const otp=1234;
+    const templateId = '1007057794784985885';
+    const phoneNumber='6296223622';
+    const message = `Welcome to FINAFID. Your OTP for signup is ${otp} Expires in 10 mins. Do not share this OTP with anyone.`;
+    const responseDetails = await sendSMS(message,phoneNumber, templateId,);
     return res.status(200).send(responseDetails);
   } catch (error) {
     res.status(401).json({ message: error.message });
