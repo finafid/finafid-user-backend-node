@@ -453,7 +453,7 @@ const getAllOrder = async (req, res) => {
           dateFilter,
           {
             $or: [
-               { payment_complete: true },
+               { payment_complete: true||false },
               { payment_method: { $in: ["COD", "Wallet"] } },
             ],
           },
