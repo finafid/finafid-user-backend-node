@@ -189,9 +189,9 @@ const sendMailVarification = async (req, res) => {
     console.log(g_otp);
     const cDate = new Date();
     const oldOtpData = await Otp.findOne({ email: userData.email });
-    const templateId = "1007057794784985885";
-    const message = `Welcome to FINAFID. Your OTP for signup is ${g_otp} Expires in 10 mins. Do not share this OTP with anyone.`;
-    const responseDetails = await sendSMS(message, userData.phone, templateId);
+    // const templateId = "1007057794784985885";
+    // const message = `Welcome to FINAFID. Your OTP for signup is ${g_otp} Expires in 10 mins. Do not share this OTP with anyone.`;
+    // const responseDetails = await sendSMS(message, userData.phone, templateId);
     if (userData.email_validation === true) {
       return res.status(200).json({
         success: true,
