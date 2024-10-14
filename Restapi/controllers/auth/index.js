@@ -185,21 +185,19 @@ const sendMailVarification = async (req, res) => {
         message: "User is not present",
       });
     }
-
-    if (userData.email_validation === true) {
-      return res.status(200).json({
-        success: true,
-        message: "Email is already varified",
-      });
-    }
-
     const g_otp = await genOtp();
     console.log(g_otp);
     const cDate = new Date();
     const oldOtpData = await Otp.findOne({ email: userData.email });
     const templateId = "1007057794784985885";
     const message = `Welcome to FINAFID. Your OTP for signup is ${g_otp} Expires in 10 mins. Do not share this OTP with anyone.`;
-    const responseDetails = await sendSMS(message, userData.phoneNumber, templateId);
+    const responseDetails = await sendSMS(message, userData.phone, templateId);
+    if (userData.email_validation === true) {
+      return res.status(200).json({
+        success: true,
+        message: "Email is already varified",
+      });
+    }
     if (oldOtpData) {
       const sendNextOtp = await oneMinuteExpiry(oldOtpData.timestamp);
       if (!sendNextOtp) {
