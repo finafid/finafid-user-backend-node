@@ -707,7 +707,7 @@ const sendOtpToPhone=async(req,res)=>{
 const loginUsingPhoneNumber=async(req,res)=>{
   try{
 
-    const otpDetails = await OtpPhone.find({
+    const otpDetails = await OtpPhone.findOne({
       otp: req.body.otp,
     });
     const userData = await User.findOne({
