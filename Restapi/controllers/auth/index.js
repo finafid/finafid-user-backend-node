@@ -725,6 +725,11 @@ const loginUsingPhoneNumber=async(req,res)=>{
          fullname: userData.fullName,
          email: userData.email,
        };
+        const { fcmToken } = req.body;
+        if (fcmToken) {
+          userData.fcmToken = fcmToken;
+          await userData.save();
+        }
        const jwtToken = generateTokens(tokenObject, userData);
        return res.status(200).json(jwtToken);
   }catch (error) {
