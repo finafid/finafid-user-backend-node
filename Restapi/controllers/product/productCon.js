@@ -79,11 +79,29 @@ const getAllVarients = async (req, res) => {
         path: "productTypeId",
       },
     });
+    const { query } = req.query;
 
-    // Shuffle the variants array
-    //const shuffledVariants = shuffleArray(variants);
+    if (!query) {
+      return res.status(400).json({ message: "Query string is required." });
+    }
 
-    return res.status(200).json({ variants: variants });
+    // Create a case-insensitive regex pattern with added flexibility for fuzzy matching
+    const regexQuery = new RegExp(query.split("").join(".*"), "i");
+
+       const results = variants.filter((element) => {
+         return regexQuery.test(element.name);
+       });
+
+    // .find({
+    //   name: regexQuery,
+    // })
+    // .distinct("entityName");
+
+    if (results.length === 0) {
+      return res.status(404).json({ message: "No matching entities found." });
+    }
+
+    return res.status(200).json({ variants: results });
   } catch (err) {
     return res.status(500).json({ message: "error", error: err.message });
   }
@@ -418,9 +436,7 @@ const deleteVariants = async (req, res) => {
     const variantDetail = await Variant.findByIdAndDelete(variantId);
 
     if (!variantDetail) {
-      return res
-        .status(500)
-        .json({ message: "No details found"});
+      return res.status(500).json({ message: "No details found" });
     }
     const productDetails = await Product.findById({
       _id: variantDetail.productGroup,

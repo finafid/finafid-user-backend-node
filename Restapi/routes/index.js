@@ -20,6 +20,7 @@ const {
   changePhoneNumber,
   loginUsingPhoneNumber,
   sendOtpToPhone,
+  getUserName,
 } = require("../controllers/auth");
 const {
   userRegistrationValidation,
@@ -288,6 +289,7 @@ const {
   makeProductTypeIsFeatured,
   getAllFeaturedProductType,
   makeTopSellingBrand,
+  getProductByName,
 } = require("../controllers/product/UtsavProductCon.js");
 const {
   sendAppNotification,
@@ -369,6 +371,7 @@ routs.post(
 routs.post("/verifyRefreshToken", verify_Refresh_Token);
 routs.post("/validAccessToken", validAccessToken);
 routs.get("/changePhoneNumber", changePhoneNumber);
+routs.get("/getUserName", getUserName);
 // Product Details
 
 routs.get("/allProducts", getAllProduct);
@@ -673,6 +676,7 @@ routs.get("/getAllWalletTransaction", getAllWalletTransaction);
 routs.post("/approveBorrowRequest/:requestId", approveBorrowRequest);
 routs.post("/approveLeaderRequest/:requestId", approveLeaderRequest);
 routs.get("/getAllApprovedLeader", getAllApprovedLeader);
+routs.get("/getProductByName", getProductByName);
 
 //admin_user
 routs.post("/blockingCustomer/:userId", blockingCustomer);

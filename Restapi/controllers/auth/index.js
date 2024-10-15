@@ -731,6 +731,33 @@ const loginUsingPhoneNumber=async(req,res)=>{
     res.status(401).json({ message: error.message });
   }
 }
+const getUserName = async (req, res) => {
+  try {
+    const { query } = req.query;
+
+    if (!query) {
+      return res.status(400).json({ message: "Query string is required." });
+    }
+
+    // Create a case-insensitive regex pattern with added flexibility for fuzzy matching
+    const regexQuery = new RegExp(query.split("").join(".*"), "i");
+
+    const results = await User
+      .find({
+        name: regexQuery,
+      })
+      .distinct("entityName");
+
+    if (results.length === 0) {
+      return res.status(404).json({ message: "No matching entities found." });
+    }
+
+    return res.status(200).json(results);
+  } catch (error) {
+    console.error("Error fetching product details:", error);
+    res.status(500).json({ message: error.message + " Internal Server Error" });
+  }
+};
 module.exports = {
   userRegistration,
   userLogin,
@@ -752,4 +779,5 @@ module.exports = {
   changePhoneNumber,
   loginUsingPhoneNumber,
   sendOtpToPhone,
+  getUserName,
 };
