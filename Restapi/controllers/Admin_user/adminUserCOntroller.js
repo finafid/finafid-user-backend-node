@@ -12,7 +12,7 @@ const getAllUser = async (req, res) => {
   try {
     const allUser = await user.find({ is_Active: true });
     
-    const userWithDetails = await Promise.all(
+    let userWithDetails = await Promise.all(
       allUser.map(async (element) => {
         const userId = element._id;
         try {
@@ -30,6 +30,19 @@ const getAllUser = async (req, res) => {
         }
       })
     );
+    const { query } = req.query;
+
+    if (query) {
+      const regexQuery = new RegExp(query.split("").join(".*"), "i");
+
+      userWithDetails = userWithDetails.filter((element) => {
+        return regexQuery.test(element.name);
+      });
+
+      if (userWithDetails.length === 0) {
+        return res.status(404).json({ message: "No matching entities found." });
+      }
+    }
     return res.status(200).json({ userWithDetails: userWithDetails });
   } catch (error) {
     return res
