@@ -73,7 +73,7 @@ const getAllProduct = async (req, res) => {
 };
 const getAllVarients = async (req, res) => {
   try {
-    const variants = await Variant.find().populate({
+    let variants = await Variant.find().populate({
       path: "productGroup",
       populate: {
         path: "productTypeId",
@@ -81,27 +81,19 @@ const getAllVarients = async (req, res) => {
     });
     const { query } = req.query;
 
-    if (!query) {
-      return res.status(400).json({ message: "Query string is required." });
-    }
+   if (query) {
+     const regexQuery = new RegExp(query.split("").join(".*"), "i");
 
-    // Create a case-insensitive regex pattern with added flexibility for fuzzy matching
-    const regexQuery = new RegExp(query.split("").join(".*"), "i");
+     variants = variants.filter((element) => {
+       return regexQuery.test(element.name);
+     });
 
-       const results = variants.filter((element) => {
-         return regexQuery.test(element.name);
-       });
+     if (variants.length === 0) {
+       return res.status(404).json({ message: "No matching entities found." });
+     }
+   }
 
-    // .find({
-    //   name: regexQuery,
-    // })
-    // .distinct("entityName");
-
-    if (results.length === 0) {
-      return res.status(404).json({ message: "No matching entities found." });
-    }
-
-    return res.status(200).json({ variants: results });
+    return res.status(200).json({ variants: variants });
   } catch (err) {
     return res.status(500).json({ message: "error", error: err.message });
   }
