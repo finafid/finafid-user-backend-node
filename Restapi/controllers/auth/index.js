@@ -8,6 +8,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { validationResult } = require("express-validator");
 const Otp = require("../../models/auth/sendOtp");
+const OtpPhone = require("../../models/auth/sendOtpPhone");
 const BlackList = require("../../models/auth/blackList");
 const Cart = require("../../models/productBag/cartSc");
 const WishList = require("../../models/productBag/wishListSc");
@@ -685,6 +686,51 @@ const changePhoneNumber=async(req,res)=>{
     res.status(401).json({ message: error.message });
   }
 }
+const sendOtpToPhone=async(req,res)=>{
+  try {
+    const g_otp = await genOtp();
+    console.log(g_otp);
+    const cDate = new Date();
+    const templateId = "1007057794784985885";
+    const message = `Welcome to FINAFID. Your OTP for signup is ${g_otp} Expires in 10 mins. Do not share this OTP with anyone.`;
+    const responseDetails = await sendSMS(message, req.body.phoneNumber, templateId);
+    await OtpPhone.findOneAndUpdate(
+      { phone: req.body.phoneNumber },
+      { otp: g_otp, timestamp: new Date(cDate.getTime()) },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+      return res.status(200).send({ responseDetails: responseDetails });
+  } catch (error) {
+    res.status(401).json({ message: error.message });
+  }
+}
+const loginUsingPhoneNumber=async(req,res)=>{
+  try{
+
+    const otpDetails = await OtpPhone.find({
+      otp: req.body.otp,
+    });
+    const userData = await User.findOne({
+      phone: req.body.phoneNumber,
+    });
+    
+    if(!otpDetails){
+      return res.status(401).send("No Otp data is present");
+    }
+     if (!userData) {
+       return res.status(401).send("No user Found");
+     }
+       const tokenObject = {
+         _id: userData._id,
+         fullname: userData.fullName,
+         email: userData.email,
+       };
+       const jwtToken = generateTokens(tokenObject, userData);
+       return res.status(200).json(jwtToken);
+  }catch (error) {
+    res.status(401).json({ message: error.message });
+  }
+}
 module.exports = {
   userRegistration,
   userLogin,
@@ -704,4 +750,6 @@ module.exports = {
   verify_Refresh_Token,
   validAccessToken,
   changePhoneNumber,
+  loginUsingPhoneNumber,
+  sendOtpToPhone,
 };

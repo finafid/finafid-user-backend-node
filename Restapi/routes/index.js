@@ -18,6 +18,8 @@ const {
   verify_Refresh_Token,
   validAccessToken,
   changePhoneNumber,
+  loginUsingPhoneNumber,
+  sendOtpToPhone,
 } = require("../controllers/auth");
 const {
   userRegistrationValidation,
@@ -795,4 +797,7 @@ routs.get(
   getBlogsFashionCategoryUser
 );
 routs.get("/getAllFashionBlog", getAllFashionBlog);
-module.exports = routs;
+routs.post("/loginUsingPhoneNumber", loginUsingPhoneNumber);
+routs.post("/sendOtpToPhone", sendOtpToPhone);
+ 
+ (module.exports = routs);
