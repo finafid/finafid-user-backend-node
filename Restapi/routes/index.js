@@ -266,6 +266,7 @@ const {
   getCustomerDetailsById,
   makeUtsabMember,
   customerOrderDetails,
+  contactUs,
 } = require("../controllers/Admin_user/adminUserCOntroller.js");
 const {
   getAllNewArrivals,
@@ -802,5 +803,5 @@ routs.get(
 routs.get("/getAllFashionBlog", getAllFashionBlog);
 routs.post("/loginUsingPhoneNumber", loginUsingPhoneNumber);
 routs.post("/sendOtpToPhone", sendOtpToPhone);
- 
- (module.exports = routs);
+ routs.post("/contactUs", contactUs);
+ ((module.exports = routs));
