@@ -130,8 +130,6 @@ const uploadVariants = async (
   const variantPromises = variants.map(async (variantData, i) => {
     let variantImageLinks = [];
     console.log(variantData);
-    // Collect variant images
-    let count = 0;
     while (uploadedFiles[`variants[${i}][images][${count}]`]) {
       const imageLinks = await uploadFiles(
         uploadedFiles[`variants[${i}][images][${count}]`]
