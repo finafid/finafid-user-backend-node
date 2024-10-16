@@ -713,7 +713,6 @@ routs.get("/getAllReviews", getAllReviews);
 //utsavProduct
 
 routs.get("/getAllUtsavProduct", getAllUtsavProduct);
-
 routs.get("/getAllTopSellingBrand", getAllTopSellingBrand);
 routs.get("/getAllTopSellingProduct", getAllTopSellingProduct);
 routs.get("/getAllFeaturedProductType", getAllFeaturedProductType);

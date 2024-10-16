@@ -423,7 +423,7 @@ const getAllMemberList = async (req, res) => {
       return res.status(404).json({ message: "No members found" });
     }
 
-    const membersWithDetails = await Promise.all(
+    let membersWithDetails = await Promise.all(
       memberList.map(async (member) => {
         const userId = member._id;
         try {
@@ -445,7 +445,19 @@ const getAllMemberList = async (req, res) => {
         }
       })
     );
+    const { query } = req.query;
 
+    if (query) {
+      const regexQuery = new RegExp(query.split("").join(".*"), "i");
+
+      membersWithDetails = membersWithDetails.filter((element) => {
+        return regexQuery.test(element.fullName);
+      });
+
+      if (membersWithDetails.length === 0) {
+        return res.status(404).json({ message: "No matching entities found." });
+      }
+    }
     return res.status(200).json({ memberList: membersWithDetails });
   } catch (error) {
     console.error("Error in getAllMemberList:", error);
