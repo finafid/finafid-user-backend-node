@@ -109,6 +109,7 @@ const userLogin = async (req, res) => {
       fullname: user.fullName,
       email: user.email,
     };
+    console.log(tokenObject);
     const jwtToken = generateTokens(tokenObject, user);
     const { fcmToken } = req.body;
     if (fcmToken) {
@@ -712,6 +713,8 @@ const loginUsingPhoneNumber=async(req,res)=>{
     });
     const userData = await User.findOne({
       phone: req.body.phoneNumber,
+      is_Active:true,
+      blocking:false
     });
     
     if(!otpDetails){
@@ -725,6 +728,7 @@ const loginUsingPhoneNumber=async(req,res)=>{
          fullname: userData.fullName,
          email: userData.email,
        };
+       console.log(tokenObject);
         const { fcmToken } = req.body;
         if (fcmToken) {
           userData.fcmToken = fcmToken;
