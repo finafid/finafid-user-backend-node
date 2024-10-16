@@ -146,10 +146,10 @@ const contactUs=async(req,res)=>{
    const {name,email,phone,issue}= req.body;
     const msg = `<div style="font-family: Arial, sans-serif; color: #333; background-color: #f9f9f9; padding: 20px;">
             <p style="margin-bottom: 10px;">Dear Admin,</p>
-            <p style="margin-bottom: 10px;"> name,${name}.</p>
-            <p style="margin-bottom: 10px;">email,${email}.</p>
-            <p style="margin-bottom: 10px;">phone ${phone}.</p>
-             <p style="margin-bottom: 10px;">issue ${issue}.</p>
+            <p style="margin-bottom: 10px;"> Name:,${name}.</p>
+            <p style="margin-bottom: 10px;">Email:,${email}.</p>
+            <p style="margin-bottom: 10px;">Phone: ${phone}.</p>
+             <p style="margin-bottom: 10px;">Issue: ${issue}.</p>
             <p style="margin-bottom: 10px;">Best regards,</p>
             <p style="margin-bottom: 0;">The Finafid Team</p>
         </div>`;
