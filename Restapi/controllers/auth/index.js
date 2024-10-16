@@ -76,12 +76,17 @@ const userRegistration = async (req, res) => {
 function generateTokens(tokenObject, user) {
   const accessToken = jwt.sign(tokenObject, process.env.SECRET, {
     expiresIn: "7d",
+    algorithm: "HS256",
   });
+
   const refreshToken = jwt.sign(tokenObject, process.env.SECRET, {
     expiresIn: "365d",
+    algorithm: "HS256", 
   });
+
   return { accessToken, refreshToken };
 }
+
 const userLogin = async (req, res) => {
   try {
     const user = await User.findOne({

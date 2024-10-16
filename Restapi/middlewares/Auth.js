@@ -23,7 +23,10 @@ const verifyToken = async (req, res, next) => {
     const blackListPromise = BlackList.findOne({ token });
 
     // Verify the JWT token
-    const decodedData = jwtToken.verify(token, process.env.SECRET);
+   const decodedData = jwt.verify(token, process.env.SECRET, {
+     algorithms: ["HS256"],
+   });
+
     req.user = decodedData;
     console.log(req.user);
     // Fetch user and admin details concurrently
