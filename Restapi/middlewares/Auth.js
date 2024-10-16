@@ -18,9 +18,9 @@ const verifyToken = async (req, res, next) => {
     if (token.startsWith("Bearer ")) {
       token = token.slice(7, token.length).trimLeft();
     }
-
-    // Check if the token is blacklisted
-    const blackListPromise = BlackList.findOne({ token });
+    console.log({ token: token });
+    // // Check if the token is blacklisted
+    // const blackListPromise = BlackList.findOne({ token });
 
     // Verify the JWT token
     const decodedData = jwtToken.verify(token, process.env.SECRET);
