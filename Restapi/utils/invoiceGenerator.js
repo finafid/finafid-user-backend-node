@@ -34,12 +34,12 @@ async function generateAndUploadInvoice(invoiceData) {
    doc.moveDown();
    doc
      .fontSize(12)
-     .text(`Your Invoice ID: ${invoiceData.invoiceNumber}`, { align: "left" })
-     .text(`Seller Details: Finafid Technologies Pvt Ltd`, { align: "left" })
+     .text(`Invoice ID: ${invoiceData.invoiceNumber}`, { align: "left" })
+     .text(`Seller: Finafid Technologies Pvt Ltd`, { align: "left" })
      .text(`GST Number: 19AAECF2320D1Z5`, { align: "left" })
-     .text(`SIN Number: U72900WB2020PTC239330`, { align: "left" });
+     .text(`CIN : U72900WB2020PTC239330`, { align: "left" });
 
-   doc.text(`Payment Details: ${invoiceData.payment_method}`, 300, doc.y - 60, {
+   doc.text(`Payment Mode: ${invoiceData.payment_method}`, 300, doc.y - 60, {
      align: "right",
    });
    doc.text(`Date: ${invoiceData.date}`, 300, doc.y, { align: "right" });
