@@ -2,6 +2,7 @@ const jwtToken = require("jsonwebtoken");
 const BlackList = require("../models/auth/blackList");
 const User = require("../models/auth/userSchema");
 const Admin=require("../models/Auth admin/adminSchema")
+const jwt = require("jsonwebtoken");
 const verifyToken = async (req, res, next) => {
   try {
     // Retrieve token from headers, query, or body
