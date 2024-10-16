@@ -19,16 +19,14 @@ const verifyToken = async (req, res, next) => {
       token = token.slice(7, token.length).trimLeft();
     }
     console.log({ token: token });
-    // // Check if the token is blacklisted
-    // const blackListPromise = BlackList.findOne({ token });
+    // Check if the token is blacklisted
+    const blackListPromise = BlackList.findOne({ token });
 
     // Verify the JWT token
     const decodedData = jwtToken.verify(token, process.env.SECRET);
     req.user = decodedData;
     console.log(req.user);
     // Fetch user and admin details concurrently
-    const user= await User.findOne({ _id: req.user._id, is_Active: true, blocking: false });
-    console.log({user: user})
     const [blackList, userDetails, adminDetails] = await Promise.all([
       blackListPromise,
       User.findOne({ _id: req.user._id, is_Active: true, blocking: false }),
