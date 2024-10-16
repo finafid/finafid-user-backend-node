@@ -36,7 +36,7 @@ const getAllUser = async (req, res) => {
       const regexQuery = new RegExp(query.split("").join(".*"), "i");
 
       userWithDetails = userWithDetails.filter((element) => {
-        return regexQuery.test(element.name);
+        return regexQuery.test(element.fullName);
       });
 
       if (userWithDetails.length === 0) {
