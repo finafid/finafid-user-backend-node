@@ -782,18 +782,8 @@ routs.get("/deleteFashionCategory/:fashionCategoryId", deleteFashionCategory);
 routs.get("/getFashionCategoryById/:fashionCategoryId", getFashionCategoryById);
 routs.get("/getAllFashionCategory", getAllFashionCategory);
 //fashion Blog
-routs.post("/createBlog", upload.fields([
-  { name: 'logoUrl', maxCount: 1 },
-  { name: 'userLogo', maxCount: 1 }
-]), createBlog);
-routs.post(
-  "/editFashionBlog/:fashionBlogId",
-  upload.fields([
-    { name: "logoUrl", maxCount: 1 },
-    { name: "userLogo", maxCount: 1 },
-  ]),
-  editFashionBlog
-);
+routs.post("/createBlog", upload.any(), createBlog);
+routs.post("/editFashionBlog/:fashionBlogId", upload.any(), editFashionBlog);
 routs.get("/deleteFashionBlog/:fashionBlogId", deleteFashionBlog);
 routs.get("/getFashionBlogById/:fashionBlogId", getFashionBlogById);
 routs.get(

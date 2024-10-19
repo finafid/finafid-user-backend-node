@@ -53,26 +53,45 @@ const createBlog = async (req, res) => {
   try {
     const { caption, productList, userName, fashionCategory } = req.body;
 
-    let logoUrl = "";
-    let userLogo = "";
+    let logoUrls = [];
+    let userLogos = [];
 
-    // Access the files correctly
-    if (req.files["logoUrl"] && req.files["logoUrl"][0]) {
-      console.log("Uploading logoUrl...");
-      logoUrl = await getMediaLink(req.files["logoUrl"][0]); 
+    const uploadedFiles = {};
+    console.log(req.files);
+    // Process all files and categorize by fieldname
+    for (const file of req.files) {
+      const fieldName = file.fieldname;
+      if (!uploadedFiles[fieldName]) {
+        uploadedFiles[fieldName] = [];
+      }
+      uploadedFiles[fieldName].push(file);
     }
 
-    if (req.files["userLogo"] && req.files["userLogo"][0]) {
-      console.log("Uploading userLogo...");
-      userLogo = await getMediaLink(req.files["userLogo"][0]); 
+    // Check for 'logoUrl[]' instead of 'logoUrl'
+    if (uploadedFiles["logoUrl[]"]) {
+      console.log("Uploading logoUrls...");
+      for (const file of uploadedFiles["logoUrl[]"]) {
+        const logoUrl = await getMediaLink(file, res);
+        logoUrls.push(logoUrl);
+      }
     }
+
+    // 'userLogo' field seems fine
+    if (uploadedFiles["userLogo"]) {
+      console.log("Uploading userLogos...");
+      for (const file of uploadedFiles["userLogo"]) {
+        const userLogoUrl = await getMediaLink(file, res);
+        userLogos.push(userLogoUrl);
+      }
+    }
+
     const newFashionBlog = new FashionBlog({
       caption,
       productList,
-      logoUrl,
+      logoUrls, // Store all logo URLs
       userName,
       fashionCategory,
-      userLogo,
+      userLogo: userLogos, // Store all user logo URLs
     });
 
     if (!newFashionBlog) {
@@ -93,35 +112,53 @@ const editFashionBlog = async (req, res) => {
     const fashionCategoryDetails = await FashionBlog.findById(
       req.params.fashionBlogId
     );
-    let logoUrl = "";
+    let logoUrls = "";
     let userLogo = "";
 
-    if (req.files["logoUrl"] && req.files["logoUrl"][0]) {
-      console.log("Uploading logoUrl...");
-      logoUrl = await getMediaLink(req.files["logoUrl"][0]); // Accessing first file in the array
+    const uploadedFiles = {};
+    console.log(req.files);
+    // Process all files and categorize by fieldname
+    for (const file of req.files) {
+      const fieldName = file.fieldname;
+      if (!uploadedFiles[fieldName]) {
+        uploadedFiles[fieldName] = [];
+      }
+      uploadedFiles[fieldName].push(file);
     }
 
-    if (req.files["userLogo"] && req.files["userLogo"][0]) {
-      console.log("Uploading userLogo...");
-      const userLogo = await getMediaLink(req.files["userLogo"][0]); // Accessing first file in the array
-  
+    // Check for 'logoUrl[]' instead of 'logoUrl'
+    if (uploadedFiles["logoUrl[]"]) {
+      console.log("Uploading logoUrls...");
+      for (const file of uploadedFiles["logoUrl[]"]) {
+        const logoUrl = await getMediaLink(file, res);
+        logoUrls.push(logoUrl);
+      }
     }
-    if (logoUrl.length!==0){
-      fashionCategoryDetails.logoUrl = logoUrl;
+
+    // 'userLogo' field seems fine
+    if (uploadedFiles["userLogo"]) {
+      console.log("Uploading userLogos...");
+      for (const file of uploadedFiles["userLogo"]) {
+        const userLogoUrl = await getMediaLink(file, res);
+        userLogo.push(userLogoUrl);
+      }
+    }
+    if (logoUrls.length !== 0) {
+      fashionCategoryDetails.logoUrls = logoUrls;
       await fashionCategoryDetails.save();
     }
-    if (userLogo.length !== 0){
-       fashionCategoryDetails.userLogo = userLogo;
-       await fashionCategoryDetails.save();
+    if (userLogo.length !== 0) {
+      fashionCategoryDetails.userLogo = userLogo;
+      await fashionCategoryDetails.save();
     }
-      if (req.body) {
-        const { caption, productList, userName, fashionCategory } = req.body;
-        fashionCategoryDetails.caption = caption;
-        fashionCategoryDetails.productList = productList;
-        fashionCategoryDetails.userName = userName;
-        fashionCategoryDetails.fashionCategory = fashionCategory;
-        await fashionCategoryDetails.save();
-      }
+    if (req.body) {
+      const { caption, productList, userName, fashionCategory } = req.body;
+      fashionCategoryDetails.caption = caption;
+      fashionCategoryDetails.productList = productList;
+      fashionCategoryDetails.userName = userName;
+      fashionCategoryDetails.fashionCategory = fashionCategory;
+      await fashionCategoryDetails.save();
+    }
     return res.status(200).json({ message: " Successfully edited" });
   } catch (error) {
     return res
@@ -153,7 +190,7 @@ const getFashionBlogById = async (req, res) => {
   try {
     const fashionCategoryDetails = await FashionBlog.findById(
       req.params.fashionBlogId
-    )
+    );
     if (!fashionCategoryDetails) {
       return res.status(404).json({ message: "Fashion category not found" });
     }
@@ -168,29 +205,27 @@ const getFashionBlogById = async (req, res) => {
 };
 const getBlogsFashionCategoryUser = async (req, res) => {
   try {
-
   } catch (error) {
     return res
       .status(500)
       .json({ message: error.message + " Internal Server Error" });
   }
-};const getAllFashionBlog=async(req,res)=>{
+};
+const getAllFashionBlog = async (req, res) => {
   try {
-      const fashionBlogDetails = await FashionBlog.find()
-        .populate("productList")
-        .populate("fashionCategory");
-      if (!fashionBlogDetails) {
-        return res.status(404).json({ message: "Fashion category not found" });
-      }
-      return res
-        .status(200)
-        .json({ fashionCategoryDetails: fashionBlogDetails });
+    const fashionBlogDetails = await FashionBlog.find()
+      .populate("productList")
+      .populate("fashionCategory");
+    if (!fashionBlogDetails) {
+      return res.status(404).json({ message: "Fashion category not found" });
+    }
+    return res.status(200).json({ fashionCategoryDetails: fashionBlogDetails });
   } catch (error) {
     return res
       .status(500)
       .json({ message: error.message + " Internal Server Error" });
   }
-}
+};
 module.exports = {
   createBlog,
   editFashionBlog,
@@ -198,5 +233,4 @@ module.exports = {
   getFashionBlogById,
   getBlogsFashionCategoryUser,
   getAllFashionBlog,
-
 };

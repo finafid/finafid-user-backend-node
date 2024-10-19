@@ -13,10 +13,10 @@ const fashionBlogSchema = new schema(
         required: false,
       },
     ],
-    logoUrl: {
+    logoUrls: [{
       type: String,
       required: true,
-    },
+    }],
     fashionCategory: {
       type: schema.Types.ObjectId,
       ref: "FashionCategory",
@@ -25,9 +25,9 @@ const fashionBlogSchema = new schema(
     userName: {
       type: String,
     },
-    userLogo: {
+    userLogo: [{
       type: String,
-    },
+    }],
   },
   { timestamps: true }
 );

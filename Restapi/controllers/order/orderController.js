@@ -255,6 +255,14 @@ const updateStatus = async (req, res) => {
     if (req.body.status == "Shipping") {
       await invoiceGenerate(orderDetail);
     }
+    if (req.body.status == "Confirmed") {
+      await orderStatusConfirmed(orderDetail);
+    }
+    if (req.body.status == "Canceled") {
+      if (orderDetail.walletBalanceUsed >= 0) {
+        await orderStatusCanceled(orderDetail);
+      }
+    }
     if (req.body.status == "Completed") {
       try {
         console.log(orderDetail.userId._id);
@@ -372,7 +380,51 @@ const updateStatus = async (req, res) => {
         });
       }
     }
+    async function orderStatusCanceled(OrderDetails) {
+      try {
+        const walletDetails = await Wallet.findOne({
+          userId: OrderDetails.userId,
+        });
+        console.log(walletDetails);
+        walletDetails.balance =
+          walletDetails.balance + OrderDetails.walletBalanceUsed;
+        await walletDetails.save();
+        const statusDetails = await orderStatus.findOne({
+          orderId: OrderDetails._id,
+        });
+        if (statusDetails.orderStatusDetails) {
+        }
+        const newWalletTransaction = new walletTransaction({
+          userId: OrderDetails.userId,
+          type: "credit",
+          transaction_message: "Refund From purchase",
+          amount: OrderDetails.walletBalanceUsed,
+          date: Date.now(),
+        });
+        await newWalletTransaction.save();
+        walletDetails.transactions.push(newWalletTransaction);
+        await walletDetails.save();
+        await Promise.all(
+          OrderDetails.orderItem.map(async (item) => {
+            const productId = item.productId;
+            const quantityToReduce = item.itemQuantity;
 
+            await Variant.findByIdAndUpdate(
+              productId,
+              { $inc: { quantity: +quantityToReduce } },
+              { new: true }
+            );
+          })
+        );
+      } catch (err) {
+        console.error("Error processing rewards:", err.message);
+        return res.status(500).json({
+          message: "Internal server error",
+          success: false,
+          error: err.message,
+        });
+      }
+    }
     const statusDetails = await orderStatus.findOne({
       orderId: req.params.orderId,
     });
@@ -404,6 +456,29 @@ const updateStatus = async (req, res) => {
     });
   }
 };
+async function orderStatusConfirmed(orderDetails){
+  try {
+    await Promise.all(
+      orderDetails.orderItem.map(async (item) => {
+        const productId = item.productId;
+        const quantityToReduce = item.itemQuantity;
+
+        await Variant.findByIdAndUpdate(
+          productId,
+          { $inc: { quantity: -quantityToReduce } },
+          { new: true } 
+        );
+      })
+    );
+
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message + "internal server error",
+    });
+  }
+}
 const getOrderByStatus = async (req, res) => {
   try {
     const orderDetails = await order.find({
@@ -453,7 +528,7 @@ const getAllOrder = async (req, res) => {
           dateFilter,
           {
             $or: [
-              { payment_complete: { $in: [true,false] } },
+              { payment_complete: { $in: [true, false] } },
               { payment_method: { $in: ["COD", "Wallet"] } },
             ],
           },

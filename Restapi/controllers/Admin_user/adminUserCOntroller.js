@@ -1,20 +1,18 @@
 const user = require("../../models/auth/userSchema");
 const order = require("../../models/Order/orderSc");
-const {
-  sendMail
-} = require("../../utils/mailer");
-const orderCountById=async(userId)=>{
+const { sendMail } = require("../../utils/mailer");
+const orderCountById = async (userId) => {
   try {
     const orderDetails = await order.find({ userId: userId });
     return orderDetails.length;
   } catch (error) {
-    return ({ message: error.message + " Internal Server Error" });
+    return { message: error.message + " Internal Server Error" };
   }
-}
+};
 const getAllUser = async (req, res) => {
   try {
     const allUser = await user.find({ is_Active: true });
-    
+
     let userWithDetails = await Promise.all(
       allUser.map(async (element) => {
         const userId = element._id;
@@ -28,7 +26,7 @@ const getAllUser = async (req, res) => {
           console.error(`Error fetching details for userId ${userId}:`, error);
           return {
             ...element._doc,
-            orderCount:0
+            orderCount: 0,
           };
         }
       })
@@ -141,9 +139,9 @@ const customerOrderDetails = async (req, res) => {
       .json({ message: error.message + " Internal Server Error" });
   }
 };
-const contactUs=async(req,res)=>{
+const contactUs = async (req, res) => {
   try {
-   const {name,email,phone,issue}= req.body;
+    const { name, email, phone, issue } = req.body;
     const msg = `<div style="font-family: Arial, sans-serif; color: #333; background-color: #f9f9f9; padding: 20px;">
             <p style="margin-bottom: 10px;">Dear Admin,</p>
             <p style="margin-bottom: 10px;"> Name:,${name}.</p>
@@ -154,15 +152,18 @@ const contactUs=async(req,res)=>{
             <p style="margin-bottom: 0;">The Finafid Team</p>
         </div>`;
 
-   const response= await sendMail("info@finafid.com", "Issue of Customer Email", msg);
+    const response = await sendMail(
+      "info@finafid.com",
+      "Issue of Customer Email",
+      msg
+    );
     return res.status(200).json({ message: "Email sent" });
-
   } catch (error) {
     return res
       .status(500)
       .json({ message: error.message + " Internal Server Error" });
   }
-}
+};
 module.exports = {
   getAllUser,
   blockingCustomer,
