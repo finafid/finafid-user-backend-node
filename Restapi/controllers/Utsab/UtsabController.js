@@ -505,6 +505,7 @@ const getMemberById = async (req, res) => {
       .populate("userId");
     const referralDetails = await Referral.findOne({
       userId: req.params.userId,
+      is_Active:true
     })
       .populate("referred_by")
       .populate({
