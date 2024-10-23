@@ -81,17 +81,17 @@ const getAllVarients = async (req, res) => {
     });
     const { query } = req.query;
 
-   if (query) {
-     const regexQuery = new RegExp(query.split("").join(".*"), "i");
+    if (query) {
+      const regexQuery = new RegExp(query.split("").join(".*"), "i");
 
-     variants = variants.filter((element) => {
-       return regexQuery.test(element.name);
-     });
+      variants = variants.filter((element) => {
+        return regexQuery.test(element.name);
+      });
 
-     if (variants.length === 0) {
-       return res.status(404).json({ message: "No matching entities found." });
-     }
-   }
+      if (variants.length === 0) {
+        return res.status(404).json({ message: "No matching entities found." });
+      }
+    }
 
     return res.status(200).json({ variants: variants });
   } catch (err) {
@@ -1199,7 +1199,7 @@ const getSubCategoryId = async (req, res) => {
 };
 const getAllSubCategory = async (req, res) => {
   try {
-    const subCategoryList = await subCategory.find({});
+    const subCategoryList = await subCategory.find({is_active:true,});
     if (!subCategoryList) {
       return res.status(500).json({ message: "No subCategory" });
     }
@@ -1210,7 +1210,7 @@ const getAllSubCategory = async (req, res) => {
 };
 const getAllProductType = async (req, res) => {
   try {
-    const productTypeList = await productType.find({});
+    const productTypeList = await productType.find({is_active:true,});
     if (!productTypeList) {
       return res.status(500).json({ message: "No subCategory" });
     }
@@ -1294,6 +1294,7 @@ const getAllFeaturedBrand = async (req, res) => {
   try {
     const brandDetails = await Brand.find({
       is_featured: true,
+      is_active:true,
     });
     if (!brandDetails) {
       return res
@@ -1309,6 +1310,7 @@ const getAllFeaturedCategory = async (req, res) => {
   try {
     const categoryDetails = await mainCategory.find({
       is_featured: true,
+      is_active:true,
     });
     if (!categoryDetails) {
       return res
@@ -1324,6 +1326,7 @@ const getAllFeaturedSubCategory = async (req, res) => {
   try {
     const subCategoryDetails = await subCategory.find({
       is_featured: true,
+      is_active:true,
     });
     if (!subCategoryDetails) {
       return res
@@ -1436,6 +1439,70 @@ const deleteNonProductVariants = async (req, res) => {
       .json({ message: "Internal Server Error", error: error.message });
   }
 };
+const activeBrandById = async (req, res) => {
+  try {
+    const elementDetails = await Brand.findById(req.params.brandId);
+    if (!elementDetails) {
+      res.status(400).json({ message: "No element Found" });
+    }
+    elementDetails.is_active = req.body.activeStatus;
+    await elementDetails.save();
+    return res.status(200).json({ message: "Updated Successfully" });
+  } catch (error) {
+    console.error("Error saving product:", error);
+    res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
+  }
+};
+const activeCategoryById = async (req, res) => {
+  try {
+    const elementDetails = await mainCategory.findById(req.params.categoryId);
+    if (!elementDetails) {
+      res.status(400).json({ message: "No element Found" });
+    }
+    elementDetails.is_active = req.body.activeStatus;
+    await elementDetails.save();
+    return res.status(200).json({ message: "Updated Successfully" });
+  } catch (error) {
+    console.error("Error saving product:", error);
+    res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
+  }
+};
+const activeSubCategoryById = async (req, res) => {
+  try {
+    const elementDetails = await subCategory.findById(req.params.subCategoryId);
+    if (!elementDetails) {
+      res.status(400).json({ message: "No element Found" });
+    }
+    elementDetails.is_active = req.body.activeStatus;
+    await elementDetails.save();
+    res.status(200).json({ message: "Updated Successfully" });
+  } catch (error) {
+    console.error("Error saving product:", error);
+    return res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
+  }
+};
+const activeProductTypeById = async (req, res) => {
+  try {
+    const elementDetails = await productType.findById(req.params.productTypeId);
+    if (!elementDetails) {
+      res.status(400).json({ message: "No element Found" });
+    }
+    elementDetails.is_active = req.body.activeStatus;
+    await elementDetails.save();
+    return res.status(200).json({ message: "Updated Successfully" });
+  } catch (error) {
+    console.error("Error saving product:", error);
+    res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
+  }
+};
 module.exports = {
   getAllProduct,
   categoryDetails,
@@ -1487,4 +1554,8 @@ module.exports = {
   getFeaturedProductBasedOnCategory,
   deleteNonProductVariants,
   suggestionProductList,
+  activeBrandById,
+  activeCategoryById,
+  activeSubCategoryById,
+  activeProductTypeById,
 };

@@ -35,6 +35,11 @@ const productTypeSchema = new Schema(
         required: false,
       },
     ],
+    is_active: {
+      type: Boolean,
+      required: false,
+      default: true,
+    },
   },
   { timestamps: true }
 );

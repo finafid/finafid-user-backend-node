@@ -80,6 +80,10 @@ const {
   getFeaturedProductBasedOnCategory,
   deleteNonProductVariants,
   suggestionProductList,
+  activeBrandById,
+  activeCategoryById,
+  activeSubCategoryById,
+  activeProductTypeById,
 } = require("../controllers/product/productCon");
 const {
   addToWishlist,
@@ -793,5 +797,9 @@ routs.get(
 routs.get("/getAllFashionBlog", getAllFashionBlog);
 routs.post("/loginUsingPhoneNumber", loginUsingPhoneNumber);
 routs.post("/sendOtpToPhone", sendOtpToPhone);
- routs.post("/contactUs", contactUs);
- ((module.exports = routs));
+routs.post("/activeBrandById/:brandId", activeBrandById);
+routs.post("/activeCategoryById/:categoryId", activeCategoryById);
+routs.post("/activeSubCategoryById/:subCategoryId", activeSubCategoryById);
+routs.post("/activeProductTypeById/:productTypeId", activeProductTypeById);
+routs.post("/contactUs", contactUs);
+module.exports = routs;

@@ -19,6 +19,11 @@ const mainCategorySchema = new Schema(
       required: false,
       default: false,
     },
+    is_active: {
+      type: Boolean,
+      required: false,
+      default: true,
+    },
   },
   { timestamps: true }
 );

@@ -6,7 +6,7 @@ const addBalance = async (req, res) => {
     const userId = req.user._id;
     const { amount, description } = req.body;
     const type = amount > 0 ? "credit" : "debit";
-
+    console.log(req.body)
     const newTransaction = new Transaction({
       userId,
       type,
@@ -58,13 +58,14 @@ const showTransactions = async (req, res) => {
 };
 const getBalance = async (req, res) => {
   try {
-    let walletDetails = await Wallet.findOne({ userId: req.user._id }).populate(
-      {
-        path: "transactions",
-        model: "walletTransaction",
-        options: { limit: 0 }, // Ensure no limit is applied
-      }
-    );
+    let walletDetails = await Wallet.findOne({ userId: req.user._id }).populate({
+      path: "transactions",
+      model: "walletTransaction",
+      options: {
+        sort: { createdAt: -1 }, // Sort by createdAt in descending order
+        limit: 0, // Ensure no limit is applied
+      },
+    });    
     console.log(walletDetails);
     if (!walletDetails) {
       walletDetails = new Wallet({

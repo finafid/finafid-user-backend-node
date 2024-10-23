@@ -43,6 +43,11 @@ const brandSchema = new Schema({
       ref: "ProductType",
     },
   ],
+  is_active: {
+    type: Boolean,
+    required: false,
+    default: true,
+  },
 });
 
 const Brand = mongoose.model("Brand", brandSchema);
