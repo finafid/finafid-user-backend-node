@@ -1046,6 +1046,7 @@ const getSubcategoryBasedOnCategory = async (req, res) => {
     const categoryId = req.params.categoryId;
     const subCategoryList = await subCategory.find({
       mainCategoryId: categoryId,
+      is_active:true
     });
     if (!subCategoryList) {
       return res.status(500).json({ message: "No list found" });
