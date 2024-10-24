@@ -1199,7 +1199,7 @@ const getSubCategoryId = async (req, res) => {
 };
 const getAllSubCategory = async (req, res) => {
   try {
-    const subCategoryList = await subCategory.find({is_active:true,});
+    const subCategoryList = await subCategory.find({});
     if (!subCategoryList) {
       return res.status(500).json({ message: "No subCategory" });
     }
