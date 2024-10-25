@@ -1,8 +1,8 @@
 const { sendSMS } = require("../../middlewares/message");
  const messageForUtsavMember=async(req,res)=>{
     try{
-    const templateId = "1007328752894505628";
-    const message ="Your FINAFID Order has been Delivered. Enjoy your products. Thank you for shopping with FINAFID";
+    const templateId = "1007298985861428740";
+    const message ="CONGRATS!! Your FINAFID Utsav membership is active. Now enjoy special discounts and benefits anytime you shop at FINAFID";
     const responseDetails = await sendSMS(message, req.body.phoneNumber, templateId);
     console.log(responseDetails.data)
     return res.status(200).json(responseDetails.data)

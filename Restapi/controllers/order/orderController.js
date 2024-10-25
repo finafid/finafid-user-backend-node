@@ -253,9 +253,43 @@ const updateStatus = async (req, res) => {
       );
     }
     if (req.body.status == "Shipping") {
+      const userData = await User.findOne({
+        _id: orderDetail.userId,
+        is_Active: true,
+        blocking: false,
+      });
+      if(!userData){
+        return res.status(400).json({message:"No user Found" })
+      }
+      const response = await fetch("https://finafid.co.in/api/v1/messageForOrderDelivary", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ phoneNumber: userData.phone }),
+      });
+      const data = await response.json();
+      console.log(data);
       await invoiceGenerate(orderDetail);
     }
     if (req.body.status == "Confirmed") {
+      const userData = await User.findOne({
+        _id: orderDetail.userId,
+        is_Active: true,
+        blocking: false,
+      });
+      if(!userData){
+        return res.status(400).json({message:"No user Found" })
+      }
+      const response = await fetch("https://finafid.co.in/api/v1/messageForOrderDelivary", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ phoneNumber: userData.phone }),
+      });
+      const data = await response.json();
+      console.log(data);
       await orderStatusConfirmed(orderDetail);
     }
     if (req.body.status == "Delivered") {
@@ -315,6 +349,17 @@ const updateStatus = async (req, res) => {
         ) {
           userData.is_utsav = true;
           await userData.save();
+          
+          const response = await fetch("https://finafid.co.in/api/v1/messageForUtsavMember", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ phoneNumber: userData.phone }),
+          });
+          const data = await response.json();
+          console.log(data);
+          return data;
         }
 
         const referralDetails = await referral.findOne({
