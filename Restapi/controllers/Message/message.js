@@ -16,9 +16,9 @@ const { sendSMS } = require("../../middlewares/message");
 const messageForOrderDelivary=async(req,res)=>{
     try{
         const templateId = "1007328752894505628";
-    const message ="Your FINAFID Order has been Delivered. Enjoy your products. Thank you for shopping with FINAFID.";
+    const message ="Exciting update! Your FINAFID Order has been Delivered.Enjoy your products.Thank you for shopping with FINAFID.";
     const responseDetails = await sendSMS(message, req.body.phoneNumber, templateId);
-    console.log(responseDetails.data)
+    console.log({data:responseDetails.data})
     return res.status(200).json(responseDetails.data)
 
     }catch(error){
@@ -30,7 +30,7 @@ const messageForOrderDelivary=async(req,res)=>{
 }
 const messageForOrderOnTheWay=async(req,res)=>{
     try{
-        const templateId = "1007328752894505628";
+    const templateId = "1007328752894505628";
     const message ="Your FINAFID Order has been Delivered. Enjoy your products. Thank you for shopping with FINAFID";
     const responseDetails = await sendSMS(message, req.body.phoneNumber, templateId);
     return res.status(200).json({message:"Send successfully"})
