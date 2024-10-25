@@ -258,6 +258,18 @@ const updateStatus = async (req, res) => {
     if (req.body.status == "Confirmed") {
       await orderStatusConfirmed(orderDetail);
     }
+    if (req.body.status == "Delivered") {
+      const response = await fetch("https://finafid.co.in/api/v1/messageForOrderDelivary", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ phoneNumber: phoneNumber }),
+      });
+      const data = await response.json();
+      console.log(data);
+      return data;
+    }
     if (req.body.status == "Canceled") {
       if (orderDetail.walletBalanceUsed >= 0) {
         await orderStatusCanceled(orderDetail);

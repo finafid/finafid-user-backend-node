@@ -342,6 +342,12 @@ const {
   getBlogsFashionCategoryUser,
   getAllFashionBlog,
 } = require("../controllers/FashionController/FashionBlogController.js");
+const {
+  messageForUtsavMember,
+  messageForOrderDelivary,
+  messageForOrderOnTheWay,
+  messageForOrderConfirmed,
+}=require("../controllers/Message/message.js")
 //user Authentication
 routs.post("/register", userRegistrationValidation, userRegistration);
 routs.post("/login", userLoginValidation, userLogin);
@@ -801,5 +807,11 @@ routs.post("/activeBrandById/:brandId", activeBrandById);
 routs.post("/activeCategoryById/:categoryId", activeCategoryById);
 routs.post("/activeSubCategoryById/:subCategoryId", activeSubCategoryById);
 routs.post("/activeProductTypeById/:productTypeId", activeProductTypeById);
+
+//message
+routs.post("/messageForUtsavMember",messageForUtsavMember);
+routs.post("/messageForOrderDelivary",messageForOrderDelivary);
+routs.post("/messageForOrderOnTheWay",messageForOrderOnTheWay);
+routs.post("/messageForOrderConfirmed",messageForOrderConfirmed);
 routs.post("/contactUs", contactUs);
 module.exports = routs;
