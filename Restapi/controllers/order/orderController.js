@@ -259,12 +259,20 @@ const updateStatus = async (req, res) => {
       await orderStatusConfirmed(orderDetail);
     }
     if (req.body.status == "Delivered") {
+      const userData = await User.findOne({
+        _id: orderDetail.userId,
+        is_Active: true,
+        blocking: false,
+      });
+      if(!userData){
+        return res.status(400).json({message:"No user Found" })
+      }
       const response = await fetch("https://finafid.co.in/api/v1/messageForOrderDelivary", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ phoneNumber: phoneNumber }),
+        body: JSON.stringify({ phoneNumber: userData.phone }),
       });
       const data = await response.json();
       console.log(data);
