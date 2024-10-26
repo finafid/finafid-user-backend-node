@@ -262,12 +262,14 @@ const updateStatus = async (req, res) => {
       if(!userData){
         return res.status(400).json({message:"No user Found" })
       }
-      const response = await fetch("https://finafid.co.in/api/v1/messageForOrderDelivary", {
+      const response = await fetch("https://finafid.co.in/api/v1/messageForOrderOnTheWay", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ phoneNumber: userData.phone }),
+        body: JSON.stringify({ phoneNumber: userData.phone,
+           itemName:""
+         }),
       });
       const data = await response.json();
       console.log(data);
@@ -281,7 +283,7 @@ const updateStatus = async (req, res) => {
       if(!userData){
         return res.status(400).json({message:"No user Found" })
       }
-      const response = await fetch("https://finafid.co.in/api/v1/messageForOrderDelivary", {
+      const response = await fetch("https://finafid.co.in/api/v1/messageForOrderConfirmed", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
