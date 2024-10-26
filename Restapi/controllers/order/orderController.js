@@ -253,6 +253,7 @@ const updateStatus = async (req, res) => {
       );
     }
     if (req.body.status == "Shipping") {
+      await invoiceGenerate(orderDetail);
       const userData = await User.findOne({
         _id: orderDetail.userId,
         is_Active: true,
@@ -270,7 +271,6 @@ const updateStatus = async (req, res) => {
       });
       const data = await response.json();
       console.log(data);
-      await invoiceGenerate(orderDetail);
     }
     if (req.body.status == "Confirmed") {
       const userData = await User.findOne({
@@ -286,7 +286,11 @@ const updateStatus = async (req, res) => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ phoneNumber: userData.phone }),
+        body: JSON.stringify({ phoneNumber: userData.phone,
+          total:orderDetail.total,
+          itemName:""
+
+         }),
       });
       const data = await response.json();
       console.log(data);
@@ -306,7 +310,10 @@ const updateStatus = async (req, res) => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ phoneNumber: userData.phone }),
+        body: JSON.stringify({ 
+          phoneNumber: userData.phone,
+
+         }),
       });
       const data = await response.json();
       console.log(data);
