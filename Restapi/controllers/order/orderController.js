@@ -259,18 +259,19 @@ const updateStatus = async (req, res) => {
         is_Active: true,
         blocking: false,
       });
-      if(!userData){
-        return res.status(400).json({message:"No user Found" })
+      if (!userData) {
+        return res.status(400).json({ message: "No user Found" });
       }
-      const response = await fetch("https://finafid.co.in/api/v1/messageForOrderOnTheWay", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ phoneNumber: userData.phone,
-           itemName:""
-         }),
-      });
+      const response = await fetch(
+        "https://finafid.co.in/api/v1/messageForOrderOnTheWay",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ phoneNumber: userData.phone, itemName: "" }),
+        }
+      );
       const data = await response.json();
       console.log(data);
     }
@@ -280,20 +281,23 @@ const updateStatus = async (req, res) => {
         is_Active: true,
         blocking: false,
       });
-      if(!userData){
-        return res.status(400).json({message:"No user Found" })
+      if (!userData) {
+        return res.status(400).json({ message: "No user Found" });
       }
-      const response = await fetch("https://finafid.co.in/api/v1/messageForOrderConfirmed", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ phoneNumber: userData.phone,
-          total:orderDetail.total,
-          itemName:""
-
-         }),
-      });
+      const response = await fetch(
+        "https://finafid.co.in/api/v1/messageForOrderConfirmed",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            phoneNumber: userData.phone,
+            total: orderDetail.total,
+            itemName: "",
+          }),
+        }
+      );
       const data = await response.json();
       console.log(data);
       await orderStatusConfirmed(orderDetail);
@@ -304,19 +308,21 @@ const updateStatus = async (req, res) => {
         is_Active: true,
         blocking: false,
       });
-      if(!userData){
-        return res.status(400).json({message:"No user Found" })
+      if (!userData) {
+        return res.status(400).json({ message: "No user Found" });
       }
-      const response = await fetch("https://finafid.co.in/api/v1/messageForOrderDelivary", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ 
-          phoneNumber: userData.phone,
-
-         }),
-      });
+      const response = await fetch(
+        "https://finafid.co.in/api/v1/messageForOrderDelivary",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            phoneNumber: userData.phone,
+          }),
+        }
+      );
       const data = await response.json();
       console.log(data);
       return data;
@@ -358,14 +364,17 @@ const updateStatus = async (req, res) => {
         ) {
           userData.is_utsav = true;
           await userData.save();
-          
-          const response = await fetch("https://finafid.co.in/api/v1/messageForUtsavMember", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ phoneNumber: userData.phone }),
-          });
+
+          const response = await fetch(
+            "https://finafid.co.in/api/v1/messageForUtsavMember",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ phoneNumber: userData.phone }),
+            }
+          );
           const data = await response.json();
           console.log(data);
           return data;
@@ -530,7 +539,7 @@ const updateStatus = async (req, res) => {
     });
   }
 };
-async function orderStatusConfirmed(orderDetails){
+async function orderStatusConfirmed(orderDetails) {
   try {
     await Promise.all(
       orderDetails.orderItem.map(async (item) => {
@@ -540,12 +549,10 @@ async function orderStatusConfirmed(orderDetails){
         await Variant.findByIdAndUpdate(
           productId,
           { $inc: { quantity: -quantityToReduce } },
-          { new: true } 
+          { new: true }
         );
       })
     );
-
-
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -792,7 +799,7 @@ async function invoiceGenerate(orderDetails) {
     customerName: orderDetails.userId.fullName,
     customerEmail: orderDetails.userId.email,
     customerPhoneNumber: orderDetails.userId.phone,
-    customerAddress: `${orderDetails.address.street}, ${orderDetails.address.locality}, ${orderDetails.address.city}, ${orderDetails.address.state}, ${orderDetails.address.pinCode}`,
+    customerAddress: `${orderDetails.address.locality}, ${orderDetails.address.city}, ${orderDetails.address.state}, ${orderDetails.address.pinCode}`,
     payment_method: orderDetails.payment_method,
     items: orderDetails.orderItem.map((item) => ({
       name: item.productId.productGroup.name,

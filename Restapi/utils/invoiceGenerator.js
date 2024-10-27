@@ -4,7 +4,7 @@ const s3 = new AWS.S3();
 
 async function generateAndUploadInvoice(invoiceData) {
   return new Promise((resolve, reject) => {
-    const doc = new PDFDocument();
+    const doc = new PDFDocument({ margin: 50 });
     const buffers = [];
 
     doc.on("data", buffers.push.bind(buffers));
@@ -28,100 +28,93 @@ async function generateAndUploadInvoice(invoiceData) {
       }
     });
 
-    // Set the title font size and center alignment
-doc.fontSize(20).text("Tax Invoice", { align: "center" });
+    // Header Section with Logo
+    if (invoiceData.logo) {
+      doc.image(invoiceData.logo, 50, 30, { width: 100 });
+    }
+    doc.fontSize(20).text("INVOICE", 50, 40, { align: "left" });
 
-// Move down for spacing
-doc.moveDown();
+    // Move down to give space between title and details
+    doc.moveDown();
 
-// Draw the Payment Mode and Date section with smaller text, underline, and a border
-const rightColumnStartX = 300;
-const detailsStartY = doc.y;
+    // Draw the Payment Mode and Date on the upper line
+    const rightColumnStartX = 300;
+    const detailsStartY = doc.y;
 
-// Set a smaller font size for Payment Mode and Date
-doc.fontSize(10).text(`Payment Mode: ${invoiceData.payment_method}`, rightColumnStartX, detailsStartY)
-   .text(`Date: ${invoiceData.date}`, rightColumnStartX, detailsStartY + 15);
+    doc.text(`Payment Mode: ${invoiceData.payment_method}`, rightColumnStartX, detailsStartY)
+      .text(`Date: ${invoiceData.date}`, rightColumnStartX, detailsStartY + 15);
 
-// Draw an underline under the Payment Mode and Date section
-doc.moveTo(rightColumnStartX, detailsStartY + 30).lineTo(550, detailsStartY + 30).stroke();
+    // Seller and Customer details in the same line
+    const leftColumnStartX = 50;
+    const sectionStartY = detailsStartY + 35; // Shift down a bit for cleaner spacing
 
-// Draw a border around the Payment Mode and Date section
-const borderPadding = 5;
-doc.rect(rightColumnStartX - borderPadding, detailsStartY - borderPadding, 250, 40 + 2 * borderPadding).stroke();
+    doc.fontSize(12)
+      .text(`Invoice ID: ${invoiceData.invoiceNumber}`, leftColumnStartX, sectionStartY)
+      .text(`Seller: Finafid Technologies Pvt Ltd`, leftColumnStartX, sectionStartY + 15)
+      .text(`GST Number: 19AAECF2320D1Z5`, leftColumnStartX, sectionStartY + 30)
+      .text(`CIN : U72900WB2020PTC239330`, leftColumnStartX, sectionStartY + 45);
 
-// Seller and Customer details in the same line
-const leftColumnStartX = 50;
-const sectionStartY = detailsStartY + 45; // Shift down for cleaner spacing
+    doc.text(`Customer Name: ${invoiceData.customerName}`, rightColumnStartX, sectionStartY)
+      .text(`Email: ${invoiceData.customerEmail}`, rightColumnStartX, sectionStartY + 15)
+      .text(`Phone: ${invoiceData.customerPhoneNumber}`, rightColumnStartX, sectionStartY + 30)
+      .text(`Address: ${invoiceData.customerAddress}`, rightColumnStartX, sectionStartY + 45);
 
-doc.fontSize(12)
-   .text(`Invoice ID: ${invoiceData.invoiceNumber}`, leftColumnStartX, sectionStartY)
-   .text(`Seller: Finafid Technologies Pvt Ltd`, leftColumnStartX, sectionStartY + 15)
-   .text(`GST Number: 19AAECF2320D1Z5`, leftColumnStartX, sectionStartY + 30)
-   .text(`CIN : U72900WB2020PTC239330`, leftColumnStartX, sectionStartY + 45);
+    // Add a larger gap between this section and the next
+    doc.moveDown(4); 
 
-doc.text(`Customer Name: ${invoiceData.customerName}`, rightColumnStartX, sectionStartY)
-   .text(`Email: ${invoiceData.customerEmail}`, rightColumnStartX, sectionStartY + 15)
-   .text(`Phone: ${invoiceData.customerPhoneNumber}`, rightColumnStartX, sectionStartY + 30)
-   .text(`Address: ${invoiceData.customerAddress}`, rightColumnStartX, sectionStartY + 45);
+    // Separator line
+    doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
 
-// Add a larger gap between this section and the next
-doc.moveDown(4);
+    // Items table (unchanged)
+    const tableTop = doc.y + 10;
+    doc.fontSize(12)
+      .text("SL", 50, tableTop)
+      .text("Ordered Items", 100, tableTop)
+      .text("Unit Price", 300, tableTop)
+      .text("QTY", 400, tableTop)
+      .text("Total", 450, tableTop);
 
-// Separator line
-doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+    doc.moveDown();
 
-// Items table (unchanged)
-const tableTop = doc.y + 10;
-doc.fontSize(12)
-   .text("SL", 50, tableTop)
-   .text("Ordered Items", 100, tableTop)
-   .text("Unit Price", 300, tableTop)
-   .text("QTY", 400, tableTop)
-   .text("Total", 450, tableTop);
+    invoiceData.items.forEach((item, index) => {
+      const position = tableTop + (index + 1) * 20;
+      doc.text(index + 1, 50, position)
+        .text(item.name, 100, position)
+        .text(`${item.unitPrice.toFixed(2)}`, 300, position)
+        .text(item.quantity, 400, position)
+        .text(`${item.price.toFixed(2)}`, 450, position);
+    });
 
-doc.moveDown();
+    // Separator line after the items table
+    doc.moveDown().moveTo(50, doc.y).lineTo(550, doc.y).stroke();
 
-invoiceData.items.forEach((item, index) => {
-  const position = tableTop + (index + 1) * 20;
-  doc.text(index + 1, 50, position)
-     .text(item.name, 100, position)
-     .text(`${item.unitPrice.toFixed(2)}`, 300, position)
-     .text(item.quantity, 400, position)
-     .text(`${item.price.toFixed(2)}`, 450, position);
-});
+    // Footer section with subtotals and totals (unchanged)
+    const footerTop = doc.y + 10;
+    doc.fontSize(12)
+      .text("Sub Total", 50, footerTop)
+      .text(`${invoiceData.subtotal.toFixed(2)}`, 450, footerTop, { align: "right" });
 
-// Separator line after the items table
-doc.moveDown().moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+    doc.text("Discount", 50, footerTop + 20)
+      .text(`${invoiceData.discount.toFixed(2)}`, 450, footerTop + 20, { align: "right" });
 
-// Footer section with subtotals and totals (unchanged)
-const footerTop = doc.y + 10;
-doc.fontSize(12)
-   .text("Sub Total", 50, footerTop)
-   .text(`${invoiceData.subtotal.toFixed(2)}`, 450, footerTop, { align: "right" });
+    doc.text("GST(incl)", 50, footerTop + 40)
+      .text(`${invoiceData.gst.toFixed(2)}`, 450, footerTop + 40, { align: "right" });
 
-doc.text("Discount", 50, footerTop + 20)
-   .text(`${invoiceData.discount.toFixed(2)}`, 450, footerTop + 20, { align: "right" });
+    doc.text("Utsav Discount", 50, footerTop + 60)
+      .text(`${invoiceData.utsavDiscount.toFixed(2)}`, 450, footerTop + 60, { align: "right" });
 
-doc.text("GST(incl)", 50, footerTop + 40)
-   .text(`${invoiceData.gst.toFixed(2)}`, 450, footerTop + 40, { align: "right" });
+    doc.text("Coupon Discount", 50, footerTop + 80)
+      .text(`${invoiceData.couponDiscount.toFixed(2)}`, 450, footerTop + 80, { align: "right" });
 
-doc.text("Utsav Discount", 50, footerTop + 60)
-   .text(`${invoiceData.utsavDiscount.toFixed(2)}`, 450, footerTop + 60, { align: "right" });
+    doc.text("Shipping Fee", 50, footerTop + 100)
+      .text(`${invoiceData.shipping.toFixed(2)}`, 450, footerTop + 100, { align: "right" });
 
-doc.text("Coupon Discount", 50, footerTop + 80)
-   .text(`${invoiceData.couponDiscount.toFixed(2)}`, 450, footerTop + 80, { align: "right" });
+    doc.font("Helvetica-Bold")
+      .text("Total", 50, footerTop + 120)
+      .text(`${invoiceData.total.toFixed(2)}`, 450, footerTop + 120, { align: "right" });
 
-doc.text("Shipping Fee", 50, footerTop + 100)
-   .text(`${invoiceData.shipping.toFixed(2)}`, 450, footerTop + 100, { align: "right" });
-
-doc.font("Helvetica-Bold")
-   .text("Total", 50, footerTop + 120)
-   .text(`${invoiceData.total.toFixed(2)}`, 450, footerTop + 120, { align: "right" });
-
-doc.end();
-
+    doc.end();
   });
 }
-
 
 module.exports = { generateAndUploadInvoice };
