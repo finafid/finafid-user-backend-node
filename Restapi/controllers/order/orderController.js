@@ -10,6 +10,8 @@ const referral = require("../../models/auth/referral");
 const Transaction = require("../../models/payment/paymentSc");
 const walletTransaction = require("../../models/Wallet/WalletTransaction");
 const mongoose = require("mongoose");
+const fs = require("fs");
+const path = require("path");
 const ObjectId = mongoose.Types.ObjectId;
 const {
   sendMail,
@@ -214,43 +216,132 @@ const updateStatus = async (req, res) => {
     }
     const userData = await User.findById(orderDetail.userId);
     if (req.body.status == "Confirmed") {
-      const msg = `
-       <div style="font-family: Arial, sans-serif; color: #333; background-color: #f9f9f9; padding: 20px;">
-         <p style="margin-bottom: 10px;">Dear ${userData.fullName},</p>
-         <p style="margin-bottom: 10px;">
-           Thank you for shopping with us! Your order has been successfully
-           placed.
-         </p>
-         <p style="margin-bottom: 10px;">Here are your order details:</p>
-         <ul style="margin-bottom: 10px;">
-           <li>
-             <strong>Order ID:</strong> ${orderDetail._id}
-           </li>
-           <li>
-             <strong>Total Amount:</strong> ${orderDetail.totalPrice}
-           </li>
-           <li>
-             <strong>Delivery Address:</strong> ${orderDetail.address.receiverName}, ${orderDetail.address.street}, ${orderDetail.address.locality}, ${orderDetail.address.city}, ${orderDetail.address.state}, ${orderDetail.address.pinCode}
-           </li>
-         </ul>
-         <p style="margin-bottom: 10px;">
-           We will notify you once your order is shipped. You can track your
-           order in your account.
-         </p>
-         <p style="margin-bottom: 10px;">
-           If you have any questions, feel free to reach out to us at
-           support@finafid.com.
-         </p>
-         <p style="margin-bottom: 10px;">Best regards,</p>
-         <p style="margin-bottom: 0;">The Finafid Team</p>
-       </div>
-     `;
+      try {
+        // Load the HTML template
+        const templatePath = path.join(__dirname, "orderconfirm.html");
+        const htmlTemplate = await fs.promises.readFile(templatePath, "utf8");
 
-      const mail = await sendMail(
-        userData.email,
-        "Order Successfully Completed",
-        msg
-      );
+        // Replace placeholders with actual order details
+        const orderItemsHTML = orderDetail.orderItem
+          .map(
+            (item) =>
+              `<tr>
+                      <td align="left" valign="top" style="padding: 16px 0px 8px 16px;">
+                       <table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation">
+                        <tr>
+                         <td>
+                          <table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation">
+                           <tr>
+                            <td valign="top">
+                             <table class="" border="0" cellpadding="0" cellspacing="0" role="presentation">
+                              <tr>
+                               <th valign="top" style="font-weight: normal; text-align: left;">
+                                <table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation">
+                                 <tr>
+                                  <td class="pc-w620-spacing-0-16-20-0" valign="top" style="padding: 0px 20px 0px 0px;">
+                                   <img src="${item?.productId?.images[0]}" class="pc-w620-width-64 pc-w620-height-64" width="100" height="104" alt="" style="display: block; outline: 0; line-height: 100%; -ms-interpolation-mode: bicubic; width:100px; height:104px; border: 0;" />
+                                  </td>
+                                 </tr>
+                                </table>
+                               </th>
+                               <th valign="top" style="font-weight: normal; text-align: left;">
+                                <table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation">
+                                 <tr>
+                                  <td>
+                                   <table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation">
+                                    <tr>
+                                     <td valign="top">
+                                      <table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation">
+                                       <tr>
+                                        <th align="left" valign="top" style="font-weight: normal; text-align: left; padding: 0px 0px 4px 0px;">
+                                         <table border="0" cellpadding="0" cellspacing="0" role="presentation" width="100%" style="border-collapse: separate; border-spacing: 0; margin-right: auto; margin-left: auto;">
+                                          <tr>
+                                           <td valign="top" align="left" style="padding: 9px 0px 0px 0px;">
+                                            <div class="pc-font-alt pc-w620-fontSize-16 pc-w620-lineHeight-26" style="line-height: 140%; letter-spacing: -0.03em; font-family: 'Poppins', Arial, Helvetica, sans-serif; font-size: 16px; font-weight: 600; font-variant-ligatures: normal; color: #001942; text-align: left; text-align-last: left;">
+                                             <div><span>${item.productId.name}</span>
+                                             </div>
+                                            </div>
+                                           </td>
+                                          </tr>
+                                         </table>
+                                        </th>
+                                       </tr>
+                                       
+                                       <tr>
+                                        <th align="left" valign="top" style="font-weight: normal; text-align: left;">
+                                         <table border="0" cellpadding="0" cellspacing="0" role="presentation" width="100%" style="border-collapse: separate; border-spacing: 0; margin-right: auto; margin-left: auto;">
+                                          <tr>
+                                           <td valign="top" align="left">
+                                            <div class="pc-font-alt" style="line-height: 140%; letter-spacing: -0.03em; font-family: 'Poppins', Arial, Helvetica, sans-serif; font-size: 14px; font-weight: normal; font-variant-ligatures: normal; color: #53627a; text-align: left; text-align-last: left;">
+                                             <div><span>Qty: ${item.itemQuantity}</span>
+                                             </div>
+                                            </div>
+                                           </td>
+                                          </tr>
+                                         </table>
+                                        </th>
+                                       </tr>
+                                      </table>
+                                     </td>
+                                    </tr>
+                                   </table>
+                                  </td>
+                                 </tr>
+                                </table>
+                               </th>
+                              </tr>
+                             </table>
+                            </td>
+                           </tr>
+                          </table>
+                         </td>
+                        </tr>
+                       </table>
+                      </td>
+                      <td align="right" valign="top" style="padding: 24px 16px 24px 16px;">
+                       <table border="0" cellpadding="0" cellspacing="0" role="presentation" width="100%" style="border-collapse: separate; border-spacing: 0; margin-right: auto; margin-left: auto;">
+                        <tr>
+                         <td valign="top" align="right">
+                          <div class="pc-font-alt pc-w620-fontSize-16 pc-w620-lineHeight-20" style="line-height: 140%; letter-spacing: -0.03em; font-family: 'Poppins', Arial, Helvetica, sans-serif; font-size: 16px; font-weight: normal; font-variant-ligatures: normal; color: #001942; text-align: right; text-align-last: right;">
+                           <div><span style="color: #001942;">${item?.productId?.sellingPrice}</span>
+                           </div>
+                          </div>
+                         </td>
+                        </tr>
+                       </table>
+                      </td>
+                     </tr>`
+          )
+          .join("");
+
+        let emailHTML = htmlTemplate
+          .replace("{{customerName}}", orderDetail.address.customerName)
+          .replace("{{orderId}}", orderDetail._id)
+          .replace("{{orderItems}}", orderItemsHTML)
+          .replace("{{subtotal}}", orderDetail.subtotal)
+          .replace("{{discount}}", orderDetail.discount)
+          .replace("{{utsavDiscount}}", orderDetail.utsavDiscount)
+          .replace("{{couponDiscount}}", orderDetail.couponDiscount)
+          .replace("{{tax}}", orderDetail.tax.toFixed(2))
+          .replace("{{shippingCost}}", orderDetail.shippingCost)
+          .replace(
+            "{{address}}",
+            orderDetail.address.locality +
+              orderDetail.address.state +
+              orderDetail.address.pinCode
+          )
+
+          .replace("{{receiverName}}", orderDetail.address.receiverName)
+          .replace("{{receiverPhone}}", orderDetail.address.receiverPhone)
+          .replace("{{_id}}", orderDetail._id)
+          .replace("{{totalPrice}}", orderDetail.totalPrice);
+
+        // Use your sendMail function to send the email
+        await sendMail(userData.email, "Order Confirmation", emailHTML);
+        console.log("Order confirmation email sent");
+      } catch (error) {
+        console.error("Error sending order confirmation email:", error);
+      }
     }
     if (req.body.status == "Shipping") {
       await invoiceGenerate(orderDetail);
@@ -275,6 +366,7 @@ const updateStatus = async (req, res) => {
       const data = await response.json();
       console.log(data);
     }
+
     if (req.body.status == "Confirmed") {
       const userData = await User.findOne({
         _id: orderDetail.userId,
