@@ -38,7 +38,8 @@ async function generateAndUploadInvoice(invoiceData) {
     doc
       .fontSize(10)
       .text(`Invoice Number: ${invoiceData.invoiceNumber}`, 400, 40)
-      .text(`Invoice Date: ${invoiceData.date}`, 400, 58);
+      .text(`Invoice Date: ${invoiceData.date}`, 400, 58)
+      .text(`Payment Mode: ${invoiceData.payment_method}`, 400, 76);
 
     // Draw a line under the header
     doc.moveTo(50, 100).lineTo(550, 100).stroke();
@@ -63,9 +64,9 @@ async function generateAndUploadInvoice(invoiceData) {
 
     // Shipping Details
     doc
-      .text(`Name: ${invoiceData.customerName}`, 300, infoY + 15)
-      .text(`Phone: ${invoiceData.customerPhoneNumber}`, 300, infoY + 30)
-      .text(`Address: ${invoiceData.customerAddress}`, 300, infoY + 45, {
+      .text(`Name: ${invoiceData.customerName}`, 330, infoY + 15)
+      .text(`Phone: ${invoiceData.customerPhoneNumber}`, 330, infoY + 30)
+      .text(`Address: ${invoiceData.customerAddress}`, 330, infoY + 45, {
         width: 230,
       });
 
@@ -105,10 +106,8 @@ async function generateAndUploadInvoice(invoiceData) {
         .font("Helvetica")
         .fillColor("black")
         .text(item.name, 50, positionY, { width: 150 })
-        .text(item.quantity, 260, positionY, {  })
-        .text(`${item.unitPrice.toFixed(2)}`, 380, positionY, {
-          
-        })
+        .text(item.quantity, 260, positionY, {})
+        .text(`${item.unitPrice.toFixed(2)}`, 360, positionY, {})
         .text(
           `${(item.unitPrice * item.quantity).toFixed(2)}`,
           450,
@@ -133,24 +132,24 @@ async function generateAndUploadInvoice(invoiceData) {
       .text(`${invoiceData.subtotal.toFixed(2)}`, 440, summaryY, {
         align: "right",
       })
-      .text("Shipping", 350, summaryY + 15)
-      .text(`${invoiceData.shipping.toFixed(2)}`, 440, summaryY + 15, {
+      .text("Discount", 350, summaryY + 15)
+      .text(`${invoiceData.discount.toFixed(2)}`, 440, summaryY + 15, {
         align: "right",
       })
-      .text("Tax", 350, summaryY + 30)
-      .text(`${invoiceData.gst.toFixed(2)}`, 440, summaryY + 30, {
+      .text("Utsav Discount", 350, summaryY + 30)
+      .text(`${invoiceData.utsavDiscount.toFixed(2)}`, 440, summaryY + 30, {
         align: "right",
       })
-      .text("Utsav Discount", 350, summaryY + 45)
-      .text(`${invoiceData.utsavDiscount.toFixed(2)}`, 440, summaryY + 45, {
+      .text("Coupon Discount", 350, summaryY + 45)
+      .text(`${invoiceData.couponDiscount.toFixed(2)}`, 440, summaryY + 45, {
         align: "right",
       })
-      .text("Coupon Discount", 350, summaryY + 60)
-      .text(`${invoiceData.couponDiscount.toFixed(2)}`, 440, summaryY + 60, {
+      .text("Tax", 350, summaryY + 60)
+      .text(`${invoiceData.gst.toFixed(2)}`, 440, summaryY + 60, {
         align: "right",
       })
-      .text("Discount", 350, summaryY + 75)
-      .text(`${invoiceData.discount.toFixed(2)}`, 440, summaryY + 75, {
+      .text("Shipping", 350, summaryY + 75)
+      .text(`${invoiceData.shipping.toFixed(2)}`, 440, summaryY + 75, {
         align: "right",
       });
 
@@ -161,10 +160,7 @@ async function generateAndUploadInvoice(invoiceData) {
         align: "right",
       });
 
-    
-
     doc.moveDown().moveDown();
-    
 
     const signatureY = doc.y + 30;
     doc.moveDown().moveDown();
