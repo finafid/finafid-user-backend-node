@@ -126,14 +126,11 @@ const placeOrder = async (req, res) => {
           .json(updateStatusResponse.data);
       }
     }
-
-    // Proceed with the original success response after updateStatus
     return res.status(201).json({
       message: "Successfully created order and Shiprocket order",
       newOrder,
       success: true,
     });
-
   } catch (error) {
     console.error("Error:", error);
     return res.status(500).json({
@@ -411,8 +408,8 @@ const updateStatus = async (req, res) => {
           },
           body: JSON.stringify({
             phoneNumber: userData.phone,
-            total: orderDetail.total,
-            itemName: "",
+            totalOrder: orderDetail.totalPrice,
+            itemName: req.params.orderId,
           }),
         }
       );
