@@ -114,12 +114,13 @@ const placeOrder = async (req, res) => {
         newOrder,
         success: true,
       });
+    } else {
+      return res.status(201).json({
+        message: "Successfully created order and Shiprocket order",
+        newOrder,
+        success: true,
+      });
     }
-    return res.status(201).json({
-      message: "Successfully created order and Shiprocket order",
-      newOrder,
-      success: true,
-    });
   } catch (error) {
     console.error("Error:", error);
     return res.status(500).json({
