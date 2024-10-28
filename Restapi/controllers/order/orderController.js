@@ -104,23 +104,36 @@ const placeOrder = async (req, res) => {
     console.log({ newOrder: newOrder });
     await updateStatusDetails(newOrder._id);
     if (req.body.status === "Confirmed") {
+      // Simulate the request to updateStatus
       const updateReq = {
         params: { orderId: newOrder._id },
         body: { status: "Confirmed" },
       };
-      await updateStatus(updateReq, res);
-      return res.status(201).json({
-        message: "Successfully created order and Shiprocket order",
-        newOrder,
-        success: true,
-      });
-    } else {
-      return res.status(201).json({
-        message: "Successfully created order and Shiprocket order",
-        newOrder,
-        success: true,
-      });
+
+      // Temporarily store the response from updateStatus
+      const updateRes = {
+        status: (statusCode) => ({
+          json: (data) => ({ statusCode, data }),
+        }),
+      };
+
+      const updateStatusResponse = await updateStatus(updateReq, updateRes);
+
+      // Check if updateStatus has returned an error response
+      if (updateStatusResponse?.statusCode >= 400) {
+        return res
+          .status(updateStatusResponse.statusCode)
+          .json(updateStatusResponse.data);
+      }
     }
+
+    // Proceed with the original success response after updateStatus
+    return res.status(201).json({
+      message: "Successfully created order and Shiprocket order",
+      newOrder,
+      success: true,
+    });
+
   } catch (error) {
     console.error("Error:", error);
     return res.status(500).json({
