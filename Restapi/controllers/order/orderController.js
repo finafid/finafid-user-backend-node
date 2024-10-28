@@ -103,14 +103,27 @@ const placeOrder = async (req, res) => {
     await newOrder.save();
     console.log({ newOrder: newOrder });
     await updateStatusDetails(newOrder._id);
-    if(req.body.status == "Confirmed"){
-       const updateReq = {
-         params: { orderId: newOrder._id },
-         body: { status: "Confirmed" },
-       };
-
-       await updateStatus(updateReq, res);
-    } 
+    if (req.body.status == "Confirmed") {
+      const updateReq = {
+        params: { orderId: newOrder._id },
+        body: { status: "Confirmed" },
+      };
+      try {
+        const update = await updateStatus(updateReq, res);
+        if (update) {
+          return res.status(201).json({
+            message: "Successfully created order and Shiprocket order",
+            newOrder,
+            success: true,
+          });
+        }
+      } catch (error) {
+        res.status(500).json({
+          message: "Failed To Create Order",
+          success: false,
+        });
+      }
+    }
     return res.status(201).json({
       message: "Successfully created order and Shiprocket order",
       newOrder,
