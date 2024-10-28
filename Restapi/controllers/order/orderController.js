@@ -109,14 +109,13 @@ const placeOrder = async (req, res) => {
         body: { status: "Confirmed" },
       };
       try {
-        const update = await updateStatus(updateReq, res);
-        if (update) {
+         await updateStatus(updateReq, res);
+        
           return res.status(201).json({
             message: "Successfully created order and Shiprocket order",
             newOrder,
             success: true,
           });
-        }
       } catch (error) {
         res.status(500).json({
           message: "Failed To Create Order",
