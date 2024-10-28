@@ -56,7 +56,7 @@ async function generateAndUploadInvoice(invoiceData) {
     doc
       .fontSize(10)
       .font("Helvetica")
-      .text(`Company: Finafid Technologies Pvt Ltd`, 50, infoY + 15)
+      .text(`Finafid Technologies Pvt Ltd`, 50, infoY + 15)
       .text(`GST Number: 19AAECF2320D1Z5`, 50, infoY + 30)
       .text(`CIN : U72900WB2020PTC239330`, 50, infoY + 45)
       .text(`Email: support@finafid.com`, 50, infoY + 60)
@@ -100,21 +100,21 @@ async function generateAndUploadInvoice(invoiceData) {
       .stroke();
 
     // Product Rows
-    let positionY = tableY + 25;
+    let positionY = tableY + 30;
     invoiceData.items.forEach((item) => {
       doc
         .font("Helvetica")
         .fillColor("black")
         .text(item.name, 50, positionY, { width: 150 })
-        .text(item.quantity, 260, positionY, {})
-        .text(`${item.unitPrice.toFixed(2)}`, 360, positionY, {})
+        .text(item.quantity, 265, positionY, {})
+        .text(`${item.unitPrice.toFixed(2)}`, 345, positionY, {})
         .text(
           `${(item.unitPrice * item.quantity).toFixed(2)}`,
           450,
           positionY,
           {}
         );
-      positionY += 20;
+      positionY += 30;
     });
 
     // Line under items
@@ -128,36 +128,36 @@ async function generateAndUploadInvoice(invoiceData) {
     doc
       .fontSize(10)
       .font("Helvetica")
-      .text("Subtotal", 350, summaryY)
-      .text(`${invoiceData.subtotal.toFixed(2)}`, 440, summaryY, {
-        align: "right",
+      .text("Subtotal", 330, summaryY)
+      .text(`${invoiceData.subtotal.toFixed(2)}`, 510, summaryY, {
+       
       })
-      .text("Discount", 350, summaryY + 15)
-      .text(`${invoiceData.discount.toFixed(2)}`, 440, summaryY + 15, {
-        align: "right",
+      .text("Product Discount", 330, summaryY + 15)
+      .text(`${invoiceData.discount.toFixed(2)}`, 510, summaryY + 15, {
+        
       })
-      .text("Utsav Discount", 350, summaryY + 30)
-      .text(`${invoiceData.utsavDiscount.toFixed(2)}`, 440, summaryY + 30, {
-        align: "right",
+      .text("Utsav Discount", 330, summaryY + 30)
+      .text(`${invoiceData.utsavDiscount.toFixed(2)}`, 510, summaryY + 30, {
+        
       })
-      .text("Coupon Discount", 350, summaryY + 45)
-      .text(`${invoiceData.couponDiscount.toFixed(2)}`, 440, summaryY + 45, {
-        align: "right",
+      .text("Coupon Discount", 330, summaryY + 45)
+      .text(`${invoiceData.couponDiscount.toFixed(2)}`, 510, summaryY + 45, {
+       
       })
-      .text("Tax", 350, summaryY + 60)
-      .text(`${invoiceData.gst.toFixed(2)}`, 440, summaryY + 60, {
-        align: "right",
+      .text("Tax", 330, summaryY + 60)
+      .text(`${invoiceData.gst.toFixed(2)}`, 510, summaryY + 60, {
+        
       })
-      .text("Shipping", 350, summaryY + 75)
-      .text(`${invoiceData.shipping.toFixed(2)}`, 440, summaryY + 75, {
-        align: "right",
+      .text("Shipping", 330, summaryY + 75)
+      .text(`${invoiceData.shipping.toFixed(2)}`, 510, summaryY + 75, {
+        
       });
 
     doc
       .font("Helvetica-Bold")
-      .text("Total", 350, summaryY + 100)
-      .text(`${invoiceData.total.toFixed(2)}`, 440, summaryY + 100, {
-        align: "right",
+      .text("Total", 330, summaryY + 100)
+      .text(`${invoiceData.total.toFixed(2)}`, 510, summaryY + 100, {
+        
       });
 
     doc.moveDown().moveDown();
