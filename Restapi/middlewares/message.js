@@ -31,7 +31,8 @@ async function sendSMS(message, phoneNumber, templateId) {
     });
 
     console.log("SMS sent successfully:", response.data);
-    return response.data;
+
+    return "SMS sent successfully";
   } catch (error) {
     console.error("Error sending SMS:", error);
   }
