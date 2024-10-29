@@ -15,7 +15,7 @@ const transporter=nodeMailer.createTransport({
 const sendMail=async(email,subject,content)=>{
     try{
         var mailOptions={
-            from:process.env.SMTP_Mail,
+            from:`"Finafid" <${process.env.SMTP_Mail}>`,
             to:email,
             subject: subject,
             html :content           
