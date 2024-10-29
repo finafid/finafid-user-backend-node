@@ -130,6 +130,11 @@ const uploadVariants = async (
   const variantPromises = variants.map(async (variantData, i) => {
     let variantImageLinks = [];
     console.log(variantData);
+
+    // Initialize count for each variant's images
+    let count = 0;
+
+    // Loop through uploaded variant images
     while (uploadedFiles[`variants[${i}][images][${count}]`]) {
       const imageLinks = await uploadFiles(
         uploadedFiles[`variants[${i}][images][${count}]`]
@@ -141,12 +146,15 @@ const uploadVariants = async (
     let singleImageUrl = "";
     const colorImageKey = `variants[${i}][colorImage]`;
     console.log(colorImageKey);
+
+    // Upload color image if it exists
     if (uploadedFiles[colorImageKey]) {
       const [imageLink] = await uploadFiles(uploadedFiles[colorImageKey]);
       singleImageUrl = imageLink;
     }
     console.log(singleImageUrl);
-    // Create variant
+
+    // Create the variant
     const variant = new Variant({
       productGroup: productId,
       attributes: variantData.attributes,
@@ -185,6 +193,7 @@ const uploadVariants = async (
   return await Promise.all(variantPromises);
 };
 
+
 const createProduct = async (req, res) => {
   const {
     totalQuantity,
@@ -202,15 +211,17 @@ const createProduct = async (req, res) => {
     description,
     variationAttributes,
     variation,
-    variants,
+    variants = [], // Default to an empty array to avoid undefined errors
   } = req.body;
 
   try {
     // Initialize an object to store uploaded URLs
     const uploadedFiles = {};
     console.log(req.files);
+
     // Process all files and categorize by fieldname
-    for (const file of req.files) {
+    for (const file of req.files || []) {
+      // Avoid errors if req.files is undefined
       const fieldName = file.fieldname;
       if (!uploadedFiles[fieldName]) {
         uploadedFiles[fieldName] = [];
@@ -229,7 +240,6 @@ const createProduct = async (req, res) => {
     let imageListUrls = [];
     if (uploadedFiles["otherImages[]"]) {
       const uploadedUrls = await uploadFiles(uploadedFiles["otherImages[]"]);
-      // Flatten the array if needed
       imageListUrls = uploadedUrls.flat();
     }
 
@@ -251,21 +261,25 @@ const createProduct = async (req, res) => {
       variation,
       variationAttributes,
       thumbnail: singleImageUrl,
-      otherImages: imageListUrls, // Use the flattened array here
+      otherImages: imageListUrls,
       variants: [],
+      is_active: true,
     });
 
     await newProduct.save();
 
-    // Upload variants
-    const variantIds = await uploadVariants(
-      variants,
-      uploadedFiles,
-      newProduct._id,
-      name
-    );
-    newProduct.variants.push(...variantIds);
-    await newProduct.save();
+    // Upload variants if they exist
+    if (variants.length > 0) {
+      const variantIds = await uploadVariants(
+        variants,
+        uploadedFiles,
+        newProduct._id,
+        name
+      );
+      newProduct.variants.push(...variantIds);
+      await newProduct.save();
+    }
+
     return res.status(200).json({
       success: true,
       message: "Product created successfully",
@@ -273,11 +287,14 @@ const createProduct = async (req, res) => {
     });
   } catch (error) {
     console.error("Error saving product:", error);
-    res
-      .status(500)
-      .json({ message: "Internal Server Error", error: error.message });
+    res.status(500).json({
+      message: "Internal Server Error",
+      error: error.message,
+    });
   }
 };
+
+
 
 const updateVariants = async (req, res) => {
   try {
