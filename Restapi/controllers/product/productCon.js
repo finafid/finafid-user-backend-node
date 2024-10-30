@@ -299,32 +299,31 @@ const createProduct = async (req, res) => {
 const updateVariants = async (req, res) => {
   try {
     const variantId = req.params.variantId;
+
+    // Find the existing variant by ID
     const variantDetail = await Variant.findById(variantId);
     if (!variantDetail) {
-      return res.status(500).json({ message: "Variant not found" });
+      return res.status(404).json({ message: "Variant not found" });
     }
 
-    // Get the old quantity before updating the variant
+    // Get the current quantity before the update
     const oldQuantity = parseInt(variantDetail.quantity, 10);
     console.log({ body: req.body });
-    let newList = [];
-    if (req.body.images) {
-      newList = req.body.images;
-      if (req.files && req.files["images[]"]) {
-        const variantImageLinks = await getImageLinks(req.files["images[]"]);
-        newList = req.body.images.concat(variantImageLinks);
-      }
-    } else if (req.files && req.files["images[]"]) {
-      newList = await getImageLinks(req.files["images[]"]);
+
+    // Initialize a new list for images
+    let newList = req.body.images ? [...req.body.images] : [];
+    if (req.files && req.files["images[]"]) {
+      const variantImageLinks = await getImageLinks(req.files["images[]"]);
+      newList = newList.concat(variantImageLinks);
     }
+
+    // Check if product group exists
     const productGroupDetails = await productSc.findById(req.body.productId);
-    //   let singleImageUrl=""
-    // if (uploadedFiles[colorImageKey]) {
-    //   const [imageLink] = await uploadFiles(uploadedFiles[colorImageKey]);
-    //   singleImageUrl = imageLink;
-    // }
-    //   const varientName =
-    //     productGroupDetails.name + " " + "(" + req.body.sku + ")";
+    if (!productGroupDetails) {
+      return res.status(404).json({ message: "Product group not found" });
+    }
+
+    // Update variant fields
     variantDetail.productGroup = req.body.productId;
     variantDetail.attributes = req.body.attributes;
     variantDetail.sku = req.body.sku;
@@ -344,37 +343,40 @@ const updateVariants = async (req, res) => {
     variantDetail.taxPercent = parseFloat(req.body.taxPercent);
     variantDetail.sellingPrice = parseFloat(req.body.sellingPrice);
     variantDetail.utsavPrice = parseFloat(req.body.utsavPrice);
-    variantDetail.barCode = parseFloat(req.body.barCode);
+    variantDetail.barCode = req.body.barCode; // Assumed to be a string, adjust as necessary
     variantDetail.utsavReward = parseFloat(req.body.utsavReward);
     variantDetail.basicReward = parseFloat(req.body.basicReward);
     variantDetail.utsavDiscountType = req.body.utsavDiscountType;
     variantDetail.variantDetails = req.body.variantDetails;
     variantDetail.expiryDate = req.body.expiryDate;
     variantDetail.name = req.body.name;
-    // variantDetail.colorImage = singleImageUrl;
-    // Save variant details
+
+    // Save updated variant details
     await variantDetail.save();
 
+    // Update the total quantity for the associated product
     const productDetails = await Product.findById(req.body.productId);
     if (!productDetails) {
-      return res.status(500).json({ message: "Product not found" });
+      return res.status(404).json({ message: "Product not found" });
     }
 
-    // Update product total quantity
     const newQuantity = parseInt(req.body.quantity, 10);
     productDetails.totalQuantity =
       parseInt(productDetails.totalQuantity, 10) + (newQuantity - oldQuantity);
 
-    console.log(productDetails.totalQuantity);
+    console.log("Updated total quantity:", productDetails.totalQuantity);
 
     await productDetails.save();
 
-    return res.status(200).json({ message: "Updated successfully" });
+    return res.status(200).json({ message: "Variant updated successfully" });
   } catch (error) {
     console.error("Error updating variant:", error);
-    res.status(500).json({ message: "Internal Server Error" + error.message });
+    res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
   }
 };
+
 
 module.exports = updateVariants;
 
