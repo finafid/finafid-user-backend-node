@@ -492,7 +492,7 @@ const updateStatus = async (req, res) => {
           );
           const data = await response.json();
           console.log(data);
-          return data;
+          // return data;
         }
 
         const referralDetails = await referral.findOne({
