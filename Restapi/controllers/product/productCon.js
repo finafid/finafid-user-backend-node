@@ -193,7 +193,6 @@ const uploadVariants = async (
   return await Promise.all(variantPromises);
 };
 
-
 const createProduct = async (req, res) => {
   const {
     totalQuantity,
@@ -294,10 +293,9 @@ const createProduct = async (req, res) => {
   }
 };
 
-
-
 const updateVariants = async (req, res) => {
   try {
+    let count = 0;
     const variantId = req.params.variantId;
 
     // Find the existing variant by ID
@@ -311,10 +309,15 @@ const updateVariants = async (req, res) => {
     console.log({ body: req.body });
 
     // Initialize a new list for images
-    let newList = req.body.images ? [...req.body.images] : [];
-    if (req.files && req.files["images[]"]) {
-      const variantImageLinks = await getImageLinks(req.files["images[]"]);
-      newList = newList.concat(variantImageLinks);
+    let newList = [];
+    if (req.body.images) {
+      newList = req.body.images;
+      if (req.files && req.files["images[]"]) {
+        const variantImageLinks = await getImageLinks(req.files["images[]"]);
+        newList = req.body.images.concat(variantImageLinks);
+      }
+    } else if (req.files && req.files["images[]"]) {
+      newList = await getImageLinks(req.files["images[]"]);
     }
 
     // Check if product group exists
@@ -343,7 +346,7 @@ const updateVariants = async (req, res) => {
     variantDetail.taxPercent = parseFloat(req.body.taxPercent);
     variantDetail.sellingPrice = parseFloat(req.body.sellingPrice);
     variantDetail.utsavPrice = parseFloat(req.body.utsavPrice);
-    variantDetail.barCode = parseFloat(req.body.barCode); 
+    variantDetail.barCode = parseFloat(req.body.barCode);
     variantDetail.utsavReward = parseFloat(req.body.utsavReward);
     variantDetail.basicReward = parseFloat(req.body.basicReward);
     variantDetail.utsavDiscountType = req.body.utsavDiscountType;
@@ -376,7 +379,6 @@ const updateVariants = async (req, res) => {
       .json({ message: "Internal Server Error", error: error.message });
   }
 };
-
 
 module.exports = updateVariants;
 
@@ -1065,7 +1067,7 @@ const getSubcategoryBasedOnCategory = async (req, res) => {
     const categoryId = req.params.categoryId;
     const subCategoryList = await subCategory.find({
       mainCategoryId: categoryId,
-      is_active:true
+      is_active: true,
     });
     if (!subCategoryList) {
       return res.status(500).json({ message: "No list found" });
@@ -1314,7 +1316,7 @@ const getAllFeaturedBrand = async (req, res) => {
   try {
     const brandDetails = await Brand.find({
       is_featured: true,
-      is_active:true,
+      is_active: true,
     });
     if (!brandDetails) {
       return res
@@ -1330,7 +1332,7 @@ const getAllFeaturedCategory = async (req, res) => {
   try {
     const categoryDetails = await mainCategory.find({
       is_featured: true,
-      is_active:true,
+      is_active: true,
     });
     if (!categoryDetails) {
       return res
@@ -1346,7 +1348,7 @@ const getAllFeaturedSubCategory = async (req, res) => {
   try {
     const subCategoryDetails = await subCategory.find({
       is_featured: true,
-      is_active:true,
+      is_active: true,
     });
     if (!subCategoryDetails) {
       return res
