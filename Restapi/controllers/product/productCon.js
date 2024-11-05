@@ -307,18 +307,21 @@ const updateVariants = async (req, res) => {
     }
 
     // Get the current quantity before the update
-  let newList = [];
-    if (req.body.images) {
-      newList = req.body.images;
-      if (req.files && req.files["images[]"]) {
-        const variantImageLinks = await getImageLinks(req.files["images[]"]);
-        newList = req.body.images.concat(variantImageLinks);
-      }
-    } else if (req.files && req.files["images[]"]) {
-      newList = await getImageLinks(req.files["images[]"]);
+    const oldQuantity = parseInt(variantDetail.quantity, 10);
+    console.log({ body: req.body });
+
+    // Initialize a new list for images
+    let newList = req.body.images ? [...req.body.images] : [];
+    if (req.files && req.files["images[]"]) {
+      const variantImageLinks = await getImageLinks(req.files["images[]"]);
+      newList = newList.concat(variantImageLinks);
+    }
 
     // Check if product group exists
-    
+    const productGroupDetails = await productSc.findById(req.body.productId);
+    if (!productGroupDetails) {
+      return res.status(404).json({ message: "Product group not found" });
+    }
 
     // Update variant fields
     variantDetail.productGroup = req.body.productId;
@@ -340,7 +343,7 @@ const updateVariants = async (req, res) => {
     variantDetail.taxPercent = parseFloat(req.body.taxPercent);
     variantDetail.sellingPrice = parseFloat(req.body.sellingPrice);
     variantDetail.utsavPrice = parseFloat(req.body.utsavPrice);
-    variantDetail.barCode = parseFloat(req.body.barCode); // Assumed to be a string, adjust as necessary
+    variantDetail.barCode = parseFloat(req.body.barCode); 
     variantDetail.utsavReward = parseFloat(req.body.utsavReward);
     variantDetail.basicReward = parseFloat(req.body.basicReward);
     variantDetail.utsavDiscountType = req.body.utsavDiscountType;
