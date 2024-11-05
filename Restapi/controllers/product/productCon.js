@@ -295,7 +295,6 @@ const createProduct = async (req, res) => {
 
 const updateVariants = async (req, res) => {
   try {
-    let count = 0;
     const variantId = req.params.variantId;
 
     // Find the existing variant by ID
@@ -306,21 +305,25 @@ const updateVariants = async (req, res) => {
 
     // Get the current quantity before the update
     const oldQuantity = parseInt(variantDetail.quantity, 10);
-    console.log({ body: req.body });
 
     // Initialize a new list for images
-    let newList = [];
-    if (req.body.images) {
-      newList = req.body.images;
-      if (req.files && req.files["images[]"]) {
+    let newList = req.body.images ? [...req.body.images] : [];
+
+    // Check if files are provided and if the key "images[]" exists
+    if (req.files && req.files["images[]"]) {
+      try {
         const variantImageLinks = await getImageLinks(req.files["images[]"]);
-        newList = req.body.images.concat(variantImageLinks);
+        newList = newList.concat(variantImageLinks);
+      } catch (imageError) {
+        console.error("Error processing images:", imageError);
+        return res.status(500).json({
+          message: "Error processing images",
+          error: imageError.message,
+        });
       }
-    } else if (req.files && req.files["images[]"]) {
-      newList = await getImageLinks(req.files["images[]"]);
     }
 
-    // Check if product group exists
+    // Check if the product group exists
     const productGroupDetails = await productSc.findById(req.body.productId);
     if (!productGroupDetails) {
       return res.status(404).json({ message: "Product group not found" });
