@@ -555,6 +555,7 @@ const suggestionProductList = async (req, res) => {
       productSc
         .find({
           productTypeId: variantDetails.productGroup.productTypeId,
+          is_active:true
         })
         .populate({
           path: "variants",
