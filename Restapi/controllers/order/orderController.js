@@ -12,6 +12,7 @@ const walletTransaction = require("../../models/Wallet/WalletTransaction");
 const mongoose = require("mongoose");
 const fs = require("fs");
 const path = require("path");
+const { getSocketInstance } = require("../../socket");
 const ObjectId = mongoose.Types.ObjectId;
 const {
   sendMail,
@@ -238,6 +239,11 @@ const updateStatus = async (req, res) => {
       });
     }
     const userData = await User.findById(orderDetail.userId);
+    const io = getSocketInstance();
+    io.emit("orderStatusUpdated", {
+      orderId: orderDetail._id,
+      status: req.body.status,
+    });
     if (req.body.status == "Confirmed") {
       try {
         // Load the HTML template
@@ -654,6 +660,8 @@ const updateStatus = async (req, res) => {
     });
   }
 };
+
+module.exports = updateStatus;
 async function orderStatusConfirmed(orderDetails) {
   try {
     await Promise.all(
