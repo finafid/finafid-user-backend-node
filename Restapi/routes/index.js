@@ -102,6 +102,7 @@ const {
   updateStatus,
   getOrderByStatus,
   getAllOrder,
+  getSalesPercentageByCategory,
   editOrder,
   orderStatusDetails,
   setDeliveryDate,
@@ -347,7 +348,10 @@ const {
   messageForOrderDelivary,
   messageForOrderOnTheWay,
   messageForOrderConfirmed,
-}=require("../controllers/Message/message.js")
+} = require("../controllers/Message/message.js");
+const {
+  handleWebhook,
+} = require("../controllers/webhooks/webhookController.js");
 //user Authentication
 routs.post("/register", userRegistrationValidation, userRegistration);
 routs.post("/login", userLoginValidation, userLogin);
@@ -367,6 +371,7 @@ routs.post(
   passwordVarification,
   updatePasswordForResetPassword
 );
+routs.post("/payu-webhook", handleWebhook);
 routs.post("/updateEmail", auth, updateEmail);
 routs.post("/updateNotification", auth, updateNotification);
 //Logout api
@@ -513,6 +518,7 @@ routs.get("/getOrderByIdAdmin/:orderId", getOrderById);
 routs.post("/updateStatusAdmin/:orderId", updateStatus);
 routs.post("/getOrderByStatus", auth, getOrderByStatus);
 routs.get("/getAllOrder", getAllOrder);
+routs.get("/sales/percentage-by-category", getSalesPercentageByCategory);
 routs.post("/editOrder", auth, editOrder);
 routs.get("/orderStatusDetails/:orderId", orderStatusDetails);
 routs.post("/setDeliveryDate", setDeliveryDate);
@@ -809,9 +815,9 @@ routs.post("/activeSubCategoryById/:subCategoryId", activeSubCategoryById);
 routs.post("/activeProductTypeById/:productTypeId", activeProductTypeById);
 
 //message
-routs.post("/messageForUtsavMember",messageForUtsavMember);
-routs.post("/messageForOrderDelivary",messageForOrderDelivary);
-routs.post("/messageForOrderOnTheWay",messageForOrderOnTheWay);
-routs.post("/messageForOrderConfirmed",messageForOrderConfirmed);
+routs.post("/messageForUtsavMember", messageForUtsavMember);
+routs.post("/messageForOrderDelivary", messageForOrderDelivary);
+routs.post("/messageForOrderOnTheWay", messageForOrderOnTheWay);
+routs.post("/messageForOrderConfirmed", messageForOrderConfirmed);
 routs.post("/contactUs", contactUs);
 module.exports = routs;

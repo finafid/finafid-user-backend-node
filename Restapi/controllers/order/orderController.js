@@ -246,11 +246,8 @@ const updateStatus = async (req, res) => {
     });
     if (req.body.status == "Confirmed") {
       try {
-        // Load the HTML template
         const templatePath = path.join(__dirname, "orderconfirm.html");
         const htmlTemplate = await fs.promises.readFile(templatePath, "utf8");
-
-        // Replace placeholders with actual order details
         const orderItemsHTML = orderDetail.orderItem
           .map(
             (item) =>
@@ -718,14 +715,13 @@ const getAllOrder = async (req, res) => {
         dateFilter.createdAt.$gte = new Date(startDate);
       }
       if (endDate) {
-        // Add 1 day to the endDate to include the entire day
         const end = new Date(endDate);
-        end.setDate(end.getDate() + 1);
+        end.setDate(end.getDate() + 1); // Include the entire endDate
         dateFilter.createdAt.$lte = end;
       }
     }
 
-    // Fetch all orders first with the date filter applied
+    // Fetch all orders with the date filter applied
     const allOrders = await order
       .find({
         $and: [
@@ -749,8 +745,12 @@ const getAllOrder = async (req, res) => {
       })
       .sort({ createdAt: -1 });
 
-    // Calculate status counts
+    // Initialize status counts, total income, and total sales variables
     const statusCount = {};
+    let totalIncome = 0;
+    let totalSales = 0;
+
+    // Define status list and count orders per status
     const statusList = [
       "Pending",
       "Confirmed",
@@ -762,14 +762,26 @@ const getAllOrder = async (req, res) => {
       "Completed",
     ];
 
+    // Count orders by status
     statusList.forEach((status) => {
-      const filteredOrderList = allOrders.filter(
+      statusCount[status] = allOrders.filter(
         (order) => order.status === status
-      );
-      statusCount[status] = filteredOrderList.length;
+      ).length;
     });
 
-    // Apply status filter
+    // Calculate total income and sales across all orders (no pagination for totals)
+    allOrders.forEach((order) => {
+      totalIncome += order.totalPrice || 0; // Sum totalAmount for income
+      order.orderItem.forEach((item) => {
+        totalSales += item.itemQuantity || 0; // Sum itemQuantity for sales
+      });
+    });
+
+    // Add total income and sales to the statusCount object
+    statusCount.total_income = totalIncome;
+    statusCount.total_sale = totalSales;
+
+    // Apply status filter if specified
     let filteredOrders = allOrders;
     if (status) {
       filteredOrders = allOrders.filter((order) => order.status === status);
@@ -779,22 +791,99 @@ const getAllOrder = async (req, res) => {
     const skip = (page - 1) * limit;
     const paginatedOrders = filteredOrders.slice(skip, skip + parseInt(limit));
 
-    // Calculate total pages
+    // Calculate total pages for pagination
     const totalOrders = filteredOrders.length;
     const totalPages = Math.ceil(totalOrders / limit);
 
+    // Return response with paginated orders, status count, and total sales
     return res.status(200).json({
       success: true,
-      orderDetails: paginatedOrders,
-      totalOrders,
-      totalPages,
-      currentPage: page,
-      statusCount,
+      orderDetails: paginatedOrders, // Paginated orders
+      totalOrders, // Total count of filtered orders (before pagination)
+      totalPages, // Total number of pages
+      currentPage: page, // Current page number
+      statusCount, // Status count, total income, and total sales
     });
   } catch (err) {
     return res.status(500).json({
       success: false,
-      message: err.message + " internal server error",
+      message: `${err.message} internal server error`,
+    });
+  }
+};
+
+const getSalesPercentageByCategory = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    // Date filter
+    let dateFilter = {};
+    if (startDate || endDate) {
+      dateFilter.createdAt = {};
+      if (startDate) {
+        dateFilter.createdAt.$gte = new Date(startDate);
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setDate(end.getDate() + 1); // Include the entire endDate
+        dateFilter.createdAt.$lte = end;
+      }
+    }
+
+    // Fetch orders with populated productTypeId names
+    const orders = await order.find(dateFilter).populate({
+      path: "orderItem.productId",
+      model: "Variant",
+      populate: {
+        path: "productGroup",
+        model: "Product",
+        populate: {
+          path: "productTypeId",
+          select: "name",
+        },
+      },
+    });
+
+    // Calculate total product sales by category
+    const categorySales = {};
+
+    orders.forEach((order) => {
+      order.orderItem.forEach((item) => {
+        const productTypeName =
+          item.productId?.productGroup?.productTypeId?.name;
+        const quantitySold = item.itemQuantity || 0; // Default to 0 if quantity is undefined
+
+        if (productTypeName) {
+          if (!categorySales[productTypeName]) {
+            categorySales[productTypeName] = 0;
+          }
+          categorySales[productTypeName] += quantitySold;
+        }
+      });
+    });
+
+    // Calculate total quantity and prepare data
+    const totalQuantitySold = Object.values(categorySales).reduce(
+      (sum, count) => sum + count,
+      0
+    );
+
+    const categorySalesData = Object.keys(categorySales).map((category) => ({
+      category,
+      product_sold: categorySales[category],
+      percentage: ((categorySales[category] / totalQuantitySold) * 100).toFixed(
+        2
+      ),
+    }));
+
+    return res.status(200).json({
+      success: true,
+      data: categorySalesData,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: `${err.message} - internal server error`,
     });
   }
 };
@@ -981,4 +1070,5 @@ module.exports = {
   setDeliveryDate,
   cancelDelivery,
   downloadInvoice,
+  getSalesPercentageByCategory,
 };

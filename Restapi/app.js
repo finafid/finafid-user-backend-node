@@ -37,10 +37,17 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(
   helmet({
-    contentSecurityPolicy: false, // Disable if necessary for inline scripts/styles
+    contentSecurityPolicy: false,
   })
 );
 app.use(cors());
+// app.use(
+//   session({
+//     secret: process.env.SESSION_SECRET,
+//     resave: false,
+//     saveUninitialized: true,
+//   })
+// );
 
 app.use("/ping", (req, res) => {
   res.json({
