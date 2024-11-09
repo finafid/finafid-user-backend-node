@@ -6,7 +6,7 @@ let io;
 const initializeSocket = (server) => {
   io = socketIo(server, {
     cors: {
-      origin: "https://admin.finafid.com",
+      origin: process.env.WS,
       methods: ["GET", "POST"],
       allowedHeaders: ["Content-Type", "Authorization"],
       credentials: true,
