@@ -1,6 +1,10 @@
 const path = require("path");
 const fs = require("fs");
-const sendMail = require("./sendMail"); // Ensure you have sendMail function available in your project
+const {
+  sendMail,
+  oneMinuteExpiry,
+  threeMinuteExpiry,
+} = require("../../utils/mailer"); // Ensure you have sendMail function available in your project
 
 async function sendOrderConfirmationEmail(orderDetail, userData) {
   try {
