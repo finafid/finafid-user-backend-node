@@ -1291,15 +1291,22 @@ const featuredProduct = async (req, res) => {
       { new: true }
     );
 
+    
+
     if (!details) {
-      return res.status(500).json({ message: "No varient" });
+      return res.status(404).json({ message: "Variant not found" });
     }
 
-    return res.status(200).json({ message: "Done" });
+    if(details?.is_featured){
+      return res.status(200).json({ message: "Added To Featured Product", is_featured: details?.is_featured,newArrival:details?.newArrival });
+    }else{
+      return res.status(200).json({ message: "Removed From Featured Product", is_featured: details?.is_featured,newArrival:details?.newArrival });
+    }   
   } catch (error) {
-    res.status(500).json({ message: error.message + " Internal Server Error" });
+    res.status(500).json({ message: "Internal Server Error", error: error.message });
   }
 };
+
 const activeProduct = async (req, res) => {
   try {
     const details = await Variant.findOneAndUpdate(
@@ -1307,14 +1314,22 @@ const activeProduct = async (req, res) => {
       { is_active: req.body.activeStatus },
       { new: true }
     );
+
     if (!details) {
-      return res.status(500).json({ message: "No varient" });
+      return res.status(404).json({ message: "Variant not found" });
     }
-    return res.status(200).json({ message: "Done" });
+
+    const message = details.is_active
+      ? "Product activated successfully"
+      : "Product deactivated successfully";
+
+    return res.status(200).json({ message,is_active:details.is_active });
   } catch (error) {
-    res.status(500).json({ message: error.message + " Internal Server Error" });
+    console.error("Error updating product status:", error.message);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
 const getAllFeaturedBrand = async (req, res) => {
   try {
     const brandDetails = await Brand.find({

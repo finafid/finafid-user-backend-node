@@ -11,6 +11,8 @@ const Transaction = require("../../models/payment/paymentSc");
 const walletTransaction = require("../../models/Wallet/WalletTransaction");
 const mongoose = require("mongoose");
 const fs = require("fs");
+const sendSms = require("./smsService");
+const sendOrderConfirmationEmail = require("./emailService");
 const path = require("path");
 const { getSocketInstance } = require("../../socket");
 const ObjectId = mongoose.Types.ObjectId;
@@ -245,129 +247,7 @@ const updateStatus = async (req, res) => {
       status: req.body.status,
     });
     if (req.body.status == "Confirmed") {
-      try {
-        const templatePath = path.join(__dirname, "orderconfirm.html");
-        const htmlTemplate = await fs.promises.readFile(templatePath, "utf8");
-        const orderItemsHTML = orderDetail.orderItem
-          .map(
-            (item) =>
-              `<tr>
-                      <td align="left" valign="top" style="padding: 16px 0px 8px 16px;">
-                       <table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation">
-                        <tr>
-                         <td>
-                          <table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation">
-                           <tr>
-                            <td valign="top">
-                             <table class="" border="0" cellpadding="0" cellspacing="0" role="presentation">
-                              <tr>
-                               <th valign="top" style="font-weight: normal; text-align: left;">
-                                <table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation">
-                                 <tr>
-                                  <td class="pc-w620-spacing-0-16-20-0" valign="top" style="padding: 0px 20px 0px 0px;">
-                                   <img src="${item?.productId?.images[0]}" class="pc-w620-width-64 pc-w620-height-64" width="100" height="104" alt="" style="display: block; outline: 0; line-height: 100%; -ms-interpolation-mode: bicubic; width:100px; height:104px; border: 0;" />
-                                  </td>
-                                 </tr>
-                                </table>
-                               </th>
-                               <th valign="top" style="font-weight: normal; text-align: left;">
-                                <table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation">
-                                 <tr>
-                                  <td>
-                                   <table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation">
-                                    <tr>
-                                     <td valign="top">
-                                      <table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation">
-                                       <tr>
-                                        <th align="left" valign="top" style="font-weight: normal; text-align: left; padding: 0px 0px 4px 0px;">
-                                         <table border="0" cellpadding="0" cellspacing="0" role="presentation" width="100%" style="border-collapse: separate; border-spacing: 0; margin-right: auto; margin-left: auto;">
-                                          <tr>
-                                           <td valign="top" align="left" style="padding: 9px 0px 0px 0px;">
-                                            <div class="pc-font-alt pc-w620-fontSize-16 pc-w620-lineHeight-26" style="line-height: 140%; letter-spacing: -0.03em; font-family: 'Poppins', Arial, Helvetica, sans-serif; font-size: 16px; font-weight: 600; font-variant-ligatures: normal; color: #001942; text-align: left; text-align-last: left;">
-                                             <div><span>${item.productId.name}</span>
-                                             </div>
-                                            </div>
-                                           </td>
-                                          </tr>
-                                         </table>
-                                        </th>
-                                       </tr>
-                                       
-                                       <tr>
-                                        <th align="left" valign="top" style="font-weight: normal; text-align: left;">
-                                         <table border="0" cellpadding="0" cellspacing="0" role="presentation" width="100%" style="border-collapse: separate; border-spacing: 0; margin-right: auto; margin-left: auto;">
-                                          <tr>
-                                           <td valign="top" align="left">
-                                            <div class="pc-font-alt" style="line-height: 140%; letter-spacing: -0.03em; font-family: 'Poppins', Arial, Helvetica, sans-serif; font-size: 14px; font-weight: normal; font-variant-ligatures: normal; color: #53627a; text-align: left; text-align-last: left;">
-                                             <div><span>Qty: ${item.itemQuantity}</span>
-                                             </div>
-                                            </div>
-                                           </td>
-                                          </tr>
-                                         </table>
-                                        </th>
-                                       </tr>
-                                      </table>
-                                     </td>
-                                    </tr>
-                                   </table>
-                                  </td>
-                                 </tr>
-                                </table>
-                               </th>
-                              </tr>
-                             </table>
-                            </td>
-                           </tr>
-                          </table>
-                         </td>
-                        </tr>
-                       </table>
-                      </td>
-                      <td align="right" valign="top" style="padding: 24px 16px 24px 16px;">
-                       <table border="0" cellpadding="0" cellspacing="0" role="presentation" width="100%" style="border-collapse: separate; border-spacing: 0; margin-right: auto; margin-left: auto;">
-                        <tr>
-                         <td valign="top" align="right">
-                          <div class="pc-font-alt pc-w620-fontSize-16 pc-w620-lineHeight-20" style="line-height: 140%; letter-spacing: -0.03em; font-family: 'Poppins', Arial, Helvetica, sans-serif; font-size: 16px; font-weight: normal; font-variant-ligatures: normal; color: #001942; text-align: right; text-align-last: right;">
-                           <div><span style="color: #001942;">${item?.productId?.sellingPrice}</span>
-                           </div>
-                          </div>
-                         </td>
-                        </tr>
-                       </table>
-                      </td>
-                     </tr>`
-          )
-          .join("");
-
-        let emailHTML = htmlTemplate
-          .replace("{{customerName}}", orderDetail.address.customerName)
-          .replace("{{orderId}}", orderDetail._id)
-          .replace("{{orderItems}}", orderItemsHTML)
-          .replace("{{subtotal}}", orderDetail.subtotal)
-          .replace("{{discount}}", orderDetail.discount)
-          .replace("{{utsavDiscount}}", orderDetail.utsavDiscount)
-          .replace("{{couponDiscount}}", orderDetail.couponDiscount)
-          .replace("{{tax}}", orderDetail.tax.toFixed(2))
-          .replace("{{shippingCost}}", orderDetail.shippingCost)
-          .replace(
-            "{{address}}",
-            orderDetail.address.locality +
-              orderDetail.address.state +
-              orderDetail.address.pinCode
-          )
-
-          .replace("{{receiverName}}", orderDetail.address.receiverName)
-          .replace("{{receiverPhone}}", orderDetail.address.receiverPhone)
-          .replace("{{_id}}", orderDetail._id)
-          .replace("{{totalPrice}}", orderDetail.totalPrice);
-
-        // Use your sendMail function to send the email
-        await sendMail(userData.email, "Order Confirmation", emailHTML);
-        console.log("Order confirmation email sent");
-      } catch (error) {
-        console.error("Error sending order confirmation email:", error);
-      }
+      await sendOrderConfirmationEmail(orderDetail, userData);
     }
     if (req.body.status == "Shipping") {
       await invoiceGenerate(orderDetail);
@@ -379,18 +259,10 @@ const updateStatus = async (req, res) => {
       if (!userData) {
         return res.status(400).json({ message: "No user Found" });
       }
-      const response = await fetch(
-        "https://finafid.co.in/api/v1/messageForOrderOnTheWay",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ phoneNumber: userData.phone, itemName: "" }),
-        }
-      );
-      const data = await response.json();
-      console.log(data);
+      await sendSms("messageForOrderOnTheWay", {
+        phoneNumber: userData.phone,
+        itemName: "",
+      });
     }
 
     if (req.body.status == "Confirmed") {
@@ -402,22 +274,11 @@ const updateStatus = async (req, res) => {
       if (!userData) {
         return res.status(400).json({ message: "No user Found" });
       }
-      const response = await fetch(
-        "https://finafid.co.in/api/v1/messageForOrderConfirmed",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            phoneNumber: userData.phone,
-            totalOrder: orderDetail.totalPrice,
-            itemName: req.params.orderId,
-          }),
-        }
-      );
-      const data = await response.json();
-      console.log(data);
+      await sendSms("messageForOrderConfirmed", {
+        phoneNumber: userData.phone,
+        totalOrder: orderDetail.totalPrice,
+        itemName: req.params.orderId,
+      });
       await orderStatusConfirmed(orderDetail);
     }
     if (req.body.status == "Delivered") {
@@ -429,21 +290,7 @@ const updateStatus = async (req, res) => {
       if (!userData) {
         return res.status(400).json({ message: "No user Found" });
       }
-      const response = await fetch(
-        "https://finafid.co.in/api/v1/messageForOrderDelivary",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            phoneNumber: userData.phone,
-          }),
-        }
-      );
-      const data = await response.json();
-      console.log(data);
-      return data;
+      await sendSms("messageForOrderDelivary", { phoneNumber: userData.phone });
     }
     if (req.body.status == "Canceled") {
       if (orderDetail.walletBalanceUsed >= 0) {
@@ -482,20 +329,7 @@ const updateStatus = async (req, res) => {
         ) {
           userData.is_utsav = true;
           await userData.save();
-
-          const response = await fetch(
-            "https://finafid.co.in/api/v1/messageForUtsavMember",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ phoneNumber: userData.phone }),
-            }
-          );
-          const data = await response.json();
-          console.log(data);
-          // return data;
+          await sendSms("messageForUtsavMember", { phoneNumber: userData.phone });
         }
 
         const referralDetails = await referral.findOne({
