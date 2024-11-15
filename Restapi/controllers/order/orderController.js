@@ -579,10 +579,10 @@ const getAllOrder = async (req, res) => {
       })
       .sort({ createdAt: -1 });
 
-    // Initialize status counts, total income, and total sales variables
+    // Initialize status counts
     const statusCount = {};
     let totalIncome = 0;
-    let totalSales = 0;
+    let totalSales = 0 ;
 
     // Define status list and count orders per status
     const statusList = [
@@ -603,17 +603,19 @@ const getAllOrder = async (req, res) => {
       ).length;
     });
 
-    // Calculate total income and sales across all orders (no pagination for totals)
+    // Calculate total income only for "Completed" orders
     allOrders.forEach((order) => {
-      totalIncome += order.totalPrice || 0; // Sum totalAmount for income
+      if (order.status === "Completed") {
+        totalIncome += order.totalPrice || 0;
+      } 
+      
       order.orderItem.forEach((item) => {
+        if (order.status === "Completed") {
         totalSales += item.itemQuantity || 0; // Sum itemQuantity for sales
+        }
       });
+      
     });
-
-    // Add total income and sales to the statusCount object
-    statusCount.total_income = totalIncome;
-    statusCount.total_sale = totalSales;
 
     // Apply status filter if specified
     let filteredOrders = allOrders;
@@ -629,14 +631,16 @@ const getAllOrder = async (req, res) => {
     const totalOrders = filteredOrders.length;
     const totalPages = Math.ceil(totalOrders / limit);
 
-    // Return response with paginated orders, status count, and total sales
+    // Return response with paginated orders, status count, and total income
     return res.status(200).json({
       success: true,
       orderDetails: paginatedOrders, // Paginated orders
       totalOrders, // Total count of filtered orders (before pagination)
       totalPages, // Total number of pages
       currentPage: page, // Current page number
-      statusCount, // Status count, total income, and total sales
+      statusCount, // Status count
+      totalIncome, // Total income from completed orders
+      totalSales
     });
   } catch (err) {
     return res.status(500).json({
