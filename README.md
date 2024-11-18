@@ -1,4 +1,4 @@
-# Finafid User Backend (Node.js)
+no# Finafid User Backend (Node.js)
 
 This repository contains the backend code for the Finafid User application, developed using Node.js and MongoDB. The backend handles user authentication, profile management, wallet functionality, product data retrieval, and various other services.
 
@@ -23,28 +23,41 @@ finafid-user-backend-node/
 
 
 
-### Key Folders
-controllers/: Contains logic for handling API requests.
-models/: Defines MongoDB schemas and models using Mongoose.
-routes/: Holds route definitions for various API endpoints.
-utils/: Includes utility functions for tasks like error handling.
-config/: Configuration files (e.g., database setup).
-middleware/: Middleware functions (e.g., authentication checks).
-services/: Contains business logic for various modules.
+## 📂 Key Folders
+
+Below is an overview of the main folders and their purposes:
+
+1. **controllers/**: Contains the logic for handling API requests (e.g., user registration, login).
+2. **models/**: Defines MongoDB schemas and models using Mongoose.
+3. **routes/**: Holds route definitions for various API endpoints (e.g., user, auth, products).
+4. **utils/**: Includes utility functions (e.g., error handling, JWT token generation).
+5. **config/**: Configuration files (e.g., MongoDB connection setup).
+6. **middleware/**: Middleware functions (e.g., authentication checks).
+7. **services/**: Contains business logic and service functions for the application.
+
+Each folder is designed to keep the code modular and maintainable.
 
 ## 🚀 Getting Started
 
 Follow these instructions to get a copy of the project running on your local machine for development and testing purposes.
 
-Prerequisites
-Node.js (v18.x or higher)
-MongoDB (locally installed or MongoDB Atlas)
-npm (v9.x or higher)
-Installation
-Clone the repository:
+### Prerequisites
 
-git clone https://github.com/your-username/finafid-user-backend-node.git
-cd finafid-user-backend-node
+Make sure you have the following installed:
+
+- **Node.js** (v18.x or higher)
+- **MongoDB** (locally installed or MongoDB Atlas)
+- **npm** (v9.x or higher)
+
+### Installation
+
+1. **Clone the repository:**
+
+   ```bash
+   git clone https://github.com/your-username/finafid-user-backend-node.git
+   cd finafid-user-backend-node
+```
+
 Install the dependencies:
 
 npm install
