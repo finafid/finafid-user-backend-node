@@ -1,4 +1,4 @@
-no# Finafid User Backend (Node.js)
+# Finafid User Backend (Node.js)
 
 This repository contains the backend code for the Finafid User application, developed using Node.js and MongoDB. The backend handles user authentication, profile management, wallet functionality, product data retrieval, and various other services.
 
