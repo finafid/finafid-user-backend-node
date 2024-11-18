@@ -57,12 +57,12 @@ Make sure you have the following installed:
    git clone https://github.com/finafid/finafid-user-backend-node.git
    cd finafid-user-backend-node```
 
-2. **Install the dependencies:
+2. Install the dependencies:
 
 ```bash
 npm install
 ```
-3. **Set up environment variables:
+3. Set up environment variables:
 
 Create a .env file in the root directory and add the following variables:
 
@@ -79,45 +79,45 @@ The server should now be running at http://localhost:4000.
 ## 📋 API Endpoints
 
 Here are some of the main API endpoints available in this backend:
-Auth Routes
-POST /api/v1/auth/register: Register a new user.
-POST /api/v1/auth/login: Log in a user and return a JWT token.
+-**Auth Routes**
+***POST /api/v1/auth/register: ***Register a new user.
+***POST /api/v1/auth/login: ***Log in a user and return a JWT token.
 User Routes
-GET /api/v1/user/profile: Fetch the user's profile.
-PUT /api/v1/user/update: Update user information.
+***GET /api/v1/user/profile: ***Fetch the user's profile.
+***PUT /api/v1/user/update:*** Update user information.
 Wallet Routes
-POST /api/v1/wallet/addBalance: Add balance to the user's wallet.
-GET /api/v1/wallet/getBalance: Get the current wallet balance.
-GET /api/v1/wallet/transactions: Fetch wallet transaction history.
+***POST /api/v1/wallet/addBalance:*** Add balance to the user's wallet.
+***GET /api/v1/wallet/getBalance: *** Get the current wallet balance.
+***GET /api/v1/wallet/transactions: ***Fetch wallet transaction history.
 Product Routes
-GET /api/v1/products/list: Get a list of all products.
-GET /api/v1/products/:id: Get details of a specific product.
+***GET /api/v1/products/list:*** Get a list of all products.
+***GET /api/v1/products/:id: ***Get details of a specific product.
 Other Routes
-GET /api/v1/categories: List all product categories.
-GET /api/v1/banners: Fetch banners for the home screen.
+***GET /api/v1/categories:*** List all product categories.
+***GET /api/v1/banners:*** Fetch banners for the home screen.
 
 
 ## 🛠️ Technologies Used
-Node.js: JavaScript runtime environment.
-Express: Web framework for Node.js.
-MongoDB: NoSQL database for data storage.
-Mongoose: ODM library for MongoDB.
-JWT: JSON Web Token for user authentication.
-dotenv: For environment variable management.
+-**Node.js:** JavaScript runtime environment.
+-**Express:** Web framework for Node.js.
+-**MongoDB:** NoSQL database for data storage.
+-**Mongoose:** ODM library for MongoDB.
+-**JWT: **JSON Web Token for user authentication.
+-**dotenv: **For environment variable management.
 
 ## 🛡️ Security
-The backend uses JWT for user authentication and authorization.
+*The backend uses JWT for user authentication and authorization.
 Passwords are hashed using bcrypt before storing in the database.
-All sensitive data is managed using environment variables.
+All sensitive data is managed using environment variables.*
 ## 🔄 Deployment
-The backend is currently deployed using Heroku at:
+**The backend is currently deployed using Heroku at:**
 
 https://finafid-backend-node-e762fd401cc5.herokuapp.com/api/v1
 
 To deploy your own version:
 
-Push the code to your GitHub repository.
-Link your Heroku app to the GitHub repository.
+```**Push the code to your GitHub repository.
+Link your Heroku app to the GitHub repository.**
 Set the environment variables in Heroku.
-Deploy the app via the Heroku dashboard or CLI.
+Deploy the app via the Heroku dashboard or CLI.```
 
