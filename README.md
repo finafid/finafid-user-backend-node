@@ -18,7 +18,7 @@ finafid-user-backend-node/
 ├── .env
 ├── app.js
 ├── package.json
-└── README.md
+└── README.md ```
 ## Key Folders
 controllers/: Contains logic for handling API requests.
 models/: Defines MongoDB schemas and models using Mongoose.
