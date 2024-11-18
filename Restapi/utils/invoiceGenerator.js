@@ -1,6 +1,6 @@
 const PDFDocument = require("pdfkit");
-const AWS = require("aws-sdk");
-const s3 = new AWS.S3();
+const axios = require("axios");
+const FormData = require("form-data");
 
 async function generateAndUploadInvoice(invoiceData) {
   return new Promise((resolve, reject) => {
@@ -11,19 +11,32 @@ async function generateAndUploadInvoice(invoiceData) {
     doc.on("end", async () => {
       const buffer = Buffer.concat(buffers);
       const fileName = `invoice-${invoiceData.invoiceNumber}.pdf`;
-      const params = {
-        Bucket: process.env.bucket_name,
-        Key: `invoices/${fileName}`, // S3 folder path
-        Body: buffer,
-        ContentType: "application/pdf",
-      };
 
       try {
-        const data = await s3.upload(params).promise();
-        console.log(`Invoice uploaded successfully at ${data.Location}`);
-        resolve(fileName);
+        // Sending the generated PDF buffer to the PHP API
+        const formData = new FormData();
+        formData.append("file", buffer, {
+          filename: fileName,
+          contentType: "application/pdf",
+        });
+
+        const response = await axios.post("https://files.finafid.org/invoice/upload.php", formData, {
+          headers: {
+            ...formData.getHeaders(),
+            "x-api-key": process.env.xapikey, // Optional API key for authentication
+          },
+        });
+
+        if (response.data.status === "success") {
+          console.log(`Invoice uploaded successfully at ${response.data.url}`);
+          console.log(response.data);
+          resolve(response.data.url);
+        } else {
+          console.error("Error uploading invoice:", response.data.message);
+          reject(new Error(response.data.message));
+        }
       } catch (err) {
-        console.error("Error uploading invoice to S3:", err);
+        console.error("Error uploading invoice to PHP API:", err);
         reject(err); // Reject the promise if there's an error
       }
     });

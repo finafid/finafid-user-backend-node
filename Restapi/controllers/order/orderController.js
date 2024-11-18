@@ -918,8 +918,7 @@ const updateStatus = async (req, res) => {
       };
       console.log({ invoiceData: invoiceData });
       const fileName = await generateAndUploadInvoice(invoiceData);
-      const invoiceLink =
-        "https://d2w5oj0jmt3sl6.cloudfront.net/invoices/" + fileName;
+      const invoiceLink = fileName;
       console.log({ invoiceLink: invoiceLink });
       orderDetails.invoicePath = invoiceLink;
       await orderDetails.save();
