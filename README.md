@@ -54,24 +54,26 @@ Make sure you have the following installed:
 1. **Clone the repository:**
 
    ```bash
-   git clone https://github.com/your-username/finafid-user-backend-node.git
-   cd finafid-user-backend-node
-```
+   git clone https://github.com/finafid/finafid-user-backend-node.git
+   cd finafid-user-backend-node```
 
-Install the dependencies:
+2. **Install the dependencies:
 
+```bash
 npm install
-Set up environment variables:
+```
+3. **Set up environment variables:
 
 Create a .env file in the root directory and add the following variables:
 
-PORT=3000
-MONGODB_URI=mongodb://localhost:27017/finafid
-JWT_SECRET=your_jwt_secret_key
-EXPO_PUBLIC_API_URL=https://finafid-backend-node-e762fd401cc5.herokuapp.com/api/v1
+-**PORT=3000**
+-**MONGODB_URI=mongodb://localhost:27017/finafid**
+-**JWT_SECRET=your_jwt_secret_key**
+-**EXPO_PUBLIC_API_URL=https://finafid-backend-node-e762fd401cc5.herokuapp.com/api/v1**
 Start the development server:
-
+```
 npm run dev
+```
 The server should now be running at http://localhost:4000.
 
 ## 📋 API Endpoints
