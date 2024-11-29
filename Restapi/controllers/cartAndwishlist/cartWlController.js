@@ -2,7 +2,7 @@ const cart = require("../../models/productBag/cartSc");
 const wishList = require("../../models/productBag/wishListSc");
 const User = require("../../models/auth/userSchema");
 const ProductDetails = require("../../models/productBag/ProductDetails");
-
+const MemberShipPlan = require("../../models/Utsab/MembershipPlan");
 const addToWishlist = async (req, res) => {
   try {
     const userData = req.user;
@@ -130,7 +130,8 @@ const addToCart = async (req, res) => {
     const { productId, itemQuantity = 1 } = req.body;
     const userCartDetails = await cart.findOne({ UserId: req.user._id });
 
-    // Fetch product details
+    // Fetch product 
+    
     const productDetails = await variants.findById(productId);
     if (!productDetails || productDetails.quantity === 0) {
       return res.status(400).json({
@@ -241,6 +242,95 @@ const getTheCart = async (req, res) => {
     });
   }
 };
+
+const validateCartForUtsav = async (req, res) => {
+  try {
+    const userData = req.user;
+
+    // Fetch the user's cart
+    const userCartDetails = await cart
+      .findOne({ UserId: userData._id })
+      .populate({
+        path: "cartItems",
+        populate: {
+          path: "productId",
+          populate: {
+            path: "productGroup",
+            model: "Product",
+          },
+        },
+      });
+
+    if (!userCartDetails || userCartDetails.cartItems.length === 0) {
+      return res.status(200).json({
+        success: false,
+        message: "Cart is empty or invalid",
+      });
+    }
+
+    // Fetch the membership plan details
+    const planDetails = await MemberShipPlan.findOne({ identity: "PLAN_IDENTITY" });
+    if (!planDetails) {
+      return res.status(404).json({
+        success: false,
+        message: "Membership plan not found",
+      });
+    }
+    const totalBasicReward = userCartDetails.cartItems.reduce(
+      (total, item) => total + item.productId.basicReward,
+      0
+    );
+    // Check if the user has already completed their first order
+    if (userData.firstOrderComplete) {
+      
+
+      return res.status(200).json({
+        success: true,
+        isEligible: false,
+        message: 'You can earn ₹'+totalBasicReward+' as a reward for this order, which will be credited to your wallet.',
+        totalBasicReward,
+       
+      });
+    }
+
+    // Calculate the total price of `isUtsav` products in the cart
+    const utsavTotalPrice = userCartDetails.cartItems
+      .filter(item => item.productId.isUtsav) // Filter items with `isUtsav: true`
+      .reduce((total, item) => total + item.productId.sellingPrice * item.itemQuantity, 0);
+
+    console.log(`Utsav Products Total Price: ${utsavTotalPrice}`);
+    console.log(`Plan Threshold: ${planDetails.amount}`);
+
+    // Validate the cart against the Utsav membership plan threshold
+    if (utsavTotalPrice >= planDetails.amount) {
+      return res.status(200).json({
+        success: true,
+        isEligible: true,
+        totalBasicReward:totalBasicReward,
+        message: 'You can earn ₹'+totalBasicReward+' as a reward for this order, which will be credited to your wallet',
+        utsavTotalPrice,
+        planThreshold: planDetails.amount,
+      });
+    } else {
+      return res.status(200).json({
+        success: false,
+        isEligible: false,
+        totalBasicReward:totalBasicReward,
+        message: "You Earn Rs "+totalBasicReward+' for this Order in your wallet.',
+        utsavTotalPrice,
+        planThreshold: planDetails.amount,
+        
+      });
+    }
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message + " Internal server error",
+    });
+  }
+};
+
+
 
 const deleteFromCart = async (req, res) => {
     try {
@@ -366,4 +456,5 @@ module.exports = {
   clearCart,
   removeFromCart,
   removeItemFromCart,
+  validateCartForUtsav
 };

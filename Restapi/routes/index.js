@@ -91,6 +91,7 @@ const {
   deleteFromWishlist,
   addToCart,
   getTheCart,
+  validateCartForUtsav,
   deleteFromCart,
   clearCart,
   removeFromCart,
@@ -506,6 +507,7 @@ routs.post("/deleteFromWishlist", auth, deleteFromWishlist);
 //Cart
 routs.post("/addToCart", auth, addToCart);
 routs.get("/getCartItems", auth, getTheCart);
+routs.get("/validateUtsav", auth, validateCartForUtsav);
 routs.post("/deleteFromCart", auth, deleteFromCart);
 routs.get("/clearCart", auth, clearCart);
 routs.post("/removeFromCart", auth, removeFromCart);
