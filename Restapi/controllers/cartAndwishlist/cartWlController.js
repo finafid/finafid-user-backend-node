@@ -307,7 +307,7 @@ const validateCartForUtsav = async (req, res) => {
         success: true,
         isEligible: true,
         totalBasicReward:totalBasicReward,
-        message: 'You can earn ₹'+totalBasicReward+' as a reward for this order, which will be credited to your wallet',
+        message: "Your Cart is eligible for Utsav membership plan.",
         utsavTotalPrice,
         planThreshold: planDetails.amount,
       });
@@ -316,7 +316,7 @@ const validateCartForUtsav = async (req, res) => {
         success: false,
         isEligible: false,
         totalBasicReward:totalBasicReward,
-        message: "You Earn Rs "+totalBasicReward+' for this Order in your wallet.',
+        message: 'You can earn ₹'+totalBasicReward+' as a reward for this order, which will be credited to your wallet',
         utsavTotalPrice,
         planThreshold: planDetails.amount,
         
