@@ -324,7 +324,7 @@ const updateStatus = async (req, res) => {
             success: false,
           });
         }
-        const utsavTotalPrice = userCartDetails.cartItems
+        const utsavTotalPrice = orderDetail.cartItems
         .filter(item => item.productId.isUtsav)
         .reduce((total, item) => total + item.productId.sellingPrice * item.itemQuantity, 0);
   
