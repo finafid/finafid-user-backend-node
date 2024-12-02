@@ -304,19 +304,16 @@ const updateStatus = async (req, res) => {
         const walletDetails = await Wallet.findOne({
           userId: new ObjectId(orderDetail.userId._id),
         });
-        console.log({ walletDetails });
 
         const planDetails = await MemberShipPlan.findOne({
           identity: "PLAN_IDENTITY",
         });
-        console.log({ planDetails });
 
         const userData = await User.findOne({
           _id: orderDetail.userId,
           is_Active: true,
           blocking: false,
         });
-        console.log({ userData });
 
         if (!walletDetails || !planDetails || !userData) {
           return res.status(404).json({
@@ -324,7 +321,7 @@ const updateStatus = async (req, res) => {
             success: false,
           });
         }
-        const utsavTotalPrice = orderDetail.cartItems
+        const utsavTotalPrice = orderDetail.orderItem
         .filter(item => item.productId.isUtsav)
         .reduce((total, item) => total + item.productId.sellingPrice * item.itemQuantity, 0);
   
