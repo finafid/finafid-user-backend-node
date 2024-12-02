@@ -299,6 +299,7 @@ const updateStatus = async (req, res) => {
     }
     if (req.body.status == "Completed") {
       try {
+        
         console.log(orderDetail.userId._id);
         const walletDetails = await Wallet.findOne({
           userId: new ObjectId(orderDetail.userId._id),
@@ -323,9 +324,13 @@ const updateStatus = async (req, res) => {
             success: false,
           });
         }
+        const utsavTotalPrice = userCartDetails.cartItems
+        .filter(item => item.productId.isUtsav)
+        .reduce((total, item) => total + item.productId.sellingPrice * item.itemQuantity, 0);
+  
         if (
           userData.is_utsav === false &&
-          orderDetail.totalPrice >= planDetails.amount
+          utsavTotalPrice >= planDetails.amount
         ) {
           userData.is_utsav = true;
           await userData.save();
