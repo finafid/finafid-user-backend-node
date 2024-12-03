@@ -73,29 +73,45 @@ const getAllProduct = async (req, res) => {
 };
 const getAllVarients = async (req, res) => {
   try {
-    let variants = await Variant.find().populate({
-      path: "productGroup",
-      populate: {
-        path: "productTypeId",
-      },
-    });
-    const { query } = req.query;
+    const { query, page = 1, limit = 10 } = req.query;
 
-    if (query) {
-      const regexQuery = new RegExp(query.split("").join(".*"), "i");
+    // Pagination settings
+    const currentPage = Math.max(parseInt(page, 10), 1);
+    const perPage = Math.max(parseInt(limit, 10), 1);
+    const skip = (currentPage - 1) * perPage;
 
-      variants = variants.filter((element) => {
-        return regexQuery.test(element.name);
+    // Fetch variants with pagination and populate related fields
+    let variants = await Variant.find()
+      .skip(skip)
+      .limit(perPage)
+      .populate({
+        path: "productGroup",
+        populate: {
+          path: "productTypeId",
+        },
       });
 
+    // Apply search query if provided
+    if (query) {
+      const regexQuery = new RegExp(query.split("").join(".*"), "i");
+      variants = variants.filter((element) => regexQuery.test(element.name));
       if (variants.length === 0) {
         return res.status(404).json({ message: "No matching entities found." });
       }
     }
 
-    return res.status(200).json({ variants: variants });
+    // Fetch total count of variants
+    const totalCount = await Variant.countDocuments();
+
+    // Return response with paginated data and total count
+    return res.status(200).json({
+      variants,
+      page: currentPage,
+      limit: perPage,
+      total: totalCount,
+    });
   } catch (err) {
-    return res.status(500).json({ message: "error", error: err.message });
+    return res.status(500).json({ message: "Error", error: err.message });
   }
 };
 
