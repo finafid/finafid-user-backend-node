@@ -14,7 +14,7 @@ async function authenticate() {
       password: PASSWORD,
     });
     token = response.data.token;
-    console.log("Authenticated successfully. Token:", token);
+     // console.log("Authenticated successfully. Token:", token);
   } catch (error) {
     console.error("Error authenticating with Shiprocket:", error.message);
   }

@@ -15,15 +15,15 @@ const initializeSocket = (server) => {
 
   // Listen for connection events
   io.on("connection", (socket) => {
-    console.log("New client connected");
+     // console.log("New client connected");
 
     socket.on("updateStatus", (data) => {
-      console.log("data send");
+       // console.log("data send");
       io.emit("statusUpdated", data);
     });
 
     socket.on("disconnect", () => {
-      console.log("Client disconnected");
+       // console.log("Client disconnected");
     });
   });
 

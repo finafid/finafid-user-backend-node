@@ -142,7 +142,7 @@ const editBanner = async (req, res) => {
 const getBannersByBannerTypeAndDetails = async (req, res) => {
   try {
     const { position, resourceType, bannerType, valueId } = req.query;
-    console.log(req.query);
+     // console.log(req.query);
 
     const queryResult = {
       position,

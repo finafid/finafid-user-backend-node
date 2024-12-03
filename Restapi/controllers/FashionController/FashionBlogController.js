@@ -57,7 +57,7 @@ const createBlog = async (req, res) => {
     let userLogos = [];
 
     const uploadedFiles = {};
-    console.log(req.files);
+     // console.log(req.files);
     // Process all files and categorize by fieldname
     for (const file of req.files) {
       const fieldName = file.fieldname;
@@ -69,7 +69,7 @@ const createBlog = async (req, res) => {
 
     // Check for 'logoUrl[]' instead of 'logoUrl'
     if (uploadedFiles["logoUrl[]"]) {
-      console.log("Uploading logoUrls...");
+       // console.log("Uploading logoUrls...");
       for (const file of uploadedFiles["logoUrl[]"]) {
         const logoUrl = await getMediaLink(file, res);
         logoUrls.push(logoUrl);
@@ -78,7 +78,7 @@ const createBlog = async (req, res) => {
 
     // 'userLogo' field seems fine
     if (uploadedFiles["userLogo"]) {
-      console.log("Uploading userLogos...");
+       // console.log("Uploading userLogos...");
       for (const file of uploadedFiles["userLogo"]) {
         const userLogoUrl = await getMediaLink(file, res);
         userLogos.push(userLogoUrl);
@@ -116,7 +116,7 @@ const editFashionBlog = async (req, res) => {
     let userLogo = "";
 
     const uploadedFiles = {};
-    console.log(req.files);
+     // console.log(req.files);
     // Process all files and categorize by fieldname
     for (const file of req.files) {
       const fieldName = file.fieldname;
@@ -128,7 +128,7 @@ const editFashionBlog = async (req, res) => {
 
     // Check for 'logoUrl[]' instead of 'logoUrl'
     if (uploadedFiles["logoUrl[]"]) {
-      console.log("Uploading logoUrls...");
+       // console.log("Uploading logoUrls...");
       for (const file of uploadedFiles["logoUrl[]"]) {
         const logoUrl = await getMediaLink(file, res);
         logoUrls.push(logoUrl);
@@ -137,7 +137,7 @@ const editFashionBlog = async (req, res) => {
 
     // 'userLogo' field seems fine
     if (uploadedFiles["userLogo"]) {
-      console.log("Uploading userLogos...");
+       // console.log("Uploading userLogos...");
       for (const file of uploadedFiles["userLogo"]) {
         const userLogoUrl = await getMediaLink(file, res);
         userLogo.push(userLogoUrl);

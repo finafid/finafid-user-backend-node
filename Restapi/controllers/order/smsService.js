@@ -10,7 +10,7 @@ async function sendSms(endpoint, payload) {
       body: JSON.stringify(payload),
     });
     const data = await response.json();
-    console.log("SMS sent:", data);
+     // console.log("SMS sent:", data);
     return data;
   } catch (error) {
     console.error("Error sending SMS:", error.message);

@@ -23,14 +23,14 @@ async function sendSMS(message, phoneNumber, templateId) {
   };
 
   try {
-    console.log(requestBody);
+     // console.log(requestBody);
     const response = await axios.post(url, requestBody, {
       headers: {
         "Content-Type": "application/json",
       },
     });
 
-    console.log("SMS sent successfully:", response.data);
+     // console.log("SMS sent successfully:", response.data);
 
     return "SMS sent successfully";
   } catch (error) {

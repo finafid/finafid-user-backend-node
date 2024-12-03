@@ -124,6 +124,7 @@ const {
   redeemGiftCard,
 } = require("../controllers/GiftCard/giftCardController");
 const auth = require("../middlewares/Auth");
+const authad = require("../middlewares/AdminAuth.js");
 const {
   addAddress,
   getAddressOfUser,
@@ -406,7 +407,7 @@ routs.post(
   auth,
   createProductType
 );
-routs.get("/getAllVariants", getAllVarients);
+routs.get("/getAllVariants",authad, getAllVarients);
 routs.post("/createBrand", upload.single("logo"), auth, createBrand);
 routs.get("/getProductGroupById/:productId", productOnId);
 routs.get(
@@ -519,7 +520,7 @@ routs.post("/updateStatus/:orderId", auth, updateStatus);
 routs.get("/getOrderByIdAdmin/:orderId", getOrderById);
 routs.post("/updateStatusAdmin/:orderId", updateStatus);
 routs.post("/getOrderByStatus", auth, getOrderByStatus);
-routs.get("/getAllOrder", getAllOrder);
+routs.get("/getAllOrder",authad, getAllOrder);
 routs.get("/sales/percentage-by-category", getSalesPercentageByCategory);
 routs.post("/editOrder", auth, editOrder);
 routs.get("/orderStatusDetails/:orderId", orderStatusDetails);
@@ -701,7 +702,7 @@ routs.get("/getProductByName", getProductByName);
 routs.post("/blockingCustomer/:userId", blockingCustomer);
 routs.get("/deleteCustomer/:userId", deleteCustomer);
 routs.get("/getCustomerDetailsById/:userId", getCustomerDetailsById);
-routs.get("/getAllUser", getAllUser);
+routs.get("/getAllUser",authad, getAllUser);
 routs.post("/makeUtsabMember/:userId", makeUtsabMember);
 routs.get("/customerOrderDetails/:userId", customerOrderDetails);
 

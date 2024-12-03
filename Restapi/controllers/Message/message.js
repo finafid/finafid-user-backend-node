@@ -9,7 +9,7 @@ const messageForUtsavMember = async (req, res) => {
       req.body.phoneNumber,
       templateId
     );
-    console.log(responseDetails);
+     // console.log(responseDetails);
     return res.status(200).json({
       success: true,
       message: responseDetails,
@@ -31,7 +31,7 @@ const messageForOrderDelivary = async (req, res) => {
       req.body.phoneNumber,
       templateId
     );
-    console.log({ data: responseDetails.data });
+     // console.log({ data: responseDetails.data });
     return res.status(200).json(responseDetails.data);
   } catch (error) {
     res.status(500).json({

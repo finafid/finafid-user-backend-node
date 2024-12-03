@@ -17,7 +17,7 @@ const { initializeSocket } = require("./socket"); // Import Socket.io initialize
 async function startServer() {
   try {
     await connectDb();
-    console.log("Database connected successfully");
+     // console.log("Database connected successfully");
   } catch (error) {
     console.error("Error starting server:", error);
     process.exit(1); // Exit process if DB connection fails
@@ -77,5 +77,5 @@ app.use((err, req, res, next) => {
 
 // Start the server with socket support
 server.listen(port, "0.0.0.0", () => {
-  console.log(`Server is running on port ${port}`);
+   // console.log(`Server is running on port ${port}`);
 });

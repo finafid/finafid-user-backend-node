@@ -250,7 +250,7 @@ const makeProductTypeIsFeatured = async (req, res) => {
   try {
     const { productTypeId } = req.params;
     const productTypeDetails = await productType.findById(productTypeId);
-    console.log(productTypeDetails);
+     // console.log(productTypeDetails);
     if (!productTypeDetails) {
       return res.status(500).json({ message: " Internal Server Error" });
     }

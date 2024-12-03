@@ -28,8 +28,8 @@ async function generateAndUploadInvoice(invoiceData) {
         });
 
         if (response.data.status === "success") {
-          console.log(`Invoice uploaded successfully at ${response.data.url}`);
-          console.log(response.data);
+           // console.log(`Invoice uploaded successfully at ${response.data.url}`);
+           // console.log(response.data);
           resolve(response.data.url);
         } else {
           console.error("Error uploading invoice:", response.data.message);

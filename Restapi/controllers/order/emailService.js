@@ -58,7 +58,7 @@ async function sendOrderConfirmationEmail(orderDetail, userData) {
       .replace("{{totalPrice}}", orderDetail.totalPrice);
 
     await sendMail(userData.email, "Order Confirmation", emailHTML);
-    console.log("Order confirmation email sent");
+     // console.log("Order confirmation email sent");
   } catch (error) {
     console.error("Error sending order confirmation email:", error);
   }

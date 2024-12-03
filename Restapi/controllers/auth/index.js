@@ -103,7 +103,7 @@ const userLogin = async (req, res) => {
       return res.status(401).json({ message: "Invalid Credential" });
     }
     const isPassEqual = await bcrypt.compare(req.body.password, user.password);
-    console.log(isPassEqual);
+     // console.log(isPassEqual);
     if (!isPassEqual) {
       return res
         .status(401)
@@ -114,7 +114,7 @@ const userLogin = async (req, res) => {
       fullname: user.fullName,
       email: user.email,
     };
-    console.log(tokenObject);
+     // console.log(tokenObject);
     const jwtToken = generateTokens(tokenObject, user);
     const { fcmToken } = req.body;
     if (fcmToken) {
@@ -172,14 +172,14 @@ const genOtp = async () => {
 const sendMailVarification = async (req, res) => {
   try {
     const errors = validationResult(req);
-    console.log(errors);
+     // console.log(errors);
     if (!errors.isEmpty()) {
       return res.status(500).json({
         success: false,
         message: "Error in request",
       });
     }
-    console.log(req.body);
+     // console.log(req.body);
     const { email } = req.body;
     const userData = await User.findOne({
       email,
@@ -193,7 +193,7 @@ const sendMailVarification = async (req, res) => {
       });
     }
     const g_otp = await genOtp();
-    console.log(g_otp);
+     // console.log(g_otp);
     const cDate = new Date();
     const oldOtpData = await Otp.findOne({ email: userData.email });
     // const templateId = "1007057794784985885";
@@ -229,7 +229,7 @@ const sendMailVarification = async (req, res) => {
         </div>`;
 
     const mail = await sendMail(userData.email, "Email Verification", msg);
-    console.log(mail);
+     // console.log(mail);
 
     return res.status(200).json({
       success: true,
@@ -247,7 +247,7 @@ const sendMailVarification = async (req, res) => {
 const sendMailVerificationForForgotPassword = async (req, res) => {
   try {
     const errors = validationResult(req);
-    console.log(errors);
+     // console.log(errors);
     if (!errors.isEmpty()) {
       return res.status(500).json({
         success: false,
@@ -264,7 +264,7 @@ const sendMailVerificationForForgotPassword = async (req, res) => {
       });
     }
     const g_otp = await genOtp();
-    console.log(g_otp);
+     // console.log(g_otp);
 
     const cDate = new Date();
     const oldOtpData = await Otp.findOne({ email: userData.email });
@@ -322,7 +322,7 @@ const varifyOtp = async (req, res) => {
       email,
       otp,
     });
-    console.log(email, otp);
+     // console.log(email, otp);
     if (!otpData) {
       return res.status(500).json({
         success: false,
@@ -372,7 +372,7 @@ const updatePasswordForResetPassword = async (req, res) => {
     }
     const { email, password } = req.body;
     const newPassword = await bcrypt.hash(password, 10);
-    console.log(newPassword);
+     // console.log(newPassword);
     const userData = await User.findOneAndUpdate(
       { email: email, is_Active: true, blocking: false },
       {
@@ -518,7 +518,7 @@ const updateUserDetails = async (req, res) => {
       userDetails.gender = gender;
       await userDetails.save();
     }
-    console.log(req.file);
+     // console.log(req.file);
     if (req.file) {
       const inputImagePath = req.file.buffer;
       const width = 800;
@@ -538,12 +538,12 @@ const updateUserDetails = async (req, res) => {
         extention;
       const imgUrl =
         "https://d2w5oj0jmt3sl6.cloudfront.net/" + req.file.originalname;
-      console.log(imgUrl);
+       // console.log(imgUrl);
       userDetails.imgUrl = imgUrl;
       await userDetails.save();
       generateStringOfImageList(imageBuffer, req.file.originalname, res);
     }
-    console.log(userDetails);
+     // console.log(userDetails);
     return res.status(200).json(userDetails);
   } catch (error) {
     return res
@@ -633,7 +633,7 @@ const verify_Refresh_Token = async (req, res) => {
 
   try {
     const payload = await verifyRefreshToken(refreshToken);
-    console.log(payload);
+     // console.log(payload);
     const userDetails = await User.findById(payload._id);
     const adminDetails = await Admin.findById(payload._id);
     let tokens = {};
@@ -662,9 +662,9 @@ const verify_Refresh_Token = async (req, res) => {
 const validAccessToken = async (req, res) => {
   try {
     const accessToken = req.body.token;
-    console.log(accessToken);
+     // console.log(accessToken);
     const decodedData = jwt.verify(accessToken, process.env.SECRET);
-    console.log(decodedData);
+     // console.log(decodedData);
     req.user = decodedData;
     const userDetails = await User.findById(req.user._id);
     const adminDetails = await Admin.findById(req.user._id);
@@ -695,7 +695,7 @@ const changePhoneNumber=async(req,res)=>{
 const sendOtpToPhone=async(req,res)=>{
   try {
     const g_otp = await genOtp();
-    console.log(g_otp);
+     // console.log(g_otp);
     const cDate = new Date();
     const templateId = "1007057794784985885";
     const message = `Welcome to FINAFID. Your OTP for signup is ${g_otp} Expires in 10 mins. Do not share this OTP with anyone.`;
@@ -733,7 +733,7 @@ const loginUsingPhoneNumber=async(req,res)=>{
          fullname: userData.fullName,
          email: userData.email,
        };
-       console.log(tokenObject);
+        // console.log(tokenObject);
         const { fcmToken } = req.body;
         if (fcmToken) {
           userData.fcmToken = fcmToken;

@@ -49,7 +49,7 @@ const placeOrder = async (req, res) => {
     }
 
     const userData = await User.findById(req.user._id);
-    console.log(req.body);
+     // console.log(req.body);
     const newDate = new Date(); // Create a new Date object
     newDate.setDate(newDate.getDate() + 6); // Add 6 days to the current date
 
@@ -87,14 +87,14 @@ const placeOrder = async (req, res) => {
         amount: req.body.walletBalanceUsed,
         date: Date.now(),
       });
-      console.log(newWalletTransaction);
+       // console.log(newWalletTransaction);
       await newWalletTransaction.save();
       walletDetails.transactions.push(newWalletTransaction);
       await walletDetails.save();
-      console.log(walletDetails);
+       // console.log(walletDetails);
     }
     await newOrder.save();
-    console.log(newOrder);
+     // console.log(newOrder);
     const newTransaction = new Transaction({
       orderId: newOrder._id,
       amount: req.body.total,
@@ -104,7 +104,7 @@ const placeOrder = async (req, res) => {
     await newTransaction.save();
     newOrder.transactionId = newTransaction._id;
     await newOrder.save();
-    console.log({ newOrder: newOrder });
+     // console.log({ newOrder: newOrder });
     await updateStatusDetails(newOrder._id);
     if (req.body.status === "Confirmed") {
       // Simulate the request to updateStatus
@@ -300,7 +300,7 @@ const updateStatus = async (req, res) => {
     if (req.body.status == "Completed") {
       try {
         
-        console.log(orderDetail.userId._id);
+         // console.log(orderDetail.userId._id);
         const walletDetails = await Wallet.findOne({
           userId: new ObjectId(orderDetail.userId._id),
         });
@@ -340,13 +340,13 @@ const updateStatus = async (req, res) => {
           const referralDetails = await referral.findOne({
             userId: orderDetail.userId,
           });
-          console.log({ referralDetails });
+           // console.log({ referralDetails });
 
           if (referralDetails && referralDetails.referred_by) {
             const referredUserData = await User.findById(
               referralDetails.referred_by
             );
-            console.log({ referredUserData });
+             // console.log({ referredUserData });
 
             if (
               referredUserData &&
@@ -368,7 +368,7 @@ const updateStatus = async (req, res) => {
                   amount: 49,
                   date: Date.now(),
                 });
-                console.log(newWalletTransaction);
+                 // console.log(newWalletTransaction);
                 await newWalletTransaction.save();
                 walletDetailsOfReferredUser.transactions.push(
                   newWalletTransaction
@@ -386,12 +386,12 @@ const updateStatus = async (req, res) => {
             const referralDetails = await referral.findOne({
               userId: orderDetail.userId,
             });
-            console.log({ referralDetails });
+             // console.log({ referralDetails });
             if (referralDetails && referralDetails.referred_by) {
               const referredUserData = await User.findById(
                 referralDetails.referred_by
               );
-              console.log({ referredUserData });
+               // console.log({ referredUserData });
 
               if (referredUserData && referredUserData.is_utsav === true) {
                 let walletDetailsOfReferredUser = await Wallet.findOne({
@@ -401,7 +401,7 @@ const updateStatus = async (req, res) => {
                   walletDetailsOfReferredUser &&
                   userData.firstOrderComplete == false
                 ) {
-                  console.log({ walletDetailsOfReferredUser });
+                   // console.log({ walletDetailsOfReferredUser });
 
                   // Update referred user's wallet balance
                   walletDetailsOfReferredUser.balance += planDetails.reward;
@@ -412,7 +412,7 @@ const updateStatus = async (req, res) => {
                     amount: planDetails.reward,
                     date: Date.now(),
                   });
-                  console.log(newWalletTransaction);
+                   // console.log(newWalletTransaction);
                   await newWalletTransaction.save();
                   walletDetailsOfReferredUser.transactions.push(
                     newWalletTransaction
@@ -471,7 +471,7 @@ const updateStatus = async (req, res) => {
             const walletDetails = await Wallet.findOne({
               userId: OrderDetails.userId,
             });
-            console.log(walletDetails);
+             // console.log(walletDetails);
             walletDetails.balance =
               walletDetails.balance + OrderDetails.walletBalanceUsed;
             await walletDetails.save();
@@ -843,7 +843,7 @@ const updateStatus = async (req, res) => {
           orderStatusDetails: [newStatusDetails],
           orderId,
         });
-        console.log({ newStatus: newStatus });
+         // console.log({ newStatus: newStatus });
         await newStatus.save();
       }
       if (statusDetails) {
@@ -893,7 +893,7 @@ const updateStatus = async (req, res) => {
     };
     const { generateAndUploadInvoice } = require("../../utils/invoiceGenerator");
     async function invoiceGenerate(orderDetails) {
-      console.log({ orderDetails: orderDetails });
+       // console.log({ orderDetails: orderDetails });
       const invoiceData = {
         invoiceNumber: "INVOICE" + Math.random().toString().slice(2, 10),
         date: new Date().toISOString().split("T")[0], // Formatted as YYYY-MM-DD
@@ -918,20 +918,20 @@ const updateStatus = async (req, res) => {
         shipping: orderDetails.shippingCost,
         total: orderDetails.totalPrice,
       };
-      console.log({ invoiceData: invoiceData });
+       // console.log({ invoiceData: invoiceData });
       const fileName = await generateAndUploadInvoice(invoiceData);
       const invoiceLink = fileName;
-      console.log({ invoiceLink: invoiceLink });
+       // console.log({ invoiceLink: invoiceLink });
       orderDetails.invoicePath = invoiceLink;
       await orderDetails.save();
 
-      console.log(`Invoice generated and uploaded successfully: ${invoiceLink}`);
+       // console.log(`Invoice generated and uploaded successfully: ${invoiceLink}`);
     }
 
     const downloadInvoice = async (req, res) => {
       try {
         const orderDetails = await order.findById(req.params.orderId);
-        console.log(orderDetails.invoicePath);
+         // console.log(orderDetails.invoicePath);
         if (!orderDetails || orderDetails.invoicePath == "false") {
           return res.status(400).json({
             message: " No order details",

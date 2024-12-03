@@ -198,8 +198,8 @@ const editGalleryDetails = async (req, res) => {
     if (!galleryDetails) {
       return res.status(500).json({ message: " Internal Server Error" });
     }
-    console.log(req.body)
-    console.log(req.file);
+     // console.log(req.body)
+     // console.log(req.file);
    if (req.file) {
      newBannerImg = await getImageLink(req);
      galleryDetails.bannerImg = newBannerImg;

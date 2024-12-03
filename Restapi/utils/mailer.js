@@ -24,10 +24,10 @@ const sendMail=async(email,subject,content)=>{
             if(error){
                 console.error(error)
             }
-            console.log('Mail sent',info.messageId);
+             // console.log('Mail sent',info.messageId);
         })
     }catch(error){
-        console.log(error)
+         // console.log(error)
     }
 }
 const oneMinuteExpiry = async (otpTime) => {
@@ -41,7 +41,7 @@ const oneMinuteExpiry = async (otpTime) => {
             return false; // OTP is still valid
         }
     } catch (error) {
-        console.log(error);
+         // console.log(error);
         return false; // Error occurred, consider OTP as expired
     }
 };
@@ -57,7 +57,7 @@ const threeMinuteExpiry = async (otpTime) => {
             return false; // OTP is still valid
         }
     } catch (error) {
-        console.log(error);
+         // console.log(error);
         return false; // Error occurred, consider OTP as expired
     }
 };

@@ -25,7 +25,7 @@ const payload = {
 // Make a POST request to the Airtel DLT API endpoint
 axios.post('https://digimate.airtel.in:44111/BulkPush/InstantJsonPush', payload)
     .then(response => {
-        console.log('Message sent successfully:', response.data);
+         // console.log('Message sent successfully:', response.data);
     })
     .catch(error => {
         console.error('Error sending message:', error.response ? error.response.data : error.message);

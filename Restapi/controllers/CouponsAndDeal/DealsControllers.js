@@ -481,7 +481,7 @@ const addProductFlashDeal = async (req, res) => {
       const validProductIds = req.body.products.every((productId) =>
         mongoose.Types.ObjectId.isValid(productId)
       );
-      console.log(req.body);
+       // console.log(req.body);
       if (!validProductIds) {
         return res.status(400).json({ message: "Invalid product ID(s)" });
       }
@@ -512,7 +512,7 @@ const addProductFeaturedDeal = async (req, res) => {
       const validProductIds = req.body.products.every((productId) =>
         mongoose.Types.ObjectId.isValid(productId)
       );
-      console.log(req.body);
+       // console.log(req.body);
       if (!validProductIds) {
         return res.status(400).json({ message: "Invalid product ID(s)" });
       }
@@ -604,7 +604,7 @@ const deleteProductFlashDeal = async (req, res) => {
     const dealDetails = await FlashDeal.findOne({
       _id: req.params.dealId,
     });
-    console.log(req.body);
+     // console.log(req.body);
     if (req.body == undefined) {
       return res.status(500).json({
         success: false,
@@ -638,7 +638,7 @@ const deleteProductFeaturedDeal = async (req, res) => {
     const dealDetails = await FeaturedDeal.findOne({
       _id: req.params.dealId,
     });
-    console.log(req.body);
+     // console.log(req.body);
     if (req.body == undefined) {
       return res.status(500).json({
         success: false,

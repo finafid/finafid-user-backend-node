@@ -8,9 +8,9 @@ const addToWishlist = async (req, res) => {
     const userData = req.user;
     const { productId } = req.body;
 
-    console.log(userData);
+     // console.log(userData);
     const userDetails = await wishList.findOne({ UserId: userData._id });
-    console.log(userDetails)
+     // console.log(userDetails)
     if (!userDetails) {
       const newWishList = new wishList({
         UserId: userData._id,
@@ -298,8 +298,8 @@ const validateCartForUtsav = async (req, res) => {
       .filter(item => item.productId.isUtsav) // Filter items with `isUtsav: true`
       .reduce((total, item) => total + item.productId.sellingPrice * item.itemQuantity, 0);
 
-    console.log(`Utsav Products Total Price: ${utsavTotalPrice}`);
-    console.log(`Plan Threshold: ${planDetails.amount}`);
+     // console.log(`Utsav Products Total Price: ${utsavTotalPrice}`);
+     // console.log(`Plan Threshold: ${planDetails.amount}`);
 
     // Validate the cart against the Utsav membership plan threshold
     if (utsavTotalPrice >= planDetails.amount) {
@@ -431,14 +431,14 @@ async function removeItemFromCart(productIdList, userId) {
   if (!userCartDetails) {
     return { message: "Cart not found" };
   }
-  console.log({ userCartDetails: userCartDetails });
+   // console.log({ userCartDetails: userCartDetails });
   productIdList.forEach((element) => {
-    console.log(element.productId._id);
+     // console.log(element.productId._id);
     const index = userCartDetails.cartItems.findIndex(
       (item) => item.productId.toString() === element.productId._id.toString()
     );
     if (index !== -1) {
-      console.log(`Removing item with ID: ${element.productId._id}`);
+       // console.log(`Removing item with ID: ${element.productId._id}`);
       userCartDetails.cartItems.splice(index, 1);
     }
   });

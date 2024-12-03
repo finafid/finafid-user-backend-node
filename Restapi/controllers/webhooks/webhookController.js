@@ -17,19 +17,19 @@ exports.handleWebhook = (req, res) => {
 
   switch (event) {
     case "payment_success":
-      console.log("Payment successful:", req.body);
+       // console.log("Payment successful:", req.body);
       // Process the successful payment here
       break;
     case "payment_failure":
-      console.log("Payment failed:", req.body);
+       // console.log("Payment failed:", req.body);
       // Handle payment failure here
       break;
     case "refund_success":
-      console.log("Refund successful:", req.body);
+       // console.log("Refund successful:", req.body);
       // Process the refund here
       break;
     default:
-      console.log("Unhandled event type:", event);
+       // console.log("Unhandled event type:", event);
   }
 
   res.status(200).json({ success: true, message: "Webhook received" });
