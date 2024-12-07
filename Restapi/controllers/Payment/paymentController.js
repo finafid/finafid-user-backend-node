@@ -17,7 +17,7 @@ const paymentDetails = async (req, res) => {
     };
 
     const order = await razorpayIntance.orders.create(options);
-    console.log(order);
+     // console.log(order);
     const newTransaction = new Transaction({
       orderId,
       razorpay_orderId: order.id,
@@ -25,7 +25,7 @@ const paymentDetails = async (req, res) => {
       amount,
       currency,
     });
-    console.log(newTransaction);
+     // console.log(newTransaction);
     if (!newTransaction){
       res.status(500).json({
         success: false,

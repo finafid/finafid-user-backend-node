@@ -25,11 +25,11 @@ const shareReferralCode = async (req, res) => {
     referralCode = await Referral.findOne({
       userId: req.user._id,
     });
-    console.log({ referralCode: referralCode });
+     // console.log({ referralCode: referralCode });
     if (!referralCode) {
-      console.log("userData");
+       // console.log("userData");
       const referral = await genReferralCode(req.user._id);
-      console.log({ referral: referral });
+       // console.log({ referral: referral });
       referralCode = await Referral.findOne({
         userId: req.user._id
       });
@@ -44,12 +44,12 @@ const shareReferralCode = async (req, res) => {
 };
 async function redeemedReferral(referralCode,userId) {
   try {
-    console.log(referralCode);
-    console.log(userId);
+     // console.log(referralCode);
+     // console.log(userId);
     const couponsDetails = await Referral.findOne({
       code: referralCode,
     });
-    console.log({ couponsDetails: couponsDetails });
+     // console.log({ couponsDetails: couponsDetails });
     if (!couponsDetails) {
       return res.status(500).json({ message: "Cannot find." });
     }
@@ -57,7 +57,7 @@ async function redeemedReferral(referralCode,userId) {
     const userDetails = await Referral.findOne({
       userId: userId,
     });
-    console.log({ userDetails: userDetails });
+     // console.log({ userDetails: userDetails });
     userDetails.referred_by = couponsDetails.userId;
     await userDetails.save();
 

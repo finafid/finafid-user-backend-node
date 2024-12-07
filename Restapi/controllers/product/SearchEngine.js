@@ -98,7 +98,7 @@ const searchEngineLink = process.env.searchEngineLink;
 //       return res.status(400).json({ message: response.data.message});;
 //     }
 //     for (let element of response.data.results) {
-//       console.log(element.Product);
+//        // console.log(element.Product);
 //       stringList.push(element.Product);
 
 //     }
@@ -129,7 +129,7 @@ const searchEngineLink = process.env.searchEngineLink;
 //        return res.status(400).json({ message: response.data.message });
 //      }
 //     let variantList = [];
-//     console.log(response.data);
+//      // console.log(response.data);
 //     for (let element of response.data.results) {
 //       const productDetails = await productSc
 //         .findOne({
@@ -337,7 +337,7 @@ const getSearchDataSecond = async (req, res) => {
       if (entities.length === 0) {
         return res.status(404).json({ message: "No matching entities found." });
       }
-      console.log(entities);
+       // console.log(entities);
     let variantList = [];
 
     // Iterate through the results and fetch details based on modelName
@@ -400,7 +400,7 @@ const getSearchDataSecond = async (req, res) => {
               
             // Directly concatenate variants
             variantList = variantList.concat(detailedEntity.variants);
-            console.log({ SubCategory: detailedEntity });
+             // console.log({ SubCategory: detailedEntity });
             break;
           case "ProductType":
             detailedEntity = await productSc

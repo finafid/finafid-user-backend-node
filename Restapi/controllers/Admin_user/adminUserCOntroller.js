@@ -11,46 +11,70 @@ const orderCountById = async (userId) => {
 };
 const getAllUser = async (req, res) => {
   try {
-    const allUser = await user.find({ is_Active: true });
+    const { query, page = 1, limit = 10 } = req.query;
 
-    let userWithDetails = await Promise.all(
-      allUser.map(async (element) => {
-        const userId = element._id;
+    // Pagination settings
+    const currentPage = Math.max(parseInt(page, 10), 1);
+    const perPage = Math.max(parseInt(limit, 10), 1);
+    const skip = (currentPage - 1) * perPage;
+
+    // Fetch active users with pagination
+    const allUsers = await user
+      .find({ is_Active: true })
+      .skip(skip)
+      .limit(perPage)
+      .lean(); // Fetch plain objects for better performance
+
+    const userIds = allUsers.map((user) => user._id);
+
+    // Batch fetch order counts for all users
+    const orderCounts = await Promise.all(
+      userIds.map(async (userId) => {
         try {
-          const orderCount = await orderCountById(userId);
-          return {
-            ...element._doc,
-            orderCount: orderCount,
-          };
+          return { userId, orderCount: await orderCountById(userId) };
         } catch (error) {
-          console.error(`Error fetching details for userId ${userId}:`, error);
-          return {
-            ...element._doc,
-            orderCount: 0,
-          };
+          console.error(`Error fetching order count for userId ${userId}:`, error);
+          return { userId, orderCount: 0 };
         }
       })
     );
-    const { query } = req.query;
 
+    // Map order counts back to users
+    const userWithDetails = allUsers.map((user) => {
+      const userOrder = orderCounts.find((order) => String(order.userId) === String(user._id));
+      return {
+        ...user,
+        orderCount: userOrder ? userOrder.orderCount : 0,
+      };
+    });
+
+    // Apply search query if provided
+    let filteredUsers = userWithDetails;
     if (query) {
       const regexQuery = new RegExp(query.split("").join(".*"), "i");
-
-      userWithDetails = userWithDetails.filter((element) => {
-        return regexQuery.test(element.fullName);
-      });
-
-      if (userWithDetails.length === 0) {
+      filteredUsers = userWithDetails.filter((element) => regexQuery.test(element.fullName));
+      if (filteredUsers.length === 0) {
         return res.status(404).json({ message: "No matching entities found." });
       }
     }
-    return res.status(200).json({ userWithDetails: userWithDetails });
+
+    // Fetch total count of active users
+    const totalCount = await user.countDocuments({ is_Active: true });
+
+    return res.status(200).json({
+      users: filteredUsers,
+      page: currentPage,
+      limit: perPage,
+      total: totalCount, // Total count of active users
+    });
   } catch (error) {
-    return res
-      .status(500)
-      .json({ message: error.message + " Internal Server Error" });
+    return res.status(500).json({
+      message: `${error.message} - Internal Server Error`,
+    });
   }
 };
+
+
 const blockingCustomer = async (req, res) => {
   try {
     const userDetails = await user.findById(req.params.userId);

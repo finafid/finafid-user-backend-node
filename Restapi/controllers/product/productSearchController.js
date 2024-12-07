@@ -156,7 +156,7 @@ const getAllVariantsOnUser = async (req, res) => {
       const maxDiscount = Math.max(...discountArray);
       query.discount = { $gte: 0, $lte: maxDiscount };
     }
-
+    query.is_active=true;
     // Initial fetch of variants
     let filteredVariants = await Variant.find(query).lean();
 

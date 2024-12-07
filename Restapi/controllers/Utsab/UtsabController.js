@@ -76,7 +76,7 @@ const addMembershipPlan = async (req, res) => {
     const memberShipDetails = await MemberShipPlan.findOne({
       identity: "PLAN_IDENTITY",
     });
-    console.log(req.body);
+     // console.log(req.body);
     if (!memberShipDetails) {
       const newDetails = new MemberShipPlan({
         amount,
@@ -231,7 +231,7 @@ const addBorrowMember = async (req, res) => {
     if (!leaderDetails) {
       return res.status(500).json({ message: "No leader found" });
     }
-    console.log(walletDetails.balance);
+     // console.log(walletDetails.balance);
     if (walletDetails.balance < memberShipDetails.amount) {
       return res.status(500).json({
         message: "Sorry but cannot process because of your wallet Balance",
