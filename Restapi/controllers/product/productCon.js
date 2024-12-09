@@ -1398,7 +1398,7 @@ const getAllFeaturedProduct = async (req, res) => {
   try {
     const variantDetails = await Variant.find({
       is_featured: true,
-      is_active:true,
+      is_active: true,
       quantity: { $gt: 0 },
     }).populate({
       path: "productGroup",
@@ -1409,14 +1409,22 @@ const getAllFeaturedProduct = async (req, res) => {
         path: "brand",
       },
     });
-    if (!variantDetails) {
-      return res.status(500).json({ message: "No variantDetails" });
+
+    if (!variantDetails || variantDetails.length === 0) {
+      return res.status(404).json({ message: "No featured products found" });
     }
-    return res.status(200).json({ variantDetails });
+
+    // Randomize the array of products
+    const randomizedProducts = variantDetails.sort(() => Math.random() - 0.5);
+
+    return res.status(200).json({ variantDetails: randomizedProducts });
   } catch (error) {
-    res.status(500).json({ message: error.message + " Internal Server Error" });
+    res
+      .status(500)
+      .json({ message: error.message + " Internal Server Error" });
   }
 };
+
 const brandBasedOnCategory = async (req, res) => {
   try {
     const brandDetails = await Brand.find({
