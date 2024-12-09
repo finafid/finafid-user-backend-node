@@ -1398,6 +1398,8 @@ const getAllFeaturedProduct = async (req, res) => {
   try {
     const variantDetails = await Variant.find({
       is_featured: true,
+      is_active:true,
+      quantity: { $gt: 0 },
     }).populate({
       path: "productGroup",
       populate: {
