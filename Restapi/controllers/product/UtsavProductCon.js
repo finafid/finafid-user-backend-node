@@ -11,7 +11,9 @@ const getAllUtsavProduct = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
-    const productDetails = await Variant.find({ isUtsav: true })
+
+    // Fetch all Utsav products
+    const allProducts = await Variant.find({ isUtsav: true,is_active:true })
       .populate({
         path: "productGroup",
         populate: {
@@ -20,13 +22,25 @@ const getAllUtsavProduct = async (req, res) => {
         },
         model: "Product",
       })
-      .skip(skip)
-      .limit(limit);
-    const totalCount = await Variant.countDocuments({ isUtsav: true });
+      .lean();
+
+    // Deduplicate products by color using Map
+    const uniqueProducts = Array.from(
+      new Map(
+        allProducts.map((product) => [
+          `${product.productGroup._id}_${product.attributes.color}`,
+          product,
+        ])
+      ).values()
+    );
+
+    // Paginate the deduplicated products
+    const paginatedProducts = uniqueProducts.slice(skip, skip + limit);
+    const totalCount = uniqueProducts.length;
     const totalPages = Math.ceil(totalCount / limit);
 
     res.status(200).json({
-      productDetails,
+      productDetails: paginatedProducts,
       pagination: {
         page,
         limit,
@@ -35,9 +49,10 @@ const getAllUtsavProduct = async (req, res) => {
       },
     });
   } catch (error) {
+    console.error("Error fetching Utsav products:", error);
     res.status(500).json({ error: error.message });
   }
-};
+}
 
 const getAllUtsavProductBasedOnCategory = async (req, res) => {
   try {
