@@ -111,6 +111,14 @@ const {
   downloadInvoice,
 } = require("../controllers/order/orderController");
 const { upload, uploadImageToS3 } = require("../utils/fileUpload");
+
+const {
+  getSettings,
+  getSettingById,
+  createSetting,
+  updateSetting,
+  deleteSetting,
+} = require('../controllers/sections/settingController.js');
 const {
   createGiftCard,
   getGiftCardDetails,
@@ -823,4 +831,9 @@ routs.post("/messageForOrderDelivary", messageForOrderDelivary);
 routs.post("/messageForOrderOnTheWay", messageForOrderOnTheWay);
 routs.post("/messageForOrderConfirmed", messageForOrderConfirmed);
 routs.post("/contactUs", contactUs);
+routs.get("/settings", getSettings);
+routs.get("/settings/:id",authad, getSettingById);
+routs.post("/settings", createSetting);
+routs.put("/settings/:id",authad, updateSetting);
+routs.delete("/settings/:id",authad, deleteSetting);
 module.exports = routs;
