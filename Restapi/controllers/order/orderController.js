@@ -497,7 +497,7 @@ const updateStatus = async (req, res) => {
 
                 await Variant.findByIdAndUpdate(
                   productId,
-                  { $inc: { quantity: +quantityToReduce } },
+                  { $inc: { quantity: + quantityToReduce } },
                   { new: true }
                 );
               })
@@ -590,8 +590,8 @@ const updateStatus = async (req, res) => {
     const getAllOrder = async (req, res) => {
       try {
         // Get query parameters for filtering and pagination
-        const { status, page = 1, limit = 10, startDate, endDate } = req.query;
-
+        const { status, page = 1, limit = 10, startDate, endDate, search } = req.query;
+    
         // Create a date filter object if startDate and endDate are provided
         let dateFilter = {};
         if (startDate || endDate) {
@@ -605,12 +605,26 @@ const updateStatus = async (req, res) => {
             dateFilter.createdAt.$lte = end;
           }
         }
-
-        // Fetch all orders with the date filter applied
+    
+        // Build search filter if 'search' query is provided
+        let searchFilter = {};
+        if (search) {
+          const regex = new RegExp(search, "i"); // Case-insensitive search
+          searchFilter = {
+            $or: [
+              { orderId: { $regex: regex } }, // Assuming `orderId` is the field you want to search
+              { "userId.name": { $regex: regex } }, // Search by user name, if relevant
+              { "userId.email": { $regex: regex } }, // Or by email
+            ],
+          };
+        }
+    
+        // Fetch all orders with filters applied
         const allOrders = await order
           .find({
             $and: [
               dateFilter,
+              searchFilter, // Add search filter here
               {
                 $or: [
                   { payment_complete: { $in: [true, false] } },
@@ -629,12 +643,12 @@ const updateStatus = async (req, res) => {
             },
           })
           .sort({ createdAt: -1 });
-
+    
         // Initialize status counts
         const statusCount = {};
         let totalIncome = 0;
         let totalSales = 0;
-
+    
         // Define status list and count orders per status
         const statusList = [
           "Pending",
@@ -646,42 +660,41 @@ const updateStatus = async (req, res) => {
           "Canceled",
           "Completed",
         ];
-
+    
         // Count orders by status
         statusList.forEach((status) => {
           statusCount[status] = allOrders.filter(
             (order) => order.status === status
           ).length;
         });
-
+    
         // Calculate total income only for "Completed" orders
         allOrders.forEach((order) => {
           if (order.status === "Completed") {
             totalIncome += order.totalPrice || 0;
           }
-
+    
           order.orderItem.forEach((item) => {
             if (order.status === "Completed") {
               totalSales += item.itemQuantity || 0; // Sum itemQuantity for sales
             }
           });
-
         });
-
+    
         // Apply status filter if specified
         let filteredOrders = allOrders;
         if (status) {
           filteredOrders = allOrders.filter((order) => order.status === status);
         }
-
+    
         // Calculate pagination values
         const skip = (page - 1) * limit;
         const paginatedOrders = filteredOrders.slice(skip, skip + parseInt(limit));
-
+    
         // Calculate total pages for pagination
         const totalOrders = filteredOrders.length;
         const totalPages = Math.ceil(totalOrders / limit);
-
+    
         // Return response with paginated orders, status count, and total income
         return res.status(200).json({
           success: true,
@@ -691,7 +704,7 @@ const updateStatus = async (req, res) => {
           currentPage: page, // Current page number
           statusCount, // Status count
           totalIncome, // Total income from completed orders
-          totalSales
+          totalSales, // Total sales from completed orders
         });
       } catch (err) {
         return res.status(500).json({
@@ -700,6 +713,7 @@ const updateStatus = async (req, res) => {
         });
       }
     };
+    
 
     const getSalesPercentageByCategory = async (req, res) => {
       try {
