@@ -119,6 +119,15 @@ const {
   updateSetting,
   deleteSetting,
 } = require('../controllers/sections/settingController.js');
+
+const {
+  createComponent,
+  getAllComponents,
+  getComponentById,
+  updateComponent,
+  deleteComponent,
+} = require('../controllers/home/homeCon.js');
+
 const {
   createGiftCard,
   getGiftCardDetails,
@@ -836,4 +845,9 @@ routs.get("/settings/:id",authad, getSettingById);
 routs.post("/settings", createSetting);
 routs.put("/settings/:id",authad, updateSetting);
 routs.delete("/settings/:id",authad, deleteSetting);
+routs.post('/createComponent', createComponent);
+routs.get('/gethome', getAllComponents);
+routs.get('/home:id', getComponentById); 
+routs.put('/home:id', updateComponent); 
+routs.delete('/home:id', deleteComponent); 
 module.exports = routs;
