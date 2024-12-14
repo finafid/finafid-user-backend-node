@@ -14,12 +14,12 @@ const verifyToken = async (req, res, next) => {
         .status(403)
         .json({ success: false, msg: "Token is not present" });
     }
-    console.log({ token: token });
+     // console.log({ token: token });
     // Handle "Bearer" prefix if present
     if (token.startsWith("Bearer ")) {
       token = token.slice(7, token.length).trimLeft();
     }
-    console.log({ token: token });
+     // console.log({ token: token });
     // Check if the token is blacklisted
     const blackListPromise = BlackList.findOne({ token });
 
@@ -29,14 +29,14 @@ const verifyToken = async (req, res, next) => {
    });
 
     req.user = decodedData;
-    console.log(req.user);
+     // console.log(decodedData);
     // Fetch user and admin details concurrently
     const [blackList, userDetails, adminDetails] = await Promise.all([
       blackListPromise,
       User.findOne({ _id: req.user._id, is_Active: true, blocking: false }),
       Admin.findOne({ _id: req.user._id }),
     ]);
-    console.log(userDetails);
+     // console.log(userDetails);
     if (blackList) {
       return res
         .status(400)

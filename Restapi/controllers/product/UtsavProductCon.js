@@ -11,7 +11,9 @@ const getAllUtsavProduct = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
-    const productDetails = await Variant.find({ isUtsav: true })
+
+    // Fetch all Utsav products
+    const allProducts = await Variant.find({ isUtsav: true,is_active:true })
       .populate({
         path: "productGroup",
         populate: {
@@ -20,13 +22,25 @@ const getAllUtsavProduct = async (req, res) => {
         },
         model: "Product",
       })
-      .skip(skip)
-      .limit(limit);
-    const totalCount = await Variant.countDocuments({ isUtsav: true });
+      .lean();
+
+    // Deduplicate products by color using Map
+    const uniqueProducts = Array.from(
+      new Map(
+        allProducts.map((product) => [
+          `${product.productGroup._id}_${product.attributes.color}`,
+          product,
+        ])
+      ).values()
+    );
+
+    // Paginate the deduplicated products
+    const paginatedProducts = uniqueProducts.slice(skip, skip + limit);
+    const totalCount = uniqueProducts.length;
     const totalPages = Math.ceil(totalCount / limit);
 
     res.status(200).json({
-      productDetails,
+      productDetails: paginatedProducts,
       pagination: {
         page,
         limit,
@@ -35,9 +49,10 @@ const getAllUtsavProduct = async (req, res) => {
       },
     });
   } catch (error) {
+    console.error("Error fetching Utsav products:", error);
     res.status(500).json({ error: error.message });
   }
-};
+}
 
 const getAllUtsavProductBasedOnCategory = async (req, res) => {
   try {
@@ -168,6 +183,7 @@ const getAllTopSellingBrand = async (req, res) => {
 
 const getAllTopSellingProduct = async (req, res) => {
   try {
+    // Fetch orders with payment complete or COD/Wallet payment methods
     const orderDetails = await Order.find({
       $or: [
         { payment_complete: true },
@@ -185,60 +201,74 @@ const getAllTopSellingProduct = async (req, res) => {
 
     let productCountMap = new Map();
 
-    // Process orders and products
+    // Process orders and dynamically check product stock and is_active
     await Promise.all(
       orderDetails.map(async (order) => {
         await Promise.all(
           order.orderItem.map(async (item) => {
-            const productDetails = item.productId;
+            const productId = item.productId?._id;
 
-            // Check if productDetails is not null before accessing _id
-            if (productDetails) {
-              const productId = productDetails._id.toString();
+            if (productId) {
+              // Fetch current stock and is_active status
+              const productDetails = await Variant.findOne({
+                _id: productId,
+                is_active: true,
+                quantity: { $gt: 0 },
+              }).populate({
+                path: "productGroup",
+                populate: {
+                  path: "brand",
+                },
+              });
 
-              if (productCountMap.has(productId)) {
-                productCountMap.get(productId).count += 1;
-              } else {
-                productCountMap.set(productId, {
-                  product: productDetails,
-                  count: 1,
-                });
+              if (productDetails) {
+                const productKey = productDetails._id.toString();
+
+                if (productCountMap.has(productKey)) {
+                  productCountMap.get(productKey).count += 1;
+                } else {
+                  productCountMap.set(productKey, {
+                    product: productDetails,
+                    count: 1,
+                  });
+                }
               }
-            } else {
-              console.error(
-                "Product details are null for an item in order:",
-                item
-              );
             }
           })
         );
       })
     );
 
-    const adminSellingProductDetails = await productSc
-      .find({
-        topSellingProduct: true,
-      })
-      .populate("brand");
+    // Fetch admin-specified top-selling products with current stock and is_active
+    const adminSellingProductDetails = await Variant.find({
+      topSellingProduct: true,
+      is_active: true,
+      quantity: { $gt: 0 },
+    }).populate({
+      path: "productGroup",
+      populate: {
+        path: "brand",
+      },
+    });
 
     adminSellingProductDetails.forEach((product) => {
-      if (product) {
-        const productId = product._id.toString();
+      const productKey = product._id.toString();
 
-        if (productCountMap.has(productId)) {
-          productCountMap.get(productId).count += 1;
-        } else {
-          productCountMap.set(productId, {
-            product: product,
-            count: 1,
-          });
-        }
+      if (productCountMap.has(productKey)) {
+        productCountMap.get(productKey).count += 1;
       } else {
-        console.error("Top-selling product is null:", product);
+        productCountMap.set(productKey, {
+          product,
+          count: 1,
+        });
       }
     });
 
-    const result = Array.from(productCountMap.values());
+    // Convert the map to an array and sort by count in descending order
+    const result = Array.from(productCountMap.values()).sort(
+      (a, b) => b.count - a.count
+    );
+
     res.status(200).json(result);
   } catch (error) {
     console.error("Error fetching product details:", error);
@@ -246,11 +276,12 @@ const getAllTopSellingProduct = async (req, res) => {
   }
 };
 
+
 const makeProductTypeIsFeatured = async (req, res) => {
   try {
     const { productTypeId } = req.params;
     const productTypeDetails = await productType.findById(productTypeId);
-    console.log(productTypeDetails);
+     // console.log(productTypeDetails);
     if (!productTypeDetails) {
       return res.status(500).json({ message: " Internal Server Error" });
     }

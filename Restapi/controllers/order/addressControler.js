@@ -20,7 +20,7 @@ const addAddress = async (req, res) => {
     const userDetails = await Address.findOne({ userId: req.user._id });
     if (!userDetails){
       newAddress.isDefault=true;
-    } console.log(newAddress);
+    }  // console.log(newAddress);
     await newAddress.save();
     res.status(200).json({
       success: true,
@@ -45,7 +45,7 @@ const getAddressOfUser = async (req, res) => {
         message: "No address is found",
       });
     }
-    console.log(addressDetails);
+     // console.log(addressDetails);
     return res.status(200).json({
       success: true,
       addressDetails,
@@ -99,15 +99,15 @@ const deleteAddress = async (req, res) => {
     const { addressId } = req.params;
    
     const addressDetails = await Address.findOne({_id:addressId});
-      console.log(addressDetails);
+       // console.log(addressDetails);
     if (!addressDetails) {
       return res.status(500).json({
         success: false,
         message: "No address found",
       });
     }
-    console.log(addressDetails);
-    console.log(addressDetails.isDefault);
+     // console.log(addressDetails);
+     // console.log(addressDetails.isDefault);
     if (addressDetails.isDefault===false) {
       await Address.deleteOne({ _id: addressId });
       return res.status(200).json({
