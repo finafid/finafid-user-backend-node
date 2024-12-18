@@ -302,7 +302,7 @@ const validateCartForUtsav = async (req, res) => {
      // console.log(`Plan Threshold: ${planDetails.amount}`);
 
     // Validate the cart against the Utsav membership plan threshold
-    if (utsavTotalPrice >= planDetails.amount) {
+    if (utsavTotalPrice >= planDetails.amount && !userData.is_utsav ) {
       return res.status(200).json({
         success: true,
         isEligible: true,
