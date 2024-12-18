@@ -302,7 +302,18 @@ const validateCartForUtsav = async (req, res) => {
      // console.log(`Plan Threshold: ${planDetails.amount}`);
 
     // Validate the cart against the Utsav membership plan threshold
-    if (utsavTotalPrice >= planDetails.amount && !userData.is_utsav ) {
+    if (utsavTotalPrice >= planDetails.amount ) {
+      if(userData.is_utsav){
+        return res.status(200).json({
+          success: false,
+          isEligible: false,
+          totalBasicReward:totalBasicReward,
+          message: 'You can earn ₹'+totalBasicReward+' as a reward for this order, which will be credited to your wallet',
+          utsavTotalPrice,
+          planThreshold: planDetails.amount,
+          
+        });
+      }
       return res.status(200).json({
         success: true,
         isEligible: true,
