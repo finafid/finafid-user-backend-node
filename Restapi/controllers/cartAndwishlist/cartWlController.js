@@ -307,7 +307,7 @@ const validateCartForUtsav = async (req, res) => {
         success: true,
         isEligible: true,
         totalBasicReward:totalBasicReward,
-        message: "Your Cart is eligible for Utsav membership plan.",
+        message: "The Products are eligible for UTSAV membership.",
         utsavTotalPrice,
         planThreshold: planDetails.amount,
       });
