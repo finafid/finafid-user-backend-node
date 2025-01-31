@@ -22,17 +22,19 @@ const createComponent = async (req, res) => {
 
    const getAllComponents = async (req, res) => {
     try {
-      const { page = 1, limit = 20 } = req.query; // Default to page 1 and limit 10
+      const page = parseInt(req.query.page) || 1;  
+      const limit = parseInt(req.query.limit) || 20;  // Ensure limit is a number
+  
       const components = await HomePageComponent.find()
-        .sort({ position: 1 }) // Sort by `position` in ascending order
+        .sort({ position: 1 }) 
         .skip((page - 1) * limit)
-        .limit(parseInt(limit));
+        .limit(limit);  // Ensure limit is a valid number
   
       const total = await HomePageComponent.countDocuments();
   
       return res.status(200).json({
         data: components,
-        currentPage: parseInt(page),
+        currentPage: page,
         totalPages: Math.ceil(total / limit),
         totalItems: total,
       });
