@@ -11,95 +11,132 @@ const {
 const {
   removeItemFromCart,
 } = require("../../controllers/cartAndwishlist/cartWlController");
+const Transaction = require("../../models/payment/paymentSc");
+const Wallet = require("../../models/Wallet/wallet");
+const walletTransaction = require("../../models/Wallet/WalletTransaction");
+
+// Payment Request (Order or Wallet)
 const paymentDetail = async (req, res) => {
   try {
-    const { amount, orderId } = req.body;
-    const orderDetails = await Order.findById(orderId);
+    const { amount, orderId, type } = req.body; // Add "type" to distinguish between order & wallet
     const userDetails = await User.findById(req.user._id);
-    const txnid = "" + orderId;
-     // console.log(txnid);
-    const hashString = `${PAYU_MERCHANT_KEY}|${txnid}|${amount}|Order|${userDetails.fullName}|${userDetails.email}|||||||||||${PAYU_MERCHANT_SALT}`;
+
+    let txnid = "";
+    let productinfo = "";
+    
+    if (type === "wallet") {
+      txnid = `wallet_${req.user._id}_${Date.now()}`; // Unique ID for wallet transactions
+      productinfo = "Wallet Recharge";
+    } else {
+      const orderDetails = await Order.findById(orderId);
+      txnid = "" + orderId;
+      productinfo = "Order";
+    }
+
+    const hashString = `${PAYU_MERCHANT_KEY}|${txnid}|${amount}|${productinfo}|${userDetails.fullName}|${userDetails.email}|||||||||||${PAYU_MERCHANT_SALT}`;
     const hash = crypto.createHash("sha512").update(hashString).digest("hex");
-     // console.log("Generated Hash: ", hash);
+
     const paymentData = {
       key: PAYU_MERCHANT_KEY,
-      txnid: txnid,
-      amount: amount,
-      productinfo: "Order",
+      txnid,
+      amount,
+      productinfo,
       firstname: userDetails.fullName,
       email: userDetails.email,
       phone: userDetails.phone.toString(),
       surl: "https://finafid-backend-node-e762fd401cc5.herokuapp.com/api/v1/success",
       furl: "https://finafid-backend-node-e762fd401cc5.herokuapp.com/api/v1/failure",
-      hash: hash,
+      hash,
       service_provider: "payu_paisa",
     };
-    //https://finafid-backend-node-e762fd401cc5.herokuapp.com/api/v1/paymentResponse
-     // console.log("Payment Data: ", paymentData);
 
     res.json({ paymentData, actionURL: `${PAYU_BASE_URL}/_payment` });
   } catch (error) {
     res.status(500).json({ message: error.message + " Internal Server Error" });
   }
 };
+
+const addBalanceFromPayment = async (userId, amount, description) => {
+  try {
+    const type = "credit";
+    const newTransaction = new walletTransaction({
+      userId,
+      type,
+      amount,
+      date: Date.now(),
+      transaction_message: description,
+    });
+
+    await newTransaction.save();
+    let walletDetails = await Wallet.findOne({ userId });
+
+    if (!walletDetails) {
+      walletDetails = new Wallet({
+        userId,
+        balance: amount,
+        transactions: [newTransaction],
+      });
+    } else {
+      walletDetails.balance += amount;
+      walletDetails.transactions.push(newTransaction);
+    }
+
+    await walletDetails.save();
+  } catch (error) {
+    console.error("Error adding balance from payment:", error);
+  }
+};
+
+
+
+// Payment Response Handler
 const paymentResponse = async (req, res) => {
   try {
-     // console.log("Processing PayU payment response...");
+    const { txnid, status, amount, email, firstname, productinfo, hash } = req.body;
 
-    // PayU typically sends the data in req.body directly, so adjust accordingly
-    let { txnid, status, amount, email, firstname, productinfo, hash } =
-      req.body;
-
-    if (
-      !txnid ||
-      !status ||
-      !amount ||
-      !email ||
-      !firstname ||
-      !productinfo ||
-      !hash
-    ) {
+    if (!txnid || !status || !amount || !email || !firstname || !productinfo || !hash) {
       return res.status(400).send("Invalid payment data");
     }
 
     const hashString = `${PAYU_MERCHANT_SALT}|${status}|||||||||||${email}|${firstname}|${productinfo}|${amount}|${txnid}|${PAYU_MERCHANT_KEY}`;
-    const generatedHash = crypto
-      .createHash("sha512")
-      .update(hashString)
-      .digest("hex");
-
-     // console.log({ generatedHash, receivedHash: hash });
+    const generatedHash = crypto.createHash("sha512").update(hashString).digest("hex");
 
     if (generatedHash === hash) {
       if (status === "success") {
-        const updatedOrder = await Order.findOneAndUpdate(
-          { _id: txnid },
-          { payment_complete: true, status: "Confirmed" }
-          // { new: true }
-        ).populate("orderItem");
-         // console.log(updatedOrder);
-        await updateStatusDetails(updatedOrder._id, "Confirmed");
-        await removeItemFromCart(updatedOrder.orderItem, updatedOrder.userId);
+        if (txnid.startsWith("wallet_")) {
+          // Wallet Recharge Handling
+          const userId = txnid.split("_")[1]; // Extract userId from txnid
+          const description = "Wallet Recharge via PayU";
+          await addBalanceFromPayment(userId, amount, description);
+          return res.render("paymentSuccess");
+        } else {
+          // Order Payment Handling
+          const updatedOrder = await Order.findOneAndUpdate(
+            { _id: txnid },
+            { payment_complete: true, status: "Confirmed" }
+          ).populate("orderItem");
 
-        return res.render("paymentSuccess");
+          await updateStatusDetails(updatedOrder._id, "Confirmed");
+          await removeItemFromCart(updatedOrder.orderItem, updatedOrder.userId);
+
+          return res.render("paymentSuccess");
+        }
       } else {
-        // const updatedOrder = await Order.findOneAndUpdate(
-        //   { _id: txnid },
-        //   { status: "Failed" },
-        //   { new: true }
-        // );
-
         return res.render("paymentFailure");
       }
     } else {
-      res.status(400).send("Payment verification failed");
+      return res.status(400).send("Payment verification failed");
     }
   } catch (error) {
-
-    res.status(500).send("Internal Server Error");
+    return res.status(500).send("Internal Server Error");
   }
 };
-const handlePaymentSuccess = async (txnid, orderDetails, res) => {
+
+
+
+
+// Handle Successful Order Payment
+const handlePaymentSuccess = async (txnid, res) => {
   try {
     const updatedOrder = await Order.findOneAndUpdate(
       { _id: txnid },
@@ -113,26 +150,21 @@ const handlePaymentSuccess = async (txnid, orderDetails, res) => {
       },
     });
 
-     // console.log("Order updated successfully:", updatedOrder);
-
-    // Update order status and remove items from cart
     await updateStatusDetails(updatedOrder._id, "Confirmed");
     await removeItemFromCart(updatedOrder.orderItem, updatedOrder.userId);
 
-    // Render the success page
     return res.render("paymentSuccess");
   } catch (error) {
     return res.status(500).send("Internal Server Error");
   }
 };
+
+// Handle Payment Failure
 const handlePaymentFailure = async (txnid, res) => {
   try {
     await Order.findOneAndUpdate({ _id: txnid }, { status: "Failed" });
-
-    // Render the failure page
     return res.render("paymentFailure");
   } catch (error) {
-    console.error("Error handling payment failure:", error);
     return res.status(500).send("Internal Server Error");
   }
 };
