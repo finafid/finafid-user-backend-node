@@ -62,7 +62,7 @@ const addBalanceFromPayment = async (userId, amount, description) => {
     const newTransaction = new walletTransaction({
       userId,
       type,
-      amount,
+      amount: Number(amount),  // Ensure amount is a number
       date: Date.now(),
       transaction_message: description,
     });
@@ -73,11 +73,11 @@ const addBalanceFromPayment = async (userId, amount, description) => {
     if (!walletDetails) {
       walletDetails = new Wallet({
         userId,
-        balance: amount,
+        balance: Number(amount),  // Ensure amount is a number
         transactions: [newTransaction],
       });
     } else {
-      walletDetails.balance += amount;
+      walletDetails.balance += Number(amount);  // Ensure addition works correctly
       walletDetails.transactions.push(newTransaction);
     }
 
@@ -86,6 +86,7 @@ const addBalanceFromPayment = async (userId, amount, description) => {
     console.error("Error adding balance from payment:", error);
   }
 };
+
 
 
 
