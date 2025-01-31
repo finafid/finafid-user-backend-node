@@ -22,15 +22,22 @@ const createComponent = async (req, res) => {
 
    const getAllComponents = async (req, res) => {
     try {
-      const page = parseInt(req.query.page) || 1;  
-      const limit = parseInt(req.query.limit) || 20;  // Ensure limit is a number
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
   
-      const components = await HomePageComponent.find()
-        .sort({ position: 1 }) 
-        .skip((page - 1) * limit)
-        .limit(limit);  // Ensure limit is a valid number
+      console.log("Page:", page, "Limit:", limit);
   
       const total = await HomePageComponent.countDocuments();
+      console.log("Total Documents in DB:", total);
+  
+      const components = await HomePageComponent.find()
+        .sort({ position: 1 })
+        .skip((page - 1) * limit)
+        .limit(Number(limit)) // Ensure limit is a number
+        .lean()
+        .exec();
+  
+      console.log("Fetched Components:", components.length);
   
       return res.status(200).json({
         data: components,
@@ -42,6 +49,7 @@ const createComponent = async (req, res) => {
       res.status(500).json({ error: err.message });
     }
   };
+  
   
 
    const getComponentById = async (req, res) => {
