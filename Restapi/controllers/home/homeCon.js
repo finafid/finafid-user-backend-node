@@ -22,18 +22,31 @@ const createComponent = async (req, res) => {
 
    const getAllComponents = async (req, res) => {
     try {
-      const page = parseInt(req.query.page) || 1;
-      const limit = parseInt(req.query.limit) || 10;
+      const page = Math.max(parseInt(req.query.page) || 1, 1); // Ensure page is at least 1
+      const limit = Math.max(parseInt(req.query.limit) || 10, 1); // Ensure limit is at least 1
   
       console.log("Page:", page, "Limit:", limit);
   
       const total = await HomePageComponent.countDocuments();
       console.log("Total Documents in DB:", total);
   
+      // Ensure skip is within valid range
+      const skip = (page - 1) * limit;
+      if (skip >= total) {
+        return res.status(200).json({
+          data: [],
+          currentPage: page,
+          totalPages: Math.ceil(total / limit),
+          totalItems: total,
+        });
+      }
+  
+      console.log("Skip:", skip, "Limit:", limit);
+  
       const components = await HomePageComponent.find()
         .sort({ position: 1 })
-        .skip((page - 1) * limit)
-        .limit(Number(limit)) // Ensure limit is a number
+        .skip(skip)
+        .limit(limit)
         .lean()
         .exec();
   
@@ -46,9 +59,11 @@ const createComponent = async (req, res) => {
         totalItems: total,
       });
     } catch (err) {
+      console.error("Error fetching components:", err);
       res.status(500).json({ error: err.message });
     }
   };
+  
   
   
 
