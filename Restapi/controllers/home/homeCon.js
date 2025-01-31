@@ -22,7 +22,7 @@ const createComponent = async (req, res) => {
 
    const getAllComponents = async (req, res) => {
     try {
-      const { page = 1, limit = 10 } = req.query; // Default to page 1 and limit 10
+      const { page = 1, limit = 20 } = req.query; // Default to page 1 and limit 10
       const components = await HomePageComponent.find()
         .sort({ position: 1 }) // Sort by `position` in ascending order
         .skip((page - 1) * limit)
