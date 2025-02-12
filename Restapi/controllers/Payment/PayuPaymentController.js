@@ -18,19 +18,25 @@ const walletTransaction = require("../../models/Wallet/WalletTransaction");
 // Payment Request (Order or Wallet)
 const paymentDetail = async (req, res) => {
   try {
-    const { amount, orderId, type } = req.body; // Add "type" to distinguish between order & wallet
+    const { amount, orderId, type, paymentMode } = req.body; // Accept paymentMode
     const userDetails = await User.findById(req.user._id);
 
-    let txnid = "";
-    let productinfo = "";
-    
+    if (!amount || !userDetails) {
+      return res.status(400).json({ message: "Invalid request data" });
+    }
+
+    let txnid, productinfo;
+
     if (type === "wallet") {
-      txnid = `wallet_${req.user._id}_${Date.now()}`; // Unique ID for wallet transactions
+      txnid = `wallet_${req.user._id}_${Date.now()}`;
       productinfo = "Wallet Recharge";
     } else {
       const orderDetails = await Order.findById(orderId);
-      txnid = "" + orderId;
-      productinfo = "Order";
+      if (!orderDetails) {
+        return res.status(400).json({ message: "Invalid order ID" });
+      }
+      txnid = orderId;
+      productinfo = "Order Payment";
     }
 
     const hashString = `${PAYU_MERCHANT_KEY}|${txnid}|${amount}|${productinfo}|${userDetails.fullName}|${userDetails.email}|||||||||||${PAYU_MERCHANT_SALT}`;
@@ -44,6 +50,7 @@ const paymentDetail = async (req, res) => {
       firstname: userDetails.fullName,
       email: userDetails.email,
       phone: userDetails.phone.toString(),
+      payment_mode: paymentMode, // Pass payment mode (CARD/UPI)
       surl: "https://finafid-backend-node-e762fd401cc5.herokuapp.com/api/v1/success",
       furl: "https://finafid-backend-node-e762fd401cc5.herokuapp.com/api/v1/failure",
       hash,
@@ -52,7 +59,7 @@ const paymentDetail = async (req, res) => {
 
     res.json({ paymentData, actionURL: `${PAYU_BASE_URL}/_payment` });
   } catch (error) {
-    res.status(500).json({ message: error.message + " Internal Server Error" });
+    res.status(500).json({ message: "Internal Server Error: " + error.message });
   }
 };
 
@@ -102,36 +109,39 @@ const paymentResponse = async (req, res) => {
     const hashString = `${PAYU_MERCHANT_SALT}|${status}|||||||||||${email}|${firstname}|${productinfo}|${amount}|${txnid}|${PAYU_MERCHANT_KEY}`;
     const generatedHash = crypto.createHash("sha512").update(hashString).digest("hex");
 
-    if (generatedHash === hash) {
-      if (status === "success") {
-        if (txnid.startsWith("wallet_")) {
-          // Wallet Recharge Handling
-          const userId = txnid.split("_")[1]; // Extract userId from txnid
-          const description = "Wallet Recharge via PayU";
-          await addBalanceFromPayment(userId, amount, description);
-          return res.render("paymentSuccess");
-        } else {
-          // Order Payment Handling
-          const updatedOrder = await Order.findOneAndUpdate(
-            { _id: txnid },
-            { payment_complete: true, status: "Confirmed" }
-          ).populate("orderItem");
+    if (generatedHash !== hash) {
+      return res.status(400).send("Payment verification failed");
+    }
 
-          await updateStatusDetails(updatedOrder._id, "Confirmed");
-          await removeItemFromCart(updatedOrder.orderItem, updatedOrder.userId);
-
-          return res.render("paymentSuccess");
-        }
+    if (status === "success") {
+      if (txnid.startsWith("wallet_")) {
+        const userId = txnid.split("_")[1]; // Extract user ID from txnid
+        const description = "Wallet Recharge Successful";
+        await addBalanceFromPayment(userId, amount, description);
+        return res.render("paymentSuccess");
       } else {
-        return res.render("paymentFailure");
+        const updatedOrder = await Order.findOneAndUpdate(
+          { _id: txnid },
+          { payment_complete: true, status: "Confirmed" }
+        ).populate("orderItem");
+
+        if (!updatedOrder) {
+          return res.status(400).send("Order not found");
+        }
+
+        await updateStatusDetails(updatedOrder._id, "Confirmed");
+        await removeItemFromCart(updatedOrder.orderItem, updatedOrder.userId);
+
+        return res.render("paymentSuccess");
       }
     } else {
-      return res.status(400).send("Payment verification failed");
+      return res.render("paymentFailure");
     }
   } catch (error) {
     return res.status(500).send("Internal Server Error");
   }
 };
+
 
 
 
