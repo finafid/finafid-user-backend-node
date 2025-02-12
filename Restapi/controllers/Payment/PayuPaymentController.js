@@ -56,6 +56,7 @@ const paymentDetail = async (req, res) => {
       service_provider: "payu_paisa",
       enforce_paymethod: paymentMode
     };
+    console.log(paymentMode)
 
     res.json({ paymentData, actionURL: `${PAYU_BASE_URL}/_payment` });
   } catch (error) {
