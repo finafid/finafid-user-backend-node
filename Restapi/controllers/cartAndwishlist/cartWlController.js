@@ -223,17 +223,29 @@ const getTheCart = async (req, res) => {
           },
         },
       });
-     ;
-      
-    if (!userCartDetails) {
+
+    if (!userCartDetails || userCartDetails.cartItems.length === 0) {
       return res.status(200).json({
         success: false,
         message: "Cart is empty",
+        paymentMethods: [],
       });
     }
+
+    // Calculate total cart amount
+    const totalAmount = userCartDetails.cartItems.reduce((acc, item) => acc + item.productId.price * item.quantity, 0);
+
+    // Define payment methods
+    const paymentMethods = [
+      { method: "COD", available: totalAmount <= 3000 }, // COD is unavailable if total > 3000
+      { method: "Online", available: true }, // Online is always available
+    ];
+
     return res.status(200).json({
       success: true,
       cartItems: userCartDetails.cartItems,
+      totalAmount,
+      paymentMethods,
     });
   } catch (error) {
     return res.status(500).json({
@@ -242,6 +254,7 @@ const getTheCart = async (req, res) => {
     });
   }
 };
+
 
 const validateCartForUtsav = async (req, res) => {
   try {
