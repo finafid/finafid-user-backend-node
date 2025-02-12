@@ -54,7 +54,8 @@ const paymentDetail = async (req, res) => {
       furl: "https://finafid-backend-node-e762fd401cc5.herokuapp.com/api/v1/failure",
       hash,
       service_provider: "payu_paisa",
-      enforce_paymethod: paymentMode
+      enforce_paymethod: paymentMode === "PAYU_UPI" ? "UPI" : "CC",
+      pg: paymentMode === "PAYU_UPI" ? "UPI" : "CC",
     };
     console.log(paymentMode)
 
