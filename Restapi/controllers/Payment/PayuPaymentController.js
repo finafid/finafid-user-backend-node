@@ -50,11 +50,11 @@ const paymentDetail = async (req, res) => {
       firstname: userDetails.fullName,
       email: userDetails.email,
       phone: userDetails.phone.toString(),
-      payment_mode: paymentMode, // Pass payment mode (CARD/UPI)
       surl: "https://finafid-backend-node-e762fd401cc5.herokuapp.com/api/v1/success",
       furl: "https://finafid-backend-node-e762fd401cc5.herokuapp.com/api/v1/failure",
       hash,
       service_provider: "payu_paisa",
+      enforce_paymethod: paymentMode
     };
 
     res.json({ paymentData, actionURL: `${PAYU_BASE_URL}/_payment` });
