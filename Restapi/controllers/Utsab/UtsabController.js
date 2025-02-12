@@ -493,20 +493,22 @@ const getBorrowMemberShipPlan = async (req, res) => {
 };
 const getMemberById = async (req, res) => {
   try {
-    const userData = await User.findById(req.params.userId);
+    const { userId } = req.params;
+    const { page = 1, limit = 10 } = req.query; // Default page 1, limit 10
+
+    const userData = await User.findById(userId);
     const address = await Address.findOne({
-      userId: req.params.userId,
+      userId,
       isDefault: true,
     });
+
     const walletTransactionDetails = await walletTransaction
-      .find({
-        userId: req.params.userId,
-      })
-      .populate("userId");
-    const referralDetails = await Referral.findOne({
-      userId: req.params.userId,
-      // is_Active:true
-    })
+      .find({ userId })
+      .populate("userId")
+      .limit(parseInt(limit))
+      .skip((parseInt(page) - 1) * parseInt(limit));
+
+    const referralDetails = await Referral.findOne({ userId })
       .populate("referred_by")
       .populate({
         path: "referred_user",
@@ -514,57 +516,45 @@ const getMemberById = async (req, res) => {
       });
 
     let membersWithDetails = [];
-
     if (referralDetails && referralDetails.referred_user) {
-      membersWithDetails = await Promise.all(
-        referralDetails.referred_user.map(async (member) => {
-          const userId = member._id;
-          try {
-            const totalSpendData = await totalSpendOfMember(userId);
+      const paginatedReferredUsers = referralDetails.referred_user.slice(
+        (parseInt(page) - 1) * parseInt(limit),
+        parseInt(page) * parseInt(limit)
+      );
 
+      membersWithDetails = await Promise.all(
+        paginatedReferredUsers.map(async (member) => {
+          try {
+            const totalSpendData = await totalSpendOfMember(member._id);
             return {
               ...member._doc,
               totalSpend: totalSpendData.totalSpend,
             };
           } catch (error) {
-            console.error(
-              `Error fetching details for userId ${userId}:`,
-              error
-            );
-            return {
-              ...member._doc,
-              totalSpend: 0,
-            };
+            console.error(`Error fetching details for userId ${member._id}:`, error);
+            return { ...member._doc, totalSpend: 0 };
           }
         })
       );
     }
 
-   const response = {};
+    const response = {};
+    if (userData) response.userData = userData;
+    if (address) response.address = address;
+    if (walletTransactionDetails) response.walletTransactionDetails = walletTransactionDetails;
+    if (referralDetails) {
+      response.referralDetails = {
+        ...referralDetails._doc,
+        referred_user: membersWithDetails,
+      };
+    }
 
-   if (userData) {
-     response.userData = userData;
-   }
-   if (address) {
-     response.address = address;
-   }
-   if (walletTransactionDetails) {
-     response.walletTransactionDetails = walletTransactionDetails;
-   }
-   if (referralDetails) {
-     response.referralDetails = {
-       ...referralDetails._doc,
-       referred_user: membersWithDetails,
-     };
-   }
-
-   return res.status(200).json(response);
+    return res.status(200).json(response);
   } catch (error) {
-    return res
-      .status(500)
-      .json({ message: error.message + " Internal Server Error" });
+    return res.status(500).json({ message: error.message + " Internal Server Error" });
   }
 };
+
 
 const totalSpendOfMemberSingle = async (req, res) => {
   try {
