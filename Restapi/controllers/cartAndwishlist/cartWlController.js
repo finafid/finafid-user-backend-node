@@ -233,11 +233,14 @@ const getTheCart = async (req, res) => {
     }
 
     // Calculate total cart amount
-    const totalAmount = userCartDetails.cartItems.reduce((acc, item) => acc + item.productId.price * item.quantity, 0);
+    const totalAmount = userCartDetails.cartItems.reduce((acc, item) => acc + item.sellingPrice.price * item.quantity, 0);
+
+    // Check if all items in the cart have cod: true
+    const isCODAvailable = userCartDetails.cartItems.every(item => item.productId.cod === true);
 
     // Define payment methods
     const paymentMethods = [
-      { method: "COD", available: totalAmount <= 3000 }, // COD is unavailable if total > 3000
+      { method: "COD", available: isCODAvailable }, // COD is available only if all items have cod: true
       { method: "Online", available: true }, // Online is always available
     ];
 
