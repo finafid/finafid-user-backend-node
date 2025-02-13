@@ -233,8 +233,7 @@ const getTheCart = async (req, res) => {
     }
 
     // Calculate total cart amount
-    const totalAmount = userCartDetails.cartItems.reduce((acc, item) => acc + item.sellingPrice.price * item.quantity, 0);
-
+   
     // Check if all items in the cart have cod: true
     const isCODAvailable = userCartDetails.cartItems.every(item => item.productId.cod === true);
 
@@ -247,7 +246,6 @@ const getTheCart = async (req, res) => {
     return res.status(200).json({
       success: true,
       cartItems: userCartDetails.cartItems,
-      totalAmount,
       paymentMethods,
     });
   } catch (error) {
