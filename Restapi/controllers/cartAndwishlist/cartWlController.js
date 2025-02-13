@@ -239,8 +239,8 @@ const getTheCart = async (req, res) => {
 
     // Define payment methods
     const paymentMethods = [
-      { method: "COD", available: isCODAvailable }, // COD is available only if all items have cod: true
-      { method: "Online", available: true }, // Online is always available
+      { lable:"Cash on Delivery",method: "COD", available: isCODAvailable,icon:"mobile" }, // COD is available only if all items have cod: true
+      { lable:"Card / UPI / Net Banking",method: "PayU", available: true,icon:"money" }, // Online is always available
     ];
 
     return res.status(200).json({
