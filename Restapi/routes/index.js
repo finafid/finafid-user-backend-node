@@ -162,6 +162,7 @@ const {
   addBalanceFromAdmin,
   getBalanceFromAdmin,
   addWallet,
+  getTotalBalance
 } = require("../controllers/Wallet/walletController.js");
 const {
   totalIncome,
@@ -203,6 +204,8 @@ const {
   deleteBanner,
   publishBanner,
   getAllBanner,
+  getAllBannerTypes,
+  getBannersWithFilters,
   getBannerById,
 } = require("../controllers/BannerController/bannerCon");
 
@@ -581,6 +584,7 @@ routs.get("/getBalance", auth, getBalance);
 routs.post("/addBalanceFromAdmin", addBalanceFromAdmin);
 routs.get("/getBalanceFromAdmin/:userId", getBalanceFromAdmin);
 routs.get("/addWallet", addWallet);
+routs.get("/getTotalBalance", getTotalBalance);
 //admin dashboard
 routs.get("/getTotalIncome", totalIncome);
 routs.get("/getTotalOrder", totalOrder);
@@ -631,6 +635,8 @@ routs.post("/createBanner", upload.single("bannerImg"), createBanner);
 routs.post("/editBanner/:bannerId", upload.single("bannerImg"), editBanner);
 routs.get("/getAllBannersByBannerType", getBannersByBannerTypeAndDetails);
 routs.get("/getAllBanners", getAllBanner);
+routs.get("/getBannersWithFilters", getBannersWithFilters);
+routs.get("/getAllBannerTypes", getAllBannerTypes);
 routs.delete("/deleteBanner/:bannerId", deleteBanner);
 routs.post("/publishBanner/:bannerId", publishBanner);
 routs.get("/getBannerById/:bannerId", getBannerById);
