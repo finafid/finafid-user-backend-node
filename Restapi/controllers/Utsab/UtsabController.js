@@ -494,7 +494,7 @@ const getBorrowMemberShipPlan = async (req, res) => {
 const getMemberById = async (req, res) => {
   try {
     const { userId } = req.params;
-    const { page = 1, limit = 10 } = req.query; // Default page 1, limit 10
+    const { page = 1, limit = 30 } = req.query; 
 
     const userData = await User.findById(userId);
     const address = await Address.findOne({

@@ -52,9 +52,15 @@ const getAllUser = async (req, res) => {
     let filteredUsers = userWithDetails;
     if (query) {
       const regexQuery = new RegExp(query.split("").join(".*"), "i");
-      filteredUsers = userWithDetails.filter((element) => regexQuery.test(element.fullName));
+      filteredUsers = userWithDetails.filter(
+        (element) =>
+          regexQuery.test(element.fullName) || 
+          regexQuery.test(element.email) || 
+          regexQuery.test(String(element.phone)) // Convert phone number to string for regex match
+      );
+
       if (filteredUsers.length === 0) {
-        return res.status(404).json({ message: "No matching entities found." });
+        return res.status(404).json({ message: "No matching users found." });
       }
     }
 
@@ -73,6 +79,7 @@ const getAllUser = async (req, res) => {
     });
   }
 };
+
 
 
 const blockingCustomer = async (req, res) => {
