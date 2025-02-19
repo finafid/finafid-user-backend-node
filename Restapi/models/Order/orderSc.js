@@ -132,7 +132,7 @@ const orderSchema = new mongoose.Schema(
 );
 
 // 🔹 Generate Unique 12-character Order ID Before Saving
-orderSchema.pre("save", async function (next) {
+orderSchema.pre("validate", async function (next) {
   if (!this.orderId) {
     let unique = false;
     let generatedId;
