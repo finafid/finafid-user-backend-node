@@ -15,6 +15,7 @@ const Transaction = require("../../models/payment/paymentSc");
 const Wallet = require("../../models/Wallet/wallet");
 const walletTransaction = require("../../models/Wallet/WalletTransaction");
 
+const { getSocketInstance } = require("../order/socket");
 // Payment Request (Order or Wallet)
 const paymentDetail = async (req, res) => {
   try {
@@ -126,6 +127,11 @@ const paymentResponse = async (req, res) => {
           { _id: txnid },
           { payment_complete: true, status: "Confirmed" }
         ).populate("orderItem");
+        const io = getSocketInstance();
+        io.emit("orderStatusUpdated", {
+          orderId:updatedOrder._id,
+          status: 'Confirmed',
+        });
 
         if (!updatedOrder) {
           return res.status(400).send("Order not found");

@@ -13,21 +13,28 @@ const getAllUser = async (req, res) => {
   try {
     const { query, page = 1, limit = 10 } = req.query;
 
-    // Pagination settings
     const currentPage = Math.max(parseInt(page, 10), 1);
     const perPage = Math.max(parseInt(limit, 10), 1);
     const skip = (currentPage - 1) * perPage;
 
-    // Fetch active users with pagination
-    const allUsers = await user
-      .find({ is_Active: true })
-      .skip(skip)
-      .limit(perPage)
-      .lean(); // Fetch plain objects for better performance
+    // Create search filter
+    let searchFilter = { is_Active: true };
 
+    if (query) {
+      const regexQuery = new RegExp(query.split("").join(".*"), "i"); // Dynamic search
+
+      searchFilter.$or = [
+        { fullName: regexQuery }, // Search by full name
+        { email: regexQuery }, // Search by email
+        { phone: regexQuery }, // Search by phone number
+      ];
+    }
+
+    // Fetch matching users with pagination
+    const allUsers = await user.find(searchFilter).skip(skip).limit(perPage).lean();
+
+    // Get order count for each user
     const userIds = allUsers.map((user) => user._id);
-
-    // Batch fetch order counts for all users
     const orderCounts = await Promise.all(
       userIds.map(async (userId) => {
         try {
@@ -39,46 +46,26 @@ const getAllUser = async (req, res) => {
       })
     );
 
-    // Map order counts back to users
+    // Attach order counts to user data
     const userWithDetails = allUsers.map((user) => {
       const userOrder = orderCounts.find((order) => String(order.userId) === String(user._id));
-      return {
-        ...user,
-        orderCount: userOrder ? userOrder.orderCount : 0,
-      };
+      return { ...user, orderCount: userOrder ? userOrder.orderCount : 0 };
     });
 
-    // Apply search query if provided
-    let filteredUsers = userWithDetails;
-    if (query) {
-      const regexQuery = new RegExp(query.split("").join(".*"), "i");
-      filteredUsers = userWithDetails.filter(
-        (element) =>
-          regexQuery.test(element.fullName) || 
-          regexQuery.test(element.email) || 
-          regexQuery.test(String(element.phone)) // Convert phone number to string for regex match
-      );
-
-      if (filteredUsers.length === 0) {
-        return res.status(404).json({ message: "No matching users found." });
-      }
-    }
-
-    // Fetch total count of active users
-    const totalCount = await user.countDocuments({ is_Active: true });
+    // Get total count of users matching search criteria
+    const totalCount = await user.countDocuments(searchFilter);
 
     return res.status(200).json({
-      users: filteredUsers,
+      users: userWithDetails,
       page: currentPage,
       limit: perPage,
-      total: totalCount, // Total count of active users
+      total: totalCount,
     });
   } catch (error) {
-    return res.status(500).json({
-      message: `${error.message} - Internal Server Error`,
-    });
+    return res.status(500).json({ message: `${error.message} - Internal Server Error` });
   }
 };
+
 
 
 
@@ -137,6 +124,7 @@ const makeUtsabMember = async (req, res) => {
       return res.status(500).json({ message: "No customer" });
     }
     userDetails.is_utsav = req.body.utsavStatus;
+    userDetails.firstOrderComplete = true;
     await userDetails.save();
     return res.status(200).json({ userDetails: userDetails });
   } catch (error) {
