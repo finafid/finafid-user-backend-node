@@ -26,9 +26,10 @@ const getAllUser = async (req, res) => {
       searchFilter.$or = [
         { fullName: regexQuery }, // Search by full name
         { email: regexQuery }, // Search by email
-        { phone: regexQuery }, // Search by phone number
+        { phone: { $regex: regexQuery, $options: "i" } }, // Convert phone to regex (ensure it's stored as a string)
       ];
     }
+
 
     // Fetch matching users with pagination
     const allUsers = await user.find(searchFilter).skip(skip).limit(perPage).lean();
