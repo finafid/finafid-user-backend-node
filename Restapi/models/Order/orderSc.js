@@ -2,6 +2,11 @@ const mongoose = require("mongoose");
 
 const orderSchema = new mongoose.Schema(
   {
+    orderId: {
+      type: String,
+      unique: true,
+      required: true,
+    },
     orderItem: [
       {
         productId: {
@@ -14,26 +19,21 @@ const orderSchema = new mongoose.Schema(
         },
         unitPrice: {
           type: Number,
-          required: false,
         },
         sellingPrice: {
           type: Number,
-          required: false,
         },
         utsavPrice: {
           type: Number,
-          required: false,
         },
         discount: {
           type: Number,
-          required: false,
         },
       },
     ],
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "user",
-      required: false,
     },
     address: {
       type: mongoose.Schema.Types.Mixed,
@@ -54,7 +54,6 @@ const orderSchema = new mongoose.Schema(
     transactionId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Transaction",
-      required: false,
     },
     tax: {
       type: Number,
@@ -62,7 +61,6 @@ const orderSchema = new mongoose.Schema(
     },
     payment_method: {
       type: String,
-      required: false,
       enum: ["Razorpay", "COD", "Wallet", "PayU"],
     },
     payment_complete: {
@@ -71,11 +69,11 @@ const orderSchema = new mongoose.Schema(
     },
     recipient_name: {
       type: String,
-      default: false,
+      default: "",
     },
     recipient_mobileNumber: {
       type: Number,
-      default: false,
+      default: 0,
     },
     is_utsab: {
       type: Boolean,
@@ -83,45 +81,37 @@ const orderSchema = new mongoose.Schema(
     },
     utsavReward: {
       type: Number,
-      required: false,
       default: 0,
     },
     basicReward: {
       type: Number,
-      required: false,
       default: 0,
     },
     walletBalanceUsed: {
       type: Number,
-      required: false,
       default: 0,
     },
     expectedDeliveryDate: {
       type: Date,
-      required: false,
     },
     invoicePath: {
       type: String,
-      default: false,
+      default: "",
     },
     couponDiscount: {
       type: Number,
-      required: false,
       default: 0,
     },
     utsavDiscount: {
       type: Number,
-      required: false,
       default: 0,
     },
     shippingCost: {
       type: Number,
-      required: false,
       default: 0,
     },
     status: {
       type: String,
-      required: true,
       enum: [
         "Pending",
         "Failed",
@@ -140,5 +130,25 @@ const orderSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// 🔹 Generate Unique 12-character Order ID Before Saving
+orderSchema.pre("save", async function (next) {
+  if (!this.orderId) {
+    let unique = false;
+    let generatedId;
+
+    while (!unique) {
+      generatedId = `F${Math.random().toString(36).substr(2, 11).toUpperCase()}`;
+      if (generatedId.length > 12) {
+        generatedId = generatedId.slice(0, 12); // Ensure exactly 12 characters
+      }
+      const existingOrder = await mongoose.model("Order").findOne({ orderId: generatedId });
+      if (!existingOrder) unique = true;
+    }
+
+    this.orderId = generatedId;
+  }
+  next();
+});
 
 module.exports = mongoose.model("Order", orderSchema);
