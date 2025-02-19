@@ -26,12 +26,16 @@ const getAllUser = async (req, res) => {
       searchFilter.$or = [
         { fullName: regexQuery }, // Search by full name
         { email: regexQuery }, // Search by email
-        { phone: { $regex: regexQuery, $options: "i" } }, // Convert phone to regex (ensure it's stored as a string)
       ];
+
+      // Handling phone number search safely
+      const isNumericQuery = /^[0-9]+$/.test(query); // Check if query is only numbers
+      if (isNumericQuery) {
+        searchFilter.$or.push({ phone: Number(query) }); // Match exact phone number
+      }
     }
 
-
-    // Fetch matching users with pagination
+    // Fetch matching users
     const allUsers = await user.find(searchFilter).skip(skip).limit(perPage).lean();
 
     // Get order count for each user
@@ -66,6 +70,7 @@ const getAllUser = async (req, res) => {
     return res.status(500).json({ message: `${error.message} - Internal Server Error` });
   }
 };
+
 
 
 
