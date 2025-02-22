@@ -556,9 +556,7 @@ const getVariantById = async (req, res) => {
 };
 const suggestionProductList = async (req, res) => {
   try {
-    const variantDetails = await Variant.findById(
-      req.params.variantId
-    ).populate("productGroup");
+    const variantDetails = await Variant.findById(req.params.variantId).populate("productGroup");
 
     if (!variantDetails) {
       return res.status(404).json({
@@ -566,14 +564,16 @@ const suggestionProductList = async (req, res) => {
         message: "Variant not found",
       });
     }
+
     const [productDetails, productList] = await Promise.all([
       productSc.findById(variantDetails.productGroup),
       productSc
         .find({
-          productTypeId: variantDetails.productGroup.productTypeId
+          productTypeId: variantDetails.productGroup.productTypeId,
         })
         .populate({
           path: "variants",
+          match: { is_active: true }, // Filter only active variants
           populate: {
             path: "productGroup",
             select: "brand",
@@ -602,6 +602,7 @@ const suggestionProductList = async (req, res) => {
     });
   }
 };
+
 
 const createBrand = async (req, res) => {
   try {
