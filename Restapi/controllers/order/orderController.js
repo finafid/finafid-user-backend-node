@@ -27,6 +27,15 @@ const placeOrder = async (req, res) => {
 
     for (const element of req.body.orderItem) {
       const variantDetails = await Variant.findById(element.productId);
+
+
+      if (variantDetails.quantity < element.itemQuantity) {
+        return res.status(400).json({
+          success: false,
+          message: `Product Out of stock !`,
+        });
+      }
+
       const newOrderItem = {
         productId: element.productId,
         itemQuantity: element.itemQuantity,
