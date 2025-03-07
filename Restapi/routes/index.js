@@ -241,6 +241,19 @@ const {
 } = require("../controllers/CouponsAndDeal/DealsControllers.js");
 
 const {
+  addRewardPoints,
+  showRewardTransactions,
+  getRewardBalance,
+  addRewardFromAdmin,
+  getRewardBalanceFromAdmin,
+  addRewardWallet,
+  getTotalRewards,
+} = require("../controllers/Reward/rewardController.js");
+
+
+
+
+const {
   createCoupons,
   getTheCoupon,
   applyCoupon,
@@ -855,5 +868,13 @@ routs.post('/createComponent', createComponent);
 routs.get('/gethome', getAllComponents);
 routs.get('/home:id', getComponentById); 
 routs.put('/home:id', updateComponent); 
-routs.delete('/home:id', deleteComponent); 
+routs.delete('/home:id', deleteComponent);
+//Reward
+router.post("/addRewardPoints", auth, addRewardPoints);
+router.get("/showRewardTransactions", auth, showRewardTransactions);
+router.get("/getRewardBalance", auth, getRewardBalance);
+router.post("/addRewardFromAdmin", addRewardFromAdmin);
+router.get("/getRewardBalanceFromAdmin/:userId", getRewardBalanceFromAdmin);
+router.get("/addRewardWallet", addRewardWallet);
+router.get("/getTotalRewards", getTotalRewards); 
 module.exports = routs;
