@@ -870,11 +870,11 @@ routs.get('/home:id', getComponentById);
 routs.put('/home:id', updateComponent); 
 routs.delete('/home:id', deleteComponent);
 //Reward
-router.post("/addRewardPoints", auth, addRewardPoints);
-router.get("/showRewardTransactions", auth, showRewardTransactions);
-router.get("/getRewardBalance", auth, getRewardBalance);
-router.post("/addRewardFromAdmin", addRewardFromAdmin);
-router.get("/getRewardBalanceFromAdmin/:userId", getRewardBalanceFromAdmin);
-router.get("/addRewardWallet", addRewardWallet);
-router.get("/getTotalRewards", getTotalRewards); 
+routs.post("/addRewardPoints", auth, addRewardPoints);
+routs.get("/showRewardTransactions", auth, showRewardTransactions);
+routs.get("/getRewardBalance", auth, getRewardBalance);
+routs.post("/addRewardFromAdmin", addRewardFromAdmin);
+routs.get("/getRewardBalanceFromAdmin/:userId", getRewardBalanceFromAdmin);
+routs.get("/addRewardWallet", addRewardWallet);
+routs.get("/getTotalRewards", getTotalRewards); 
 module.exports = routs;
