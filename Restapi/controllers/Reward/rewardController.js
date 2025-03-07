@@ -25,42 +25,44 @@ const getTotalRewards = async (req, res) => {
 
 // Add Reward Points to User (User Action)
 const addRewardPoints = async (req, res) => {
-  try {
-    const userId = req.user._id;
-    const { points, description } = req.body;
-    const type = points > 0 ? "credit" : "debit";
-
-    const newTransaction = new RewardTransaction({
-      userId,
-      type,
-      points,
-      transaction_message: description,
-    });
-
-    await newTransaction.save();
-    let rewardDetails = await Reward.findOne({ userId });
-
-    if (!rewardDetails) {
-      rewardDetails = new Reward({
+    try {
+      const userId = req.user._id;
+      let { points, description } = req.body;
+  
+      // Convert points to number to prevent concatenation issues
+      points = Number(points);
+  
+      if (isNaN(points)) {
+        return res.status(400).json({ success: false, message: "Points must be a valid number." });
+      }
+  
+      const type = points > 0 ? "credit" : "debit";
+  
+      const newTransaction = new RewardTransaction({
         userId,
+        type,
         points,
-        transactions: [newTransaction],
+        transaction_message: description,
       });
+  
+      await newTransaction.save();
+  
+      let rewardDetails = await Reward.findOne({ userId });
+  
+      if (!rewardDetails) {
+        rewardDetails = new Reward({ userId, points: 0, transactions: [] });
+      }
+  
+      rewardDetails.points += points;  // Ensure numeric addition
+      rewardDetails.transactions.push(newTransaction);
+      await rewardDetails.save();
+  
+      res.status(200).json({ success: true, message: "Reward points added successfully", points: rewardDetails.points });
+    } catch (error) {
+      res.status(500).json({ success: false, message: "Internal server error", error: error.message });
     }
-
-    rewardDetails.points += points;
-    rewardDetails.transactions.push(newTransaction);
-    await rewardDetails.save();
-
-    res.status(200).json({
-      success: true,
-      message: "Reward points added successfully",
-      points: rewardDetails.points,
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Internal server error", error: error.message });
-  }
-};
+  };
+  
 
 // Show User's Reward Transactions
 const showRewardTransactions = async (req, res) => {
@@ -103,41 +105,43 @@ const getRewardBalance = async (req, res) => {
 
 // Add Reward Points from Admin
 const addRewardFromAdmin = async (req, res) => {
-  try {
-    const { points, description, userId } = req.body;
-    const type = points > 0 ? "credit" : "debit";
-
-    const newTransaction = new RewardTransaction({
-      userId,
-      type,
-      points,
-      transaction_message: description,
-    });
-
-    await newTransaction.save();
-    let rewardDetails = await Reward.findOne({ userId });
-
-    if (!rewardDetails) {
-      rewardDetails = new Reward({
+    try {
+      const { points, description, userId } = req.body;
+  
+      // Convert points to number
+      const parsedPoints = Number(points);
+  
+      if (isNaN(parsedPoints)) {
+        return res.status(400).json({ success: false, message: "Points must be a valid number." });
+      }
+  
+      const type = parsedPoints > 0 ? "credit" : "debit";
+  
+      const newTransaction = new RewardTransaction({
         userId,
-        points,
-        transactions: [newTransaction],
+        type,
+        points: parsedPoints,
+        transaction_message: description,
       });
+  
+      await newTransaction.save();
+  
+      let rewardDetails = await Reward.findOne({ userId });
+  
+      if (!rewardDetails) {
+        rewardDetails = new Reward({ userId, points: 0, transactions: [] });
+      }
+  
+      rewardDetails.points += parsedPoints;  // Ensure numeric addition
+      rewardDetails.transactions.push(newTransaction);
+      await rewardDetails.save();
+  
+      res.status(200).json({ success: true, message: "Reward points added successfully", points: rewardDetails.points });
+    } catch (error) {
+      res.status(500).json({ success: false, message: "Internal server error", error: error.message });
     }
-
-    rewardDetails.points += points;
-    rewardDetails.transactions.push(newTransaction);
-    await rewardDetails.save();
-
-    res.status(200).json({
-      success: true,
-      message: "Reward points added successfully",
-      points: rewardDetails.points,
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Internal server error", error: error.message });
-  }
-};
+  };
+  
 
 // Get User's Reward Points Balance (Admin)
 const getRewardBalanceFromAdmin = async (req, res) => {
