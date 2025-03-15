@@ -8,4 +8,7 @@ const rewardTransactionSchema = new mongoose.Schema({
   transaction_message: { type: String },
 });
 
-module.exports = mongoose.model("RewardTransaction", rewardTransactionSchema);
+
+const rewardTransaction = mongoose.model("RewardTransaction", rewardTransactionSchema);
+
+module.exports = rewardTransaction;

@@ -6,4 +6,5 @@ const rewardSchema = new mongoose.Schema({
   transactions: [{ type: mongoose.Schema.Types.ObjectId, ref: "RewardTransaction" }],
 });
 
-module.exports = mongoose.model("Reward", rewardSchema);
+const Reward = mongoose.model("Reward", rewardSchema);
+module.exports = Reward; 

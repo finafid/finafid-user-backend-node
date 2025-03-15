@@ -1,6 +1,7 @@
 const order = require("../../models/Order/orderSc");
 const orderStatus = require("../../models/Order/OrderStatus");
 const Wallet = require("../../models/Wallet/wallet");
+const Reward = require("../../models/reward/Reward");
 const { authenticate, createOrder } = require("../../controllers/order/socket"); // Adjust the path to your Shiprocket module
 const GetAndBuy = require("../../models/Coupons/But_and_get");
 const User = require("../../models/auth/userSchema");
@@ -9,6 +10,7 @@ const MemberShipPlan = require("../../models/Utsab/MembershipPlan");
 const referral = require("../../models/auth/referral");
 const Transaction = require("../../models/payment/paymentSc");
 const walletTransaction = require("../../models/Wallet/WalletTransaction");
+const rewardTransaction = require("../../models/reward/RewardTransaction");
 const mongoose = require("mongoose");
 const fs = require("fs");
 const sendSms = require("./smsService");
@@ -313,6 +315,9 @@ const updateStatus = async (req, res) => {
         const walletDetails = await Wallet.findOne({
           userId: new ObjectId(orderDetail.userId._id),
         });
+        const RewardDetails = await Reward.findOne({
+          userId: new ObjectId(orderDetail.userId._id),
+        });
 
         const planDetails = await MemberShipPlan.findOne({
           identity: "PLAN_IDENTITY",
@@ -364,23 +369,23 @@ const updateStatus = async (req, res) => {
               orderDetail.status !== "Completed"
             ) {
               // Reward ₹49 to the referrer
-              let walletDetailsOfReferredUser = await Wallet.findOne({
+              let walletDetailsOfReferredUser = await Reward.findOne({
                 userId: referralDetails.referred_by,
               });
 
               if (walletDetailsOfReferredUser) {
-                walletDetailsOfReferredUser.balance += 49;
-                const newWalletTransaction = new walletTransaction({
+                walletDetailsOfReferredUser.points += 49;
+                const newRewardTransaction = new RewardTransaction.findOne({
                   userId: referralDetails.referred_by,
                   type: "credit",
                   transaction_message: "Referral Reward for First Purchase",
-                  amount: 49,
+                  points: 49,
                   date: Date.now(),
                 });
                  // console.log(newWalletTransaction);
-                await newWalletTransaction.save();
+                await newRewardTransaction.save();
                 walletDetailsOfReferredUser.transactions.push(
-                  newWalletTransaction
+                  newRewardTransaction
                 );
                 await walletDetailsOfReferredUser.save();
 
@@ -395,73 +400,75 @@ const updateStatus = async (req, res) => {
             const referralDetails = await referral.findOne({
               userId: orderDetail.userId,
             });
-             // console.log({ referralDetails });
+             
             if (referralDetails && referralDetails.referred_by) {
               const referredUserData = await User.findById(
                 referralDetails.referred_by
-              );
-               // console.log({ referredUserData });
+              ); 
 
               if (referredUserData && referredUserData.is_utsav === true) {
                 let walletDetailsOfReferredUser = await Wallet.findOne({
                   userId: referralDetails.referred_by,
                 });
+                let rewardDetailsOfReferredUser = await Reward.findOne({
+                  userId: referralDetails.referred_by,
+                });
                 if (
                   walletDetailsOfReferredUser &&
                   userData.firstOrderComplete == false
-                ) {
+                ) {   
                    // console.log({ walletDetailsOfReferredUser });
 
                   // Update referred user's wallet balance
-                  walletDetailsOfReferredUser.balance += planDetails.reward;
-                  const newWalletTransaction = new walletTransaction({
+                  rewardDetailsOfReferredUser.points += planDetails.reward;
+                  const newRewardTransaction = new RewardTransaction({
                     userId: referralDetails.referred_by,
                     type: "credit",
                     transaction_message: "Referral Reward",
-                    amount: planDetails.reward,
+                    points: planDetails.reward,
                     date: Date.now(),
                   });
                    // console.log(newWalletTransaction);
-                  await newWalletTransaction.save();
-                  walletDetailsOfReferredUser.transactions.push(
-                    newWalletTransaction
+                  await newRewardTransaction.save();
+                  rewardDetailsOfReferredUser.transactions.push(
+                    newRewardTransaction
                   );
-                  await walletDetailsOfReferredUser.save();
+                  await rewardDetailsOfReferredUser.save();
                   userData.firstOrderComplete = true;
                   await userData.save();
                 } else if (
-                  walletDetailsOfReferredUser &&
+                  rewardDetailsOfReferredUser &&
                   userData.firstOrderComplete == true &&
                   userData.is_utsav === true
                 ) {
-                  walletDetailsOfReferredUser.balance += orderDetail.utsavReward;
-                  const newWalletTransaction = new walletTransaction({
+                  rewardDetailsOfReferredUser.points += orderDetail.utsavReward;
+                  const newRewardTransaction = new RewardTransaction({
                     userId: referralDetails.referred_by,
                     type: "credit",
                     transaction_message: "Referral Reward",
-                    amount: orderDetail.utsavReward,
+                    points: orderDetail.utsavReward,
                     date: Date.now(),
                   });
-                  await newWalletTransaction.save();
-                  walletDetailsOfReferredUser.transactions.push(
-                    newWalletTransaction
+                  await newRewardTransaction.save();
+                  rewardDetailsOfReferredUser.transactions.push(
+                    newRewardTransaction
                   );
-                  await walletDetailsOfReferredUser.save();
+                  await rewardDetailsOfReferredUser.save();
                 }
               }
             }
             // Add basic reward to the user's wallet
-            walletDetails.balance += orderDetail.basicReward;
-            const newWalletTransaction = new walletTransaction({
+            RewardDetails.points += orderDetail.basicReward;
+            const newRewardTransaction = new RewardTransaction({
               userId: userData._id,
               type: "credit",
               transaction_message: "Referral Reward",
-              amount: orderDetail.basicReward,
+              points: orderDetail.basicReward,
               date: Date.now(),
             });
-            await newWalletTransaction.save();
-            walletDetails.transactions.push(newWalletTransaction);
-            await walletDetails.save();
+            await newRewardTransaction.save();
+            RewardDetails.transactions.push(newRewardTransaction);
+            await RewardDetails.save();
             return res.status(200).json({
               message: "Rewards processed successfully",
               success: true,
@@ -915,6 +922,7 @@ const updateStatus = async (req, res) => {
       }
     };
     const { generateAndUploadInvoice } = require("../../utils/invoiceGenerator");
+const RewardTransaction = require("../../models/reward/RewardTransaction");
     async function invoiceGenerate(orderDetails) {
        // console.log({ orderDetails: orderDetails });
       const invoiceData = {
