@@ -484,12 +484,12 @@ const updateStatus = async (req, res) => {
         }
         async function orderStatusCanceled(OrderDetails) {
           try {
-            const walletDetails = await Wallet.findOne({
+            const walletDetails = await Reward.findOne({
               userId: OrderDetails.userId,
             });
              // console.log(walletDetails);
-            walletDetails.balance =
-              walletDetails.balance + OrderDetails.walletBalanceUsed;
+            walletDetails.points =
+              walletDetails.points + OrderDetails.walletBalanceUsed;
             await walletDetails.save();
             const statusDetails = await orderStatus.findOne({
               orderId: OrderDetails._id,
@@ -500,7 +500,7 @@ const updateStatus = async (req, res) => {
               userId: OrderDetails.userId,
               type: "credit",
               transaction_message: "Refund From purchase",
-              amount: OrderDetails.walletBalanceUsed,
+              points: OrderDetails.walletBalanceUsed,
               date: Date.now(),
             });
             await newWalletTransaction.save();
