@@ -70,19 +70,25 @@ const markAsaNewArrivals = async (req, res) => {
     const productDetails = await varient.findById(req.params.productId);
 
     if (!productDetails) {
-      return res
-        .status(500)
-        .json({ message: error.message + " Internal Server Error" });
+      return res.status(404).json({ message: "Product not found" });
     }
+
     productDetails.newArrival = req.body.arrival;
     await productDetails.save();
-    return res.status(200).json({ productDetails: productDetails });
+
+    const message = productDetails.newArrival
+      ? "Product added to New Arrivals"
+      : "Product removed from New Arrivals";
+
+    return res.status(200).json({ message, newArrival: productDetails.newArrival });
+    
   } catch (error) {
-    return res
-      .status(500)
-      .json({ message: error.message + " Internal Server Error" });
+    console.error("Error marking product as new arrival:", error.message);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
+
 const getAllUtsavFeaturedBrand = async (req, res) => {
   try {
     const productDetails = await brand.find({
@@ -192,8 +198,8 @@ const editGalleryDetails = async (req, res) => {
     if (!galleryDetails) {
       return res.status(500).json({ message: " Internal Server Error" });
     }
-    console.log(req.body)
-    console.log(req.file);
+     // console.log(req.body)
+     // console.log(req.file);
    if (req.file) {
      newBannerImg = await getImageLink(req);
      galleryDetails.bannerImg = newBannerImg;

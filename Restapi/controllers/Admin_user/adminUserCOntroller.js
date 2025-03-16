@@ -11,46 +11,70 @@ const orderCountById = async (userId) => {
 };
 const getAllUser = async (req, res) => {
   try {
-    const allUser = await user.find({ is_Active: true });
+    const { query, page = 1, limit = 10 } = req.query;
 
-    let userWithDetails = await Promise.all(
-      allUser.map(async (element) => {
-        const userId = element._id;
+    const currentPage = Math.max(parseInt(page, 10), 1);
+    const perPage = Math.max(parseInt(limit, 10), 1);
+    const skip = (currentPage - 1) * perPage;
+
+    // Create search filter
+    let searchFilter = { is_Active: true };
+
+    if (query) {
+      const regexQuery = new RegExp(query.split("").join(".*"), "i"); // Dynamic search
+
+      searchFilter.$or = [
+        { fullName: regexQuery }, // Search by full name
+        { email: regexQuery }, // Search by email
+      ];
+
+      // Handling phone number search safely
+      const isNumericQuery = /^[0-9]+$/.test(query); // Check if query is only numbers
+      if (isNumericQuery) {
+        searchFilter.$or.push({ phone: Number(query) }); // Match exact phone number
+      }
+    }
+
+    // Fetch matching users
+    const allUsers = await user.find(searchFilter).skip(skip).limit(perPage).lean();
+
+    // Get order count for each user
+    const userIds = allUsers.map((user) => user._id);
+    const orderCounts = await Promise.all(
+      userIds.map(async (userId) => {
         try {
-          const orderCount = await orderCountById(userId);
-          return {
-            ...element._doc,
-            orderCount: orderCount,
-          };
+          return { userId, orderCount: await orderCountById(userId) };
         } catch (error) {
-          console.error(`Error fetching details for userId ${userId}:`, error);
-          return {
-            ...element._doc,
-            orderCount: 0,
-          };
+          console.error(`Error fetching order count for userId ${userId}:`, error);
+          return { userId, orderCount: 0 };
         }
       })
     );
-    const { query } = req.query;
 
-    if (query) {
-      const regexQuery = new RegExp(query.split("").join(".*"), "i");
+    // Attach order counts to user data
+    const userWithDetails = allUsers.map((user) => {
+      const userOrder = orderCounts.find((order) => String(order.userId) === String(user._id));
+      return { ...user, orderCount: userOrder ? userOrder.orderCount : 0 };
+    });
 
-      userWithDetails = userWithDetails.filter((element) => {
-        return regexQuery.test(element.fullName);
-      });
+    // Get total count of users matching search criteria
+    const totalCount = await user.countDocuments(searchFilter);
 
-      if (userWithDetails.length === 0) {
-        return res.status(404).json({ message: "No matching entities found." });
-      }
-    }
-    return res.status(200).json({ userWithDetails: userWithDetails });
+    return res.status(200).json({
+      users: userWithDetails,
+      page: currentPage,
+      limit: perPage,
+      total: totalCount,
+    });
   } catch (error) {
-    return res
-      .status(500)
-      .json({ message: error.message + " Internal Server Error" });
+    return res.status(500).json({ message: `${error.message} - Internal Server Error` });
   }
 };
+
+
+
+
+
 const blockingCustomer = async (req, res) => {
   try {
     const userDetails = await user.findById(req.params.userId);
@@ -106,6 +130,7 @@ const makeUtsabMember = async (req, res) => {
       return res.status(500).json({ message: "No customer" });
     }
     userDetails.is_utsav = req.body.utsavStatus;
+    userDetails.firstOrderComplete = true;
     await userDetails.save();
     return res.status(200).json({ userDetails: userDetails });
   } catch (error) {

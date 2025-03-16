@@ -73,29 +73,45 @@ const getAllProduct = async (req, res) => {
 };
 const getAllVarients = async (req, res) => {
   try {
-    let variants = await Variant.find().populate({
-      path: "productGroup",
-      populate: {
-        path: "productTypeId",
-      },
-    });
-    const { query } = req.query;
+    const { query, page = 1, limit = 10 } = req.query;
 
-    if (query) {
-      const regexQuery = new RegExp(query.split("").join(".*"), "i");
+    // Pagination settings
+    const currentPage = Math.max(parseInt(page, 10), 1);
+    const perPage = Math.max(parseInt(limit, 10), 1);
+    const skip = (currentPage - 1) * perPage;
 
-      variants = variants.filter((element) => {
-        return regexQuery.test(element.name);
+    // Fetch variants with pagination and populate related fields
+    let variants = await Variant.find()
+      .skip(skip)
+      .limit(perPage)
+      .populate({
+        path: "productGroup",
+        populate: {
+          path: "productTypeId",
+        },
       });
 
+    // Apply search query if provided
+    if (query) {
+      const regexQuery = new RegExp(query.split("").join(".*"), "i");
+      variants = variants.filter((element) => regexQuery.test(element.name));
       if (variants.length === 0) {
         return res.status(404).json({ message: "No matching entities found." });
       }
     }
 
-    return res.status(200).json({ variants: variants });
+    // Fetch total count of variants
+    const totalCount = await Variant.countDocuments();
+
+    // Return response with paginated data and total count
+    return res.status(200).json({
+      variants,
+      page: currentPage,
+      limit: perPage,
+      total: totalCount,
+    });
   } catch (err) {
-    return res.status(500).json({ message: "error", error: err.message });
+    return res.status(500).json({ message: "Error", error: err.message });
   }
 };
 
@@ -130,6 +146,11 @@ const uploadVariants = async (
   const variantPromises = variants.map(async (variantData, i) => {
     let variantImageLinks = [];
     console.log(variantData);
+
+    // Initialize count for each variant's images
+    let count = 0;
+
+    // Loop through uploaded variant images
     while (uploadedFiles[`variants[${i}][images][${count}]`]) {
       const imageLinks = await uploadFiles(
         uploadedFiles[`variants[${i}][images][${count}]`]
@@ -141,12 +162,15 @@ const uploadVariants = async (
     let singleImageUrl = "";
     const colorImageKey = `variants[${i}][colorImage]`;
     console.log(colorImageKey);
+
+    // Upload color image if it exists
     if (uploadedFiles[colorImageKey]) {
       const [imageLink] = await uploadFiles(uploadedFiles[colorImageKey]);
       singleImageUrl = imageLink;
     }
     console.log(singleImageUrl);
-    // Create variant
+
+    // Create the variant
     const variant = new Variant({
       productGroup: productId,
       attributes: variantData.attributes,
@@ -202,15 +226,17 @@ const createProduct = async (req, res) => {
     description,
     variationAttributes,
     variation,
-    variants,
+    variants = [], // Default to an empty array to avoid undefined errors
   } = req.body;
 
   try {
     // Initialize an object to store uploaded URLs
     const uploadedFiles = {};
     console.log(req.files);
+
     // Process all files and categorize by fieldname
-    for (const file of req.files) {
+    for (const file of req.files || []) {
+      // Avoid errors if req.files is undefined
       const fieldName = file.fieldname;
       if (!uploadedFiles[fieldName]) {
         uploadedFiles[fieldName] = [];
@@ -229,7 +255,6 @@ const createProduct = async (req, res) => {
     let imageListUrls = [];
     if (uploadedFiles["otherImages[]"]) {
       const uploadedUrls = await uploadFiles(uploadedFiles["otherImages[]"]);
-      // Flatten the array if needed
       imageListUrls = uploadedUrls.flat();
     }
 
@@ -251,21 +276,25 @@ const createProduct = async (req, res) => {
       variation,
       variationAttributes,
       thumbnail: singleImageUrl,
-      otherImages: imageListUrls, // Use the flattened array here
+      otherImages: imageListUrls,
       variants: [],
+      is_active: true,
     });
 
     await newProduct.save();
 
-    // Upload variants
-    const variantIds = await uploadVariants(
-      variants,
-      uploadedFiles,
-      newProduct._id,
-      name
-    );
-    newProduct.variants.push(...variantIds);
-    await newProduct.save();
+    // Upload variants if they exist
+    if (variants.length > 0) {
+      const variantIds = await uploadVariants(
+        variants,
+        uploadedFiles,
+        newProduct._id,
+        name
+      );
+      newProduct.variants.push(...variantIds);
+      await newProduct.save();
+    }
+
     return res.status(200).json({
       success: true,
       message: "Product created successfully",
@@ -273,41 +302,50 @@ const createProduct = async (req, res) => {
     });
   } catch (error) {
     console.error("Error saving product:", error);
-    res
-      .status(500)
-      .json({ message: "Internal Server Error", error: error.message });
+    res.status(500).json({
+      message: "Internal Server Error",
+      error: error.message,
+    });
   }
 };
 
 const updateVariants = async (req, res) => {
   try {
     const variantId = req.params.variantId;
+
+    // Find the existing variant by ID
     const variantDetail = await Variant.findById(variantId);
     if (!variantDetail) {
-      return res.status(500).json({ message: "Variant not found" });
+      return res.status(404).json({ message: "Variant not found" });
     }
 
-    // Get the old quantity before updating the variant
+    // Get the current quantity before the update
     const oldQuantity = parseInt(variantDetail.quantity, 10);
-    console.log({ body: req.body });
-    let newList = [];
-    if (req.body.images) {
-      newList = req.body.images;
-      if (req.files && req.files["images[]"]) {
+
+    // Initialize a new list for images
+    let newList = req.body.images ? [...req.body.images] : [];
+
+    // Check if files are provided and if the key "images[]" exists
+    if (req.files && req.files["images[]"]) {
+      try {
         const variantImageLinks = await getImageLinks(req.files["images[]"]);
-        newList = req.body.images.concat(variantImageLinks);
+        newList = newList.concat(variantImageLinks);
+      } catch (imageError) {
+        console.error("Error processing images:", imageError);
+        return res.status(500).json({
+          message: "Error processing images",
+          error: imageError.message,
+        });
       }
-    } else if (req.files && req.files["images[]"]) {
-      newList = await getImageLinks(req.files["images[]"]);
     }
+
+    // Check if the product group exists
     const productGroupDetails = await productSc.findById(req.body.productId);
-    //   let singleImageUrl=""
-    // if (uploadedFiles[colorImageKey]) {
-    //   const [imageLink] = await uploadFiles(uploadedFiles[colorImageKey]);
-    //   singleImageUrl = imageLink;
-    // }
-    //   const varientName =
-    //     productGroupDetails.name + " " + "(" + req.body.sku + ")";
+    if (!productGroupDetails) {
+      return res.status(404).json({ message: "Product group not found" });
+    }
+
+    // Update variant fields
     variantDetail.productGroup = req.body.productId;
     variantDetail.attributes = req.body.attributes;
     variantDetail.sku = req.body.sku;
@@ -334,28 +372,30 @@ const updateVariants = async (req, res) => {
     variantDetail.variantDetails = req.body.variantDetails;
     variantDetail.expiryDate = req.body.expiryDate;
     variantDetail.name = req.body.name;
-    // variantDetail.colorImage = singleImageUrl;
-    // Save variant details
+
+    // Save updated variant details
     await variantDetail.save();
 
+    // Update the total quantity for the associated product
     const productDetails = await Product.findById(req.body.productId);
     if (!productDetails) {
-      return res.status(500).json({ message: "Product not found" });
+      return res.status(404).json({ message: "Product not found" });
     }
 
-    // Update product total quantity
     const newQuantity = parseInt(req.body.quantity, 10);
     productDetails.totalQuantity =
       parseInt(productDetails.totalQuantity, 10) + (newQuantity - oldQuantity);
 
-    console.log(productDetails.totalQuantity);
+    console.log("Updated total quantity:", productDetails.totalQuantity);
 
     await productDetails.save();
 
-    return res.status(200).json({ message: "Updated successfully" });
+    return res.status(200).json({ message: "Variant updated successfully" });
   } catch (error) {
     console.error("Error updating variant:", error);
-    res.status(500).json({ message: "Internal Server Error" + error.message });
+    res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
   }
 };
 
@@ -516,9 +556,7 @@ const getVariantById = async (req, res) => {
 };
 const suggestionProductList = async (req, res) => {
   try {
-    const variantDetails = await Variant.findById(
-      req.params.variantId
-    ).populate("productGroup");
+    const variantDetails = await Variant.findById(req.params.variantId).populate("productGroup");
 
     if (!variantDetails) {
       return res.status(404).json({
@@ -526,6 +564,7 @@ const suggestionProductList = async (req, res) => {
         message: "Variant not found",
       });
     }
+
     const [productDetails, productList] = await Promise.all([
       productSc.findById(variantDetails.productGroup),
       productSc
@@ -534,6 +573,7 @@ const suggestionProductList = async (req, res) => {
         })
         .populate({
           path: "variants",
+          match: { is_active: true }, // Filter only active variants
           populate: {
             path: "productGroup",
             select: "brand",
@@ -562,6 +602,7 @@ const suggestionProductList = async (req, res) => {
     });
   }
 };
+
 
 const createBrand = async (req, res) => {
   try {
@@ -1046,7 +1087,7 @@ const getSubcategoryBasedOnCategory = async (req, res) => {
     const categoryId = req.params.categoryId;
     const subCategoryList = await subCategory.find({
       mainCategoryId: categoryId,
-      is_active:true
+      is_active: true,
     });
     if (!subCategoryList) {
       return res.status(500).json({ message: "No list found" });
@@ -1267,15 +1308,22 @@ const featuredProduct = async (req, res) => {
       { new: true }
     );
 
+    
+
     if (!details) {
-      return res.status(500).json({ message: "No varient" });
+      return res.status(404).json({ message: "Variant not found" });
     }
 
-    return res.status(200).json({ message: "Done" });
+    if(details?.is_featured){
+      return res.status(200).json({ message: "Added To Featured Product", is_featured: details?.is_featured,newArrival:details?.newArrival });
+    }else{
+      return res.status(200).json({ message: "Removed From Featured Product", is_featured: details?.is_featured,newArrival:details?.newArrival });
+    }   
   } catch (error) {
-    res.status(500).json({ message: error.message + " Internal Server Error" });
+    res.status(500).json({ message: "Internal Server Error", error: error.message });
   }
 };
+
 const activeProduct = async (req, res) => {
   try {
     const details = await Variant.findOneAndUpdate(
@@ -1283,19 +1331,27 @@ const activeProduct = async (req, res) => {
       { is_active: req.body.activeStatus },
       { new: true }
     );
+
     if (!details) {
-      return res.status(500).json({ message: "No varient" });
+      return res.status(404).json({ message: "Variant not found" });
     }
-    return res.status(200).json({ message: "Done" });
+
+    const message = details.is_active
+      ? "Product activated successfully"
+      : "Product deactivated successfully";
+
+    return res.status(200).json({ message,is_active:details.is_active });
   } catch (error) {
-    res.status(500).json({ message: error.message + " Internal Server Error" });
+    console.error("Error updating product status:", error.message);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
 const getAllFeaturedBrand = async (req, res) => {
   try {
     const brandDetails = await Brand.find({
       is_featured: true,
-      is_active:true,
+      is_active: true,
     });
     if (!brandDetails) {
       return res
@@ -1311,7 +1367,7 @@ const getAllFeaturedCategory = async (req, res) => {
   try {
     const categoryDetails = await mainCategory.find({
       is_featured: true,
-      is_active:true,
+      is_active: true,
     });
     if (!categoryDetails) {
       return res
@@ -1327,7 +1383,7 @@ const getAllFeaturedSubCategory = async (req, res) => {
   try {
     const subCategoryDetails = await subCategory.find({
       is_featured: true,
-      is_active:true,
+      is_active: true,
     });
     if (!subCategoryDetails) {
       return res
@@ -1343,6 +1399,8 @@ const getAllFeaturedProduct = async (req, res) => {
   try {
     const variantDetails = await Variant.find({
       is_featured: true,
+      is_active: true,
+      quantity: { $gt: 0 },
     }).populate({
       path: "productGroup",
       populate: {
@@ -1352,14 +1410,22 @@ const getAllFeaturedProduct = async (req, res) => {
         path: "brand",
       },
     });
-    if (!variantDetails) {
-      return res.status(500).json({ message: "No variantDetails" });
+
+    if (!variantDetails || variantDetails.length === 0) {
+      return res.status(404).json({ message: "No featured products found" });
     }
-    return res.status(200).json({ variantDetails });
+
+    // Randomize the array of products
+    const randomizedProducts = variantDetails.sort(() => Math.random() - 0.5);
+
+    return res.status(200).json({ variantDetails: randomizedProducts });
   } catch (error) {
-    res.status(500).json({ message: error.message + " Internal Server Error" });
+    res
+      .status(500)
+      .json({ message: error.message + " Internal Server Error" });
   }
 };
+
 const brandBasedOnCategory = async (req, res) => {
   try {
     const brandDetails = await Brand.find({

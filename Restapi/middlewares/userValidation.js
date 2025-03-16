@@ -79,7 +79,7 @@ const passwordVarification = (req, res, next) => {
       .pattern(new RegExp("^[a-zA-Z0-9!@#$%^&*()_+\\-=[\\]{};:'\"|,.<>/?]*$"))
       .required(),
   });
-  console.log(req.body.email, req.body.password);
+   // console.log(req.body.email, req.body.password);
   const { error, value } = schema.validate(req.body);
   if (error) {
     return res.status(400).json({

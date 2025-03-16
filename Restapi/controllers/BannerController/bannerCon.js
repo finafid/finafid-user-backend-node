@@ -142,7 +142,7 @@ const editBanner = async (req, res) => {
 const getBannersByBannerTypeAndDetails = async (req, res) => {
   try {
     const { position, resourceType, bannerType, valueId } = req.query;
-    console.log(req.query);
+     // console.log(req.query);
 
     const queryResult = {
       position,
@@ -245,6 +245,69 @@ const getAllBanner = async (req, res) => {
     });
   }
 };
+
+const getBannersWithFilters = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, bannerType } = req.query; // Extract query params with defaults
+
+    // Build the filter object
+    const filter = {};
+    if (bannerType) {
+      filter.bannerType = bannerType;
+    }
+
+    // Calculate skip value for pagination
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    // Fetch banners with pagination and filtering
+    const banners = await Banner.find(filter)
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    // Count total documents for pagination metadata
+    const totalBanners = await Banner.countDocuments(filter);
+
+    return res.status(200).json({
+      success: true,
+      banners,
+      totalPages: Math.ceil(totalBanners / limit),
+      currentPage: parseInt(page),
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message + " Internal server error",
+    });
+  }
+};
+
+
+const getAllBannerTypes = async (req, res) => {
+  try {
+    // Use MongoDB's distinct method to fetch unique bannerType values
+    const bannerTypes = await Banner.distinct("bannerType");
+
+    if (!bannerTypes || bannerTypes.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No banner types found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      bannerTypes,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message + " Internal server error",
+    });
+  }
+};
+
+
+
 const getBannerById = async (req, res) => {
   try {
     const bannerDetails = await Banner.findById(req.params.bannerId);
@@ -270,4 +333,6 @@ module.exports = {
   publishBanner,
   getAllBanner,
   getBannerById,
+  getBannersWithFilters,
+  getAllBannerTypes
 };

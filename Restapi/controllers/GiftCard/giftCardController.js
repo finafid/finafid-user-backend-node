@@ -231,7 +231,7 @@ const editTemplateId = async (req, res) => {
     const templatesDetails = await GiftCardTemplate.findById(
       req.params.templateId
     );
-    console.log(req.body);
+     // console.log(req.body);
     if (!templatesDetails) {
       return res.status(500).json({
         success: false,

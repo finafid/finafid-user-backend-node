@@ -11,95 +11,151 @@ const {
 const {
   removeItemFromCart,
 } = require("../../controllers/cartAndwishlist/cartWlController");
+const Transaction = require("../../models/payment/paymentSc");
+const Wallet = require("../../models/Wallet/wallet");
+const walletTransaction = require("../../models/Wallet/WalletTransaction");
+
+const { getSocketInstance } = require("../order/socket");
+// Payment Request (Order or Wallet)
 const paymentDetail = async (req, res) => {
   try {
-    const { amount, orderId } = req.body;
-    const orderDetails = await Order.findById(orderId);
+    const { amount, orderId, type, paymentMode } = req.body; // Accept paymentMode
     const userDetails = await User.findById(req.user._id);
-    const txnid = "" + orderId;
-    console.log(txnid);
-    const hashString = `${PAYU_MERCHANT_KEY}|${txnid}|${amount}|Order|${userDetails.fullName}|${userDetails.email}|||||||||||${PAYU_MERCHANT_SALT}`;
+
+    if (!amount || !userDetails) {
+      return res.status(400).json({ message: "Invalid request data" });
+    }
+
+    let txnid, productinfo;
+
+    if (type === "wallet") {
+      txnid = `wallet_${req.user._id}_${Date.now()}`;
+      productinfo = "Wallet Recharge";
+    } else {
+      const orderDetails = await Order.findById(orderId);
+      if (!orderDetails) {
+        return res.status(400).json({ message: "Invalid order ID" });
+      }
+      txnid = orderId;
+      productinfo = "Order Payment";
+    }
+
+    const hashString = `${PAYU_MERCHANT_KEY}|${txnid}|${amount}|${productinfo}|${userDetails.fullName}|${userDetails.email}|||||||||||${PAYU_MERCHANT_SALT}`;
     const hash = crypto.createHash("sha512").update(hashString).digest("hex");
-    console.log("Generated Hash: ", hash);
+
     const paymentData = {
       key: PAYU_MERCHANT_KEY,
-      txnid: txnid,
-      amount: amount,
-      productinfo: "Order",
+      txnid,
+      amount,
+      productinfo,
       firstname: userDetails.fullName,
       email: userDetails.email,
       phone: userDetails.phone.toString(),
       surl: "https://finafid-backend-node-e762fd401cc5.herokuapp.com/api/v1/success",
       furl: "https://finafid-backend-node-e762fd401cc5.herokuapp.com/api/v1/failure",
-      hash: hash,
+      hash,
       service_provider: "payu_paisa",
+      enforce_paymethod: paymentMode === "PAYU_UPI" ? "UPI" : "CC",
+      pg: paymentMode === "PAYU_UPI" ? "UPI" : "CC",
     };
-    //https://finafid-backend-node-e762fd401cc5.herokuapp.com/api/v1/paymentResponse
-    console.log("Payment Data: ", paymentData);
+    console.log(paymentMode)
 
     res.json({ paymentData, actionURL: `${PAYU_BASE_URL}/_payment` });
   } catch (error) {
-    res.status(500).json({ message: error.message + " Internal Server Error" });
+    res.status(500).json({ message: "Internal Server Error: " + error.message });
   }
 };
+
+const addBalanceFromPayment = async (userId, amount, description) => {
+  try {
+    const type = "credit";
+    const newTransaction = new walletTransaction({
+      userId,
+      type,
+      amount: Number(amount),  // Ensure amount is a number
+      date: Date.now(),
+      transaction_message: description,
+    });
+
+    await newTransaction.save();
+    let walletDetails = await Wallet.findOne({ userId });
+
+    if (!walletDetails) {
+      walletDetails = new Wallet({
+        userId,
+        balance: Number(amount),  // Ensure amount is a number
+        transactions: [newTransaction],
+      });
+    } else {
+      walletDetails.balance += Number(amount);  // Ensure addition works correctly
+      walletDetails.transactions.push(newTransaction);
+    }
+
+    await walletDetails.save();
+  } catch (error) {
+    console.error("Error adding balance from payment:", error);
+  }
+};
+
+
+
+
+// Payment Response Handler
 const paymentResponse = async (req, res) => {
   try {
-    console.log("Processing PayU payment response...");
+    const { txnid, status, amount, email, firstname, productinfo, hash } = req.body;
 
-    // PayU typically sends the data in req.body directly, so adjust accordingly
-    let { txnid, status, amount, email, firstname, productinfo, hash } =
-      req.body;
-
-    if (
-      !txnid ||
-      !status ||
-      !amount ||
-      !email ||
-      !firstname ||
-      !productinfo ||
-      !hash
-    ) {
+    if (!txnid || !status || !amount || !email || !firstname || !productinfo || !hash) {
       return res.status(400).send("Invalid payment data");
     }
 
     const hashString = `${PAYU_MERCHANT_SALT}|${status}|||||||||||${email}|${firstname}|${productinfo}|${amount}|${txnid}|${PAYU_MERCHANT_KEY}`;
-    const generatedHash = crypto
-      .createHash("sha512")
-      .update(hashString)
-      .digest("hex");
+    const generatedHash = crypto.createHash("sha512").update(hashString).digest("hex");
 
-    console.log({ generatedHash, receivedHash: hash });
+    if (generatedHash !== hash) {
+      return res.status(400).send("Payment verification failed");
+    }
 
-    if (generatedHash === hash) {
-      if (status === "success") {
+    if (status === "success") {
+      if (txnid.startsWith("wallet_")) {
+        const userId = txnid.split("_")[1]; // Extract user ID from txnid
+        const description = "Wallet Recharge Successful";
+        await addBalanceFromPayment(userId, amount, description);
+        return res.render("paymentSuccess");
+      } else {
         const updatedOrder = await Order.findOneAndUpdate(
           { _id: txnid },
           { payment_complete: true, status: "Confirmed" }
-          // { new: true }
         ).populate("orderItem");
-        console.log(updatedOrder);
+        const io = getSocketInstance();
+        io.emit("orderStatusUpdated", {
+          orderId:updatedOrder._id,
+          status: 'Confirmed',
+        });
+
+        if (!updatedOrder) {
+          return res.status(400).send("Order not found");
+        }
+
         await updateStatusDetails(updatedOrder._id, "Confirmed");
         await removeItemFromCart(updatedOrder.orderItem, updatedOrder.userId);
 
         return res.render("paymentSuccess");
-      } else {
-        // const updatedOrder = await Order.findOneAndUpdate(
-        //   { _id: txnid },
-        //   { status: "Failed" },
-        //   { new: true }
-        // );
-
-        return res.render("paymentFailure");
       }
     } else {
-      res.status(400).send("Payment verification failed");
+      return res.render("paymentFailure");
     }
   } catch (error) {
-
-    res.status(500).send("Internal Server Error");
+    return res.status(500).send("Internal Server Error");
   }
 };
-const handlePaymentSuccess = async (txnid, orderDetails, res) => {
+
+
+
+
+
+// Handle Successful Order Payment
+const handlePaymentSuccess = async (txnid, res) => {
   try {
     const updatedOrder = await Order.findOneAndUpdate(
       { _id: txnid },
@@ -113,26 +169,21 @@ const handlePaymentSuccess = async (txnid, orderDetails, res) => {
       },
     });
 
-    console.log("Order updated successfully:", updatedOrder);
-
-    // Update order status and remove items from cart
     await updateStatusDetails(updatedOrder._id, "Confirmed");
     await removeItemFromCart(updatedOrder.orderItem, updatedOrder.userId);
 
-    // Render the success page
     return res.render("paymentSuccess");
   } catch (error) {
     return res.status(500).send("Internal Server Error");
   }
 };
+
+// Handle Payment Failure
 const handlePaymentFailure = async (txnid, res) => {
   try {
     await Order.findOneAndUpdate({ _id: txnid }, { status: "Failed" });
-
-    // Render the failure page
     return res.render("paymentFailure");
   } catch (error) {
-    console.error("Error handling payment failure:", error);
     return res.status(500).send("Internal Server Error");
   }
 };

@@ -79,7 +79,7 @@ const genOtp = async () => {
 const sendMailVerificationAdmin = async (req, res) => {
   try {
     const errors = validationResult(req);
-    console.log(errors);
+     // console.log(errors);
     if (!errors.isEmpty()) {
       return res.status(500).json({
         success: false,
@@ -89,7 +89,7 @@ const sendMailVerificationAdmin = async (req, res) => {
 
     const { email } = req.body;
     const adminData = await Admin.findOne({ email });
-    console.log(adminData);
+     // console.log(adminData);
     if (!adminData) {
       return res.status(500).json({
         success: false,
@@ -105,7 +105,7 @@ const sendMailVerificationAdmin = async (req, res) => {
     }
 
     const g_otp = await genOtp();
-    console.log(g_otp);
+     // console.log(g_otp);
     const cDate = new Date();
     const oldOtpData = await Otp.findOne({ email: adminData.email });
 
@@ -150,7 +150,7 @@ const sendMailVerificationAdmin = async (req, res) => {
 const sendMailVerificationForForgotPassword=async(req,res)=> {
     try {
         const errors = validationResult(req);
-        console.log(errors);
+         // console.log(errors);
         if (!errors.isEmpty()) {
             return res.status(500).json({
                 success: false,
@@ -167,7 +167,7 @@ const sendMailVerificationForForgotPassword=async(req,res)=> {
           });
         }
         const g_otp = await genOtp();
-        console.log(g_otp)
+         // console.log(g_otp)
         const cDate = new Date();
         const oldOtpData = await Otp.findOne({ email: adminData.email });
        
@@ -224,7 +224,7 @@ const verifyOtp = async (req, res) => {
             email,
             otp
         })
-        console.log(email,otp)
+         // console.log(email,otp)
         if (!otpData) {
             return res.status(500).json({
                 success: false,
@@ -268,16 +268,16 @@ const updatePasswordForResetPassword=async(req,res)=>{
                 message: 'Error in the function',
             });
         }
-        console.log(errors)
+         // console.log(errors)
         const  {email,password}=req.body;
         const newPassword = await bcrypt.hash(password, 10);
-        console.log(newPassword)
+         // console.log(newPassword)
         const adminData=await Admin.findOneAndUpdate({email:email},{
             $set:{
                 password:newPassword
             }
         },{ new: true })
-        console.log(adminData);
+         // console.log(adminData);
         if (!adminData) {
           return res.status(500).json({
             success: false,
@@ -360,7 +360,7 @@ const updateAdminDetails = async (req, res) => {
             adminDetails.gender = gender;
             await adminDetails.save();
         }
-        console.log(req.file)
+         // console.log(req.file)
         if (req.file) {
           
             const inputImagePath = req.file.buffer;
@@ -370,12 +370,12 @@ const updateAdminDetails = async (req, res) => {
             const imageBuffer = await compressAndResizeImage(inputImagePath, extention, width, compressionQuality);
             req.file.originalname = req.file.originalname.split(".")[0].split(" ").join("-") + "-" + Date.now() + "." + extention;
             const imgUrl = "https://d2w5oj0jmt3sl6.cloudfront.net/" + req.file.originalname;
-            console.log(imgUrl)
+             // console.log(imgUrl)
             adminDetails.imgUrl = imgUrl;
             await adminDetails.save();
             genarateStringOfImageList(imageBuffer, req.file.originalname, res);
         }
-        console.log(adminDetails);
+         // console.log(adminDetails);
         return res.status(200).json(adminDetails);
     } catch (error) {
         return res.status(500).json({ message: error.message + ' Internal Server Error' });

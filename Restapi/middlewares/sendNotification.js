@@ -9,7 +9,7 @@ admin.initializeApp({
 
 async function sendNotification(userId, title, body) {
   const user = await User.findById(userId);
-  console.log(user);
+   // console.log(user);
   if (user && user.fcmToken) {
     const messagePayload = {
       notification: {
@@ -27,9 +27,9 @@ async function sendNotification(userId, title, body) {
       read: false,
     });
     await notification.save();
-    console.log("Notification stored in MongoDB");
+     // console.log("Notification stored in MongoDB");
     const response = await admin.messaging().send(messagePayload);
-    console.log("Successfully sent message:", response);
+     // console.log("Successfully sent message:", response);
   } else {
     console.error("No FCM tokens found for user");
   }

@@ -1,6 +1,32 @@
 const Wallet = require("../../models/Wallet/wallet");
 const Transaction = require("./../../models/Wallet/WalletTransaction");
 const User = require("../../models/auth/userSchema");
+
+const getTotalBalance = async (req, res) => {
+  try {
+    const totalBalance = await Wallet.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalBalance: { $sum: "$balance" },
+        },
+      },
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      totalBalance: totalBalance.length ? totalBalance[0].totalBalance : 0,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
 const addBalance = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -185,4 +211,5 @@ module.exports = {
   addBalanceFromAdmin,
   getBalanceFromAdmin,
   addWallet,
+  getTotalBalance
 };

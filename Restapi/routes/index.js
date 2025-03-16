@@ -91,6 +91,7 @@ const {
   deleteFromWishlist,
   addToCart,
   getTheCart,
+  validateCartForUtsav,
   deleteFromCart,
   clearCart,
   removeFromCart,
@@ -102,6 +103,7 @@ const {
   updateStatus,
   getOrderByStatus,
   getAllOrder,
+  getSalesPercentageByCategory,
   editOrder,
   orderStatusDetails,
   setDeliveryDate,
@@ -109,6 +111,23 @@ const {
   downloadInvoice,
 } = require("../controllers/order/orderController");
 const { upload, uploadImageToS3 } = require("../utils/fileUpload");
+
+const {
+  getSettings,
+  getSettingById,
+  createSetting,
+  updateSetting,
+  deleteSetting,
+} = require('../controllers/sections/settingController.js');
+
+const {
+  createComponent,
+  getAllComponents,
+  getComponentById,
+  updateComponent,
+  deleteComponent,
+} = require('../controllers/home/homeCon.js');
+
 const {
   createGiftCard,
   getGiftCardDetails,
@@ -122,6 +141,7 @@ const {
   redeemGiftCard,
 } = require("../controllers/GiftCard/giftCardController");
 const auth = require("../middlewares/Auth");
+const authad = require("../middlewares/AdminAuth.js");
 const {
   addAddress,
   getAddressOfUser,
@@ -142,6 +162,7 @@ const {
   addBalanceFromAdmin,
   getBalanceFromAdmin,
   addWallet,
+  getTotalBalance
 } = require("../controllers/Wallet/walletController.js");
 const {
   totalIncome,
@@ -183,6 +204,8 @@ const {
   deleteBanner,
   publishBanner,
   getAllBanner,
+  getAllBannerTypes,
+  getBannersWithFilters,
   getBannerById,
 } = require("../controllers/BannerController/bannerCon");
 
@@ -216,6 +239,19 @@ const {
   getFeaturedDealByIdOnUser,
   getDEalOfTheDayByIdOnUser,
 } = require("../controllers/CouponsAndDeal/DealsControllers.js");
+
+const {
+  addRewardPoints,
+  showRewardTransactions,
+  getRewardBalance,
+  addRewardFromAdmin,
+  getRewardBalanceFromAdmin,
+  addRewardWallet,
+  getTotalRewards,
+} = require("../controllers/Reward/rewardController.js");
+
+
+
 
 const {
   createCoupons,
@@ -347,7 +383,10 @@ const {
   messageForOrderDelivary,
   messageForOrderOnTheWay,
   messageForOrderConfirmed,
-}=require("../controllers/Message/message.js")
+} = require("../controllers/Message/message.js");
+const {
+  handleWebhook,
+} = require("../controllers/webhooks/webhookController.js");
 //user Authentication
 routs.post("/register", userRegistrationValidation, userRegistration);
 routs.post("/login", userLoginValidation, userLogin);
@@ -367,6 +406,7 @@ routs.post(
   passwordVarification,
   updatePasswordForResetPassword
 );
+routs.post("/payu-webhook", handleWebhook);
 routs.post("/updateEmail", auth, updateEmail);
 routs.post("/updateNotification", auth, updateNotification);
 //Logout api
@@ -400,7 +440,7 @@ routs.post(
   auth,
   createProductType
 );
-routs.get("/getAllVariants", getAllVarients);
+routs.get("/getAllVariants",authad, getAllVarients);
 routs.post("/createBrand", upload.single("logo"), auth, createBrand);
 routs.get("/getProductGroupById/:productId", productOnId);
 routs.get(
@@ -501,6 +541,7 @@ routs.post("/deleteFromWishlist", auth, deleteFromWishlist);
 //Cart
 routs.post("/addToCart", auth, addToCart);
 routs.get("/getCartItems", auth, getTheCart);
+routs.get("/validateUtsav", auth, validateCartForUtsav);
 routs.post("/deleteFromCart", auth, deleteFromCart);
 routs.get("/clearCart", auth, clearCart);
 routs.post("/removeFromCart", auth, removeFromCart);
@@ -512,7 +553,8 @@ routs.post("/updateStatus/:orderId", auth, updateStatus);
 routs.get("/getOrderByIdAdmin/:orderId", getOrderById);
 routs.post("/updateStatusAdmin/:orderId", updateStatus);
 routs.post("/getOrderByStatus", auth, getOrderByStatus);
-routs.get("/getAllOrder", getAllOrder);
+routs.get("/getAllOrder",authad, getAllOrder);
+routs.get("/sales/percentage-by-category", getSalesPercentageByCategory);
 routs.post("/editOrder", auth, editOrder);
 routs.get("/orderStatusDetails/:orderId", orderStatusDetails);
 routs.post("/setDeliveryDate", setDeliveryDate);
@@ -555,6 +597,7 @@ routs.get("/getBalance", auth, getBalance);
 routs.post("/addBalanceFromAdmin", addBalanceFromAdmin);
 routs.get("/getBalanceFromAdmin/:userId", getBalanceFromAdmin);
 routs.get("/addWallet", addWallet);
+routs.get("/getTotalBalance", getTotalBalance);
 //admin dashboard
 routs.get("/getTotalIncome", totalIncome);
 routs.get("/getTotalOrder", totalOrder);
@@ -605,6 +648,8 @@ routs.post("/createBanner", upload.single("bannerImg"), createBanner);
 routs.post("/editBanner/:bannerId", upload.single("bannerImg"), editBanner);
 routs.get("/getAllBannersByBannerType", getBannersByBannerTypeAndDetails);
 routs.get("/getAllBanners", getAllBanner);
+routs.get("/getBannersWithFilters", getBannersWithFilters);
+routs.get("/getAllBannerTypes", getAllBannerTypes);
 routs.delete("/deleteBanner/:bannerId", deleteBanner);
 routs.post("/publishBanner/:bannerId", publishBanner);
 routs.get("/getBannerById/:bannerId", getBannerById);
@@ -693,7 +738,7 @@ routs.get("/getProductByName", getProductByName);
 routs.post("/blockingCustomer/:userId", blockingCustomer);
 routs.get("/deleteCustomer/:userId", deleteCustomer);
 routs.get("/getCustomerDetailsById/:userId", getCustomerDetailsById);
-routs.get("/getAllUser", getAllUser);
+routs.get("/getAllUser",authad, getAllUser);
 routs.post("/makeUtsabMember/:userId", makeUtsabMember);
 routs.get("/customerOrderDetails/:userId", customerOrderDetails);
 
@@ -809,9 +854,27 @@ routs.post("/activeSubCategoryById/:subCategoryId", activeSubCategoryById);
 routs.post("/activeProductTypeById/:productTypeId", activeProductTypeById);
 
 //message
-routs.post("/messageForUtsavMember",messageForUtsavMember);
-routs.post("/messageForOrderDelivary",messageForOrderDelivary);
-routs.post("/messageForOrderOnTheWay",messageForOrderOnTheWay);
-routs.post("/messageForOrderConfirmed",messageForOrderConfirmed);
+routs.post("/messageForUtsavMember", messageForUtsavMember);
+routs.post("/messageForOrderDelivary", messageForOrderDelivary);
+routs.post("/messageForOrderOnTheWay", messageForOrderOnTheWay);
+routs.post("/messageForOrderConfirmed", messageForOrderConfirmed);
 routs.post("/contactUs", contactUs);
+routs.get("/settings", getSettings);
+routs.get("/settings/:id",authad, getSettingById);
+routs.post("/settings", createSetting);
+routs.put("/settings/:id",authad, updateSetting);
+routs.delete("/settings/:id",authad, deleteSetting);
+routs.post('/createComponent', createComponent);
+routs.get('/gethome', getAllComponents);
+routs.get('/home:id', getComponentById); 
+routs.put('/home:id', updateComponent); 
+routs.delete('/home:id', deleteComponent);
+//Reward
+routs.post("/addRewardPoints", auth, addRewardPoints);
+routs.get("/showRewardTransactions", auth, showRewardTransactions);
+routs.get("/getRewardBalance", auth, getRewardBalance);
+routs.post("/addRewardFromAdmin", addRewardFromAdmin);
+routs.get("/getRewardBalanceFromAdmin/:userId", getRewardBalanceFromAdmin);
+routs.get("/addRewardWallet", addRewardWallet);
+routs.get("/getTotalRewards", getTotalRewards); 
 module.exports = routs;

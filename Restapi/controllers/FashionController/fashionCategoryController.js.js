@@ -35,10 +35,10 @@ const getImageLink = async (req, res) => {
 };
 const createFashionCategory = async (req, res) => {
   try {
-     console.log("nkjwkdjqo");
+      // console.log("nkjwkdjqo");
     const { name, description } = req.body;
     let logoUrl = "";
-    console.log(req.file)
+     // console.log(req.file)
     if (req.file) {
       logoUrl = await getImageLink(req);
     }
