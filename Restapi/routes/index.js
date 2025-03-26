@@ -162,7 +162,8 @@ const {
   addBalanceFromAdmin,
   getBalanceFromAdmin,
   addWallet,
-  getTotalBalance
+  getTotalBalance,
+  getAmounts
 } = require("../controllers/Wallet/walletController.js");
 const {
   totalIncome,
@@ -248,6 +249,7 @@ const {
   getRewardBalanceFromAdmin,
   addRewardWallet,
   getTotalRewards,
+  
 } = require("../controllers/Reward/rewardController.js");
 
 
@@ -877,4 +879,5 @@ routs.post("/addRewardFromAdmin", addRewardFromAdmin);
 routs.get("/getRewardBalanceFromAdmin/:userId", getRewardBalanceFromAdmin);
 routs.get("/addRewardWallet", addRewardWallet);
 routs.get("/getTotalRewards", getTotalRewards); 
+routs.get("/getAmounts", getAmounts); 
 module.exports = routs;
