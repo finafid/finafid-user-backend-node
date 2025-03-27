@@ -91,6 +91,10 @@ const orderSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    rewardBalanceUsed: {
+      type: Number,
+      default: 0,
+    },
     expectedDeliveryDate: {
       type: Date,
     },
