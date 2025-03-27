@@ -63,7 +63,7 @@ const placeOrder = async (req, res) => {
     if (req.body.payment_method === "Wallet") {
       const walletDetails = await Wallet.findOne({ userId: req.user._id }).session(session);
 
-      if (!walletDetails || walletDetails.balance < req.body.subtotal) {
+      if (!walletDetails || walletDetails.balance < req.body.total) {
         await session.abortTransaction();
         session.endSession();
         return res.status(405).json({
@@ -73,13 +73,13 @@ const placeOrder = async (req, res) => {
       }
 
       // Deduct wallet balance
-      walletDetails.balance -= req.body.subtotal;
+      walletDetails.balance -= req.body.total;
 
       const newWalletTransaction = new walletTransaction({
         userId: req.user._id,
         type: "debit",
         transaction_message: "Balance used in Purchase",
-        amount: req.body.subtotal,
+        amount: req.body.total,
         date: Date.now(),
       });
 
