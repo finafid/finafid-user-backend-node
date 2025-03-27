@@ -23,49 +23,87 @@ const {
   oneMinuteExpiry,
   threeMinuteExpiry,
 } = require("../../utils/mailer");
+const mongoose = require("mongoose");
+
 const placeOrder = async (req, res) => {
+  const session = await mongoose.startSession(); // Start transaction session
+  session.startTransaction(); // Begin transaction
+
   try {
     const newOrderItems = [];
 
+    // Loop through order items to check stock availability
     for (const element of req.body.orderItem) {
-      const variantDetails = await Variant.findById(element.productId);
+      const variantDetails = await Variant.findById(element.productId).session(session);
 
-
-      if (variantDetails.quantity < element.itemQuantity) {
+      if (!variantDetails || variantDetails.quantity < element.itemQuantity) {
+        await session.abortTransaction();
+        session.endSession();
         return res.status(400).json({
           success: false,
-          message: `Product Out of stock !`,
+          message: `Product Out of stock!`,
         });
       }
 
-      const newOrderItem = {
+      // Prepare order item
+      newOrderItems.push({
         productId: element.productId,
         itemQuantity: element.itemQuantity,
         unitPrice: variantDetails.unitPrice,
         sellingPrice: variantDetails.sellingPrice,
         utsavPrice: variantDetails.utsavPrice,
         discount: variantDetails.unitPrice - variantDetails.sellingPrice,
-      };
-      newOrderItems.push(newOrderItem);
+      });
+
+      // Deduct stock from inventory
+      variantDetails.quantity -= element.itemQuantity;
+      await variantDetails.save({ session });
     }
+
+    // **Wallet Deduction First if Payment Method is Wallet**
+    if (req.body.payment_method === "Wallet") {
+      const walletDetails = await Wallet.findOne({ userId: req.user._id }).session(session);
+
+      if (!walletDetails || walletDetails.balance < req.body.subtotal) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(405).json({
+          success: false,
+          message: "Insufficient wallet balance!",
+        });
+      }
+
+      // Deduct wallet balance
+      walletDetails.balance -= req.body.subtotal;
+
+      const newWalletTransaction = new walletTransaction({
+        userId: req.user._id,
+        type: "debit",
+        transaction_message: "Balance used in Purchase",
+        amount: req.body.subtotal,
+        date: Date.now(),
+      });
+
+      await newWalletTransaction.save({ session });
+      walletDetails.transactions.push(newWalletTransaction);
+      await walletDetails.save({ session });
+    }
+
+    // Calculate rewards
     let totalUtsavReward = 0;
-    for (const element of newOrderItems) {
-      const variantDetails = await Variant.findById(element.productId);
-      totalUtsavReward += variantDetails.utsavReward * element.itemQuantity;
-    }
     let totalBasicReward = 0;
-    for (const element of newOrderItems) {
-      const variantDetails = await Variant.findById(element.productId);
-      totalBasicReward += variantDetails.basicReward * element.itemQuantity;
+
+    for (const item of newOrderItems) {
+      const variantDetails = await Variant.findById(item.productId).session(session);
+      totalUtsavReward += variantDetails.utsavReward * item.itemQuantity;
+      totalBasicReward += variantDetails.basicReward * item.itemQuantity;
     }
 
-    const userData = await User.findById(req.user._id);
-     // console.log(req.body);
-    const newDate = new Date(); // Create a new Date object
-    newDate.setDate(newDate.getDate() + 6); // Add 6 days to the current date
+    const userData = await User.findById(req.user._id).session(session);
+    const expectedDeliveryDate = new Date();
+    expectedDeliveryDate.setDate(expectedDeliveryDate.getDate() + 6);
 
-    const expectedDeliveryDate = newDate; // This will store the updated date
-    
+    // Create order
     const newOrder = new order({
       orderItem: newOrderItems,
       userId: req.user._id,
@@ -85,45 +123,63 @@ const placeOrder = async (req, res) => {
       expectedDeliveryDate: expectedDeliveryDate,
       shippingCost: req.body.shippingCost,
     });
-    if (req.body.rewardBalanceUsed && req.body.rewardBalanceUsed > 0) {
-      const RewardDetails = await Reward.findOne({
-        userId: req.user._id,
-      });
-      RewardDetails.points =
-      RewardDetails.points - req.body.rewardBalanceUsed;
 
-      const newRewardTransaction = new rewardTransaction({
-        userId: req.user._id,
-        type: "debit",
-        transaction_message: "Points used in Purchase",
-        points: req.body.rewardBalanceUsed
-      });
-      await newRewardTransaction.save();
-      RewardDetails.transactions.push(newRewardTransaction);
-      await RewardDetails.save();
+    await newOrder.save({ session });
+
+    // Deduct reward points if used
+    if (req.body.rewardBalanceUsed && req.body.rewardBalanceUsed > 0) {
+      const rewardDetails = await Reward.findOne({ userId: req.user._id }).session(session);
+
+      if (rewardDetails && rewardDetails.points >= req.body.rewardBalanceUsed) {
+        rewardDetails.points -= req.body.rewardBalanceUsed;
+
+        const newRewardTransaction = new rewardTransaction({
+          userId: req.user._id,
+          type: "debit",
+          transaction_message: "Points used in Purchase",
+          points: req.body.rewardBalanceUsed,
+        });
+
+        await newRewardTransaction.save({ session });
+        rewardDetails.transactions.push(newRewardTransaction);
+        await rewardDetails.save({ session });
+      } else {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(400).json({
+          success: false,
+          message: "Insufficient reward points!",
+        });
+      }
     }
-    
-    await newOrder.save();
-     // console.log(newOrder);
+
+    // Create transaction
     const newTransaction = new Transaction({
       orderId: newOrder._id,
       amount: req.body.total,
       currency: "INR",
       userId: req.user._id,
     });
-    await newTransaction.save();
+
+    await newTransaction.save({ session });
+
     newOrder.transactionId = newTransaction._id;
-    await newOrder.save();
-     // console.log({ newOrder: newOrder });
+    await newOrder.save({ session });
+
+    // Commit transaction if everything is successful
+    await session.commitTransaction();
+    session.endSession();
+
+    // Update order status
     await updateStatusDetails(newOrder._id);
+
+    // Handle status confirmation
     if (req.body.status === "Confirmed") {
-      // Simulate the request to updateStatus
       const updateReq = {
         params: { orderId: newOrder._id },
         body: { status: "Confirmed" },
       };
 
-      // Temporarily store the response from updateStatus
       const updateRes = {
         status: (statusCode) => ({
           json: (data) => ({ statusCode, data }),
@@ -132,19 +188,20 @@ const placeOrder = async (req, res) => {
 
       const updateStatusResponse = await updateStatus(updateReq, updateRes);
 
-      // Check if updateStatus has returned an error response
       if (updateStatusResponse?.statusCode >= 400) {
-        return res
-          .status(updateStatusResponse.statusCode)
-          .json(updateStatusResponse.data);
+        return res.status(updateStatusResponse.statusCode).json(updateStatusResponse.data);
       }
     }
+
     return res.status(201).json({
-      message: "Successfully created order and Shiprocket order",
+      message: "You Order Has Been Placed Successfully.",
       newOrder,
       success: true,
     });
   } catch (error) {
+    // Rollback transaction on error
+    await session.abortTransaction();
+    session.endSession();
     console.error("Error:", error);
     return res.status(500).json({
       success: false,
@@ -152,6 +209,7 @@ const placeOrder = async (req, res) => {
     });
   }
 };
+
 
 const getOrderDetails = async (req, res) => {
   try {
