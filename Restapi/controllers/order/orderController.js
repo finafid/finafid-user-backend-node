@@ -65,7 +65,7 @@ const placeOrder = async (req, res) => {
     newDate.setDate(newDate.getDate() + 6); // Add 6 days to the current date
 
     const expectedDeliveryDate = newDate; // This will store the updated date
-
+    
     const newOrder = new order({
       orderItem: newOrderItems,
       userId: req.user._id,
@@ -85,25 +85,24 @@ const placeOrder = async (req, res) => {
       expectedDeliveryDate: expectedDeliveryDate,
       shippingCost: req.body.shippingCost,
     });
-    if (req.body.walletBalanceUsed > 0) {
-      const walletDetails = await Wallet.findOne({
+    if (req.body.rewardBalanceUsed && req.body.rewardBalanceUsed > 0) {
+      const RewardDetails = await Reward.findOne({
         userId: req.user._id,
       });
-      walletDetails.balance =
-        walletDetails.balance - req.body.walletBalanceUsed;
-      const newWalletTransaction = new walletTransaction({
+      RewardDetails.points =
+      RewardDetails.points - req.body.rewardBalanceUsed;
+
+      const newRewardTransaction = new rewardTransaction({
         userId: req.user._id,
         type: "debit",
-        transaction_message: "Balance used in Purchase",
-        amount: req.body.walletBalanceUsed,
-        date: Date.now(),
+        transaction_message: "Points used in Purchase",
+        points: req.body.rewardBalanceUsed
       });
-       // console.log(newWalletTransaction);
-      await newWalletTransaction.save();
-      walletDetails.transactions.push(newWalletTransaction);
-      await walletDetails.save();
-       // console.log(walletDetails);
+      await newRewardTransaction.save();
+      RewardDetails.transactions.push(newRewardTransaction);
+      await RewardDetails.save();
     }
+    
     await newOrder.save();
      // console.log(newOrder);
     const newTransaction = new Transaction({

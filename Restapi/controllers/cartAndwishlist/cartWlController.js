@@ -239,8 +239,8 @@ const getTheCart = async (req, res) => {
 
     // Define payment methods
     const paymentMethods = [
-      { lable:"Cash on Delivery",method: "COD", available: isCODAvailable,icon:"mobile",image:"https://finafid.com/image/cod.jpg" }, 
-      { lable:"Wallet",method: "WALLET", available: false,icon:"mobile",image: "https://finafid.com/image/mywallet.png"}, 
+      { lable:"Cash on Delivery",method: "Cash on Delivery", available: isCODAvailable,icon:"mobile",image:"https://finafid.com/image/cod.jpg" }, 
+      { lable:"Wallet",method: "Wallet", available: false,icon:"mobile",image: "https://finafid.com/image/mywallet.png"}, 
       { lable:"Card / UPI / Net Banking",method: "PayU", available: true,icon:"money",image: "https://finafid.com/image/payumoney.png" }, 
     ];
 
