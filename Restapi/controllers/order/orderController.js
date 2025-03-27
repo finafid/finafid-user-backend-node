@@ -23,7 +23,6 @@ const {
   oneMinuteExpiry,
   threeMinuteExpiry,
 } = require("../../utils/mailer");
-const mongoose = require("mongoose");
 
 const placeOrder = async (req, res) => {
   const session = await mongoose.startSession(); // Start transaction session
