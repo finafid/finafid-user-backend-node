@@ -1,7 +1,7 @@
 const User = require("../models/auth/userSchema");
 const Notification = require("../models/Notification/pushNotification");
 const admin = require("firebase-admin");
-const serviceAccount = require("../../finafid-a37bc-firebase-adminsdk-9icoq-22543df655.json");
+
 
 admin.initializeApp({
   credential: admin.credential.cert({
@@ -20,17 +20,32 @@ admin.initializeApp({
 });
 
 async function sendNotification(userId, title, body) {
-  const user = await User.findById(userId);
-  // console.log(user);
-  if (user && user.fcmToken) {
-    const messagePayload = {
-      notification: {
-        title: title,
-        body: body,
-      },
-      token: user.fcmToken, // Specify the token here
-    };
+  try {
+    const user = await User.findById(userId);
 
+    if (!user || !user.fcmToken || user.fcmToken.length === 0) {
+      console.error("No FCM tokens found for user");
+      return;
+    }
+
+    // Convert old string token to an array if necessary
+    if (typeof user.fcmToken === "string") {
+      user.fcmToken = [user.fcmToken]; 
+    } else if (!Array.isArray(user.fcmToken)) {
+      user.fcmToken = [];
+    }
+
+    // Remove invalid or empty tokens
+    user.fcmToken = user.fcmToken.filter(token => typeof token === "string" && token.trim() !== "");
+
+    if (user.fcmToken.length === 0) {
+      console.error("No valid FCM tokens found for user");
+      return;
+    }
+
+    console.log("FCM Tokens:", user.fcmToken);
+
+    // Store notification in MongoDB
     const notification = new Notification({
       userId: userId,
       title: title,
@@ -39,13 +54,35 @@ async function sendNotification(userId, title, body) {
       read: false,
     });
     await notification.save();
-    // console.log("Notification stored in MongoDB");
-    const response = await admin.messaging().send(messagePayload);
-    // console.log("Successfully sent message:", response);
-  } else {
-    console.error("No FCM tokens found for user");
+    console.log("Notification stored in MongoDB");
+
+    // Notification payload
+    const messagePayload = {
+      notification: {
+        title: title,
+        body: body,
+      },
+    };
+
+    // Send notification to all valid tokens
+    const responses = await Promise.all(
+      user.fcmToken.map(async (token) => {
+        try {
+          return await admin.messaging().send({ ...messagePayload, token });
+        } catch (error) {
+          console.error(`Error sending to token ${token}:`, error);
+          return null; // Avoids breaking the loop
+        }
+      })
+    );
+
+    console.log("FCM Response:", responses.filter((res) => res !== null));
+  } catch (error) {
+    console.error("Error in sendNotification:", error);
   }
 }
+
+
 
 module.exports = {
   sendNotification,

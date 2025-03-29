@@ -118,8 +118,11 @@ const userLogin = async (req, res) => {
     const jwtToken = generateTokens(tokenObject, user);
     const { fcmToken } = req.body;
     if (fcmToken) {
-      user.fcmToken = fcmToken;
-      await user.save();
+      // Add the token without duplicates
+      if (!user.fcmToken.includes(fcmToken)) {
+        user.fcmToken.push(fcmToken);
+        await user.save();
+      }
     }
     tokenObject.imgUrl = user.imgUrl;
     return res.status(200).json(jwtToken);
@@ -735,10 +738,13 @@ const loginUsingPhoneNumber=async(req,res)=>{
        };
         // console.log(tokenObject);
         const { fcmToken } = req.body;
-        if (fcmToken) {
-          userData.fcmToken = fcmToken;
-          await userData.save();
-        }
+    if (fcmToken) {
+      // Add the token without duplicates
+      if (!userData.fcmToken.includes(fcmToken)) {
+        userData.fcmToken.push(fcmToken);
+        await userData.save();
+      }
+    }
        const jwtToken = generateTokens(tokenObject, userData);
        return res.status(200).json(jwtToken);
   }catch (error) {

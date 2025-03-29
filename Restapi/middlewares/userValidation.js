@@ -25,25 +25,34 @@ const userRegistrationValidation = (req, res, next) => {
   }
   next();
 };
+
 const userLoginValidation = (req, res, next) => {
   const schema = joi.object({
     email: joi.string().email().required(),
     password: joi
       .string()
       .min(8)
-      .pattern(new RegExp("^[a-zA-Z0-9!@#$%^&*()_+\\-=[\\]{};:'\"|,.<>/?]*$"))
+      .pattern(/^[a-zA-Z0-9!@#$%^&*()_+\-=[\]{};:'"|,.<>/?]*$/)
       .required(),
-    fcmToken: joi.string(),
+    fcmToken: joi.alternatives().try(
+      joi.string().trim().min(1), // Accepts a single non-empty string
+      joi.array().items(joi.string().trim().min(1)).min(1) // Accepts a non-empty array of strings
+    ).optional(), // fcmToken is optional
   });
-  const { error, value } = schema.validate(req.body);
+
+  const { error } = schema.validate(req.body, { abortEarly: false });
+
   if (error) {
     return res.status(400).json({
       message: "Bad Request",
-      error,
+      errors: error.details.map((err) => err.message),
     });
   }
   next();
 };
+
+
+
 const emailVarification = (req, res, next) => {
   const schema = joi.object({
     email: joi.string().email().required(),
