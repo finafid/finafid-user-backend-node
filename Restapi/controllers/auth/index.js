@@ -117,12 +117,16 @@ const userLogin = async (req, res) => {
      // console.log(tokenObject);
     const jwtToken = generateTokens(tokenObject, user);
     const { fcmToken } = req.body;
-    if (fcmToken) {
-      // Add the token without duplicates
-      if (!user.fcmToken.includes(fcmToken)) {
-        user.fcmToken.push(fcmToken);
-        await user.save();
-      }
+    if (typeof user.fcmToken === "string") {
+      user.fcmToken = [user.fcmToken];
+    } else if (!Array.isArray(user.fcmToken)) {
+      user.fcmToken = [];
+    }
+
+    // Add new FCM token if it's not already in the list
+    if (fcmToken && !user.fcmToken.includes(fcmToken)) {
+      user.fcmToken.push(fcmToken);
+      await user.save();
     }
     tokenObject.imgUrl = user.imgUrl;
     return res.status(200).json(jwtToken);
@@ -713,44 +717,57 @@ const sendOtpToPhone=async(req,res)=>{
     res.status(401).json({ message: error.message });
   }
 }
-const loginUsingPhoneNumber=async(req,res)=>{
-  try{
+const loginUsingPhoneNumber = async (req, res) => {
+  try {
+    const { otp, phoneNumber, fcmToken } = req.body;
 
-    const otpDetails = await OtpPhone.findOne({
-      otp: req.body.otp,
-    });
+    // Find OTP linked to the phone number
+    const otpDetails = await OtpPhone.findOne({ otp, phoneNumber });
+
+    if (!otpDetails) {
+      return res.status(401).json({ message: "Invalid or expired OTP" });
+    }
+
+    // Find active, non-blocked user
     const userData = await User.findOne({
-      phone: req.body.phoneNumber,
-      is_Active:true,
-      blocking:false
+      phone: phoneNumber,
+      is_Active: true,
+      blocking: false,
     });
-    
-    if(!otpDetails){
-      return res.status(401).send("No Otp data is present");
+
+    if (!userData) {
+      return res.status(401).json({ message: "No user found" });
     }
-     if (!userData) {
-       return res.status(401).send("No user Found");
-     }
-       const tokenObject = {
-         _id: userData._id,
-         fullname: userData.fullName,
-         email: userData.email,
-       };
-        // console.log(tokenObject);
-        const { fcmToken } = req.body;
-    if (fcmToken) {
-      // Add the token without duplicates
-      if (!userData.fcmToken.includes(fcmToken)) {
-        userData.fcmToken.push(fcmToken);
-        await userData.save();
-      }
+
+    // Convert old FCM token format (string -> array)
+    if (typeof userData.fcmToken === "string") {
+      userData.fcmToken = [userData.fcmToken];
+    } else if (!Array.isArray(userData.fcmToken)) {
+      userData.fcmToken = [];
     }
-       const jwtToken = generateTokens(tokenObject, userData);
-       return res.status(200).json(jwtToken);
-  }catch (error) {
-    res.status(401).json({ message: error.message });
+
+    // Add new FCM token if it's not already in the list
+    if (fcmToken && !userData.fcmToken.includes(fcmToken)) {
+      userData.fcmToken.push(fcmToken);
+      await userData.save();
+    }
+
+    // Generate JWT token
+    const tokenObject = {
+      _id: userData._id,
+      fullname: userData.fullName,
+      email: userData.email,
+    };
+    const jwtToken = generateTokens(tokenObject, userData);
+
+    // Delete OTP after successful login to prevent reuse
+    await OtpPhone.deleteOne({ otp, phoneNumber });
+
+    return res.status(200).json(jwtToken);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
   }
-}
+};
 const getUserName = async (req, res) => {
   try {
     const { query } = req.query;
