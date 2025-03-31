@@ -722,16 +722,15 @@ const sendOtpToPhone=async(req,res)=>{
 }
 const loginUsingPhoneNumber = async (req, res) => {
   try {
-    const { otp, phoneNumber, fcmToken } = req.body;
+    const { phoneNumber, otp, fcmToken } = req.body;
 
-    // Find OTP linked to the phone number
-    const otpDetails = await OtpPhone.findOne({ otp, phoneNumber });
-
+    // Find OTP entry
+    const otpDetails = await OtpPhone.findOne({ otp, phone: phoneNumber });
     if (!otpDetails) {
-      return res.status(401).json({ message: "Invalid or expired OTP" });
+      return res.status(401).json({ message: "Invalid OTP or phone number" });
     }
 
-    // Find active, non-blocked user
+    // Find active & unblocked user
     const userData = await User.findOne({
       phone: phoneNumber,
       is_Active: true,
@@ -742,34 +741,31 @@ const loginUsingPhoneNumber = async (req, res) => {
       return res.status(401).json({ message: "No user found" });
     }
 
-    if (fcmToken) {
-      // Store the latest FCM token
-      userData.fcmToken = fcmToken;
-
-      // Add token to fcmTokens array only if it’s unique
-      if (!userData.fcmTokens.includes(fcmToken)) {
-        userData.fcmTokens.push(fcmToken);
-      }
-
-      await userData.save();
-    }
-
-    // Generate JWT token
+    // Create token payload
     const tokenObject = {
       _id: userData._id,
       fullname: userData.fullName,
       email: userData.email,
     };
-    const jwtToken = generateTokens(tokenObject, userData);
 
-    // Delete OTP after successful login
-    await OtpPhone.deleteOne({ otp, phoneNumber });
+    // Handle FCM Token
+    if (fcmToken) {
+      if (!userData.fcmTokens.includes(fcmToken)) {
+        userData.fcmTokens.push(fcmToken);
+        await userData.save();
+      }
+    }
+
+    // Generate JWT token
+    const jwtToken = generateTokens(tokenObject, userData);
+    tokenObject.imgUrl = userData.imgUrl; // Attach user image URL
 
     return res.status(200).json(jwtToken);
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
 };
+
 
 const getUserName = async (req, res) => {
   try {
