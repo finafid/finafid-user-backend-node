@@ -89,53 +89,56 @@ function generateTokens(tokenObject, user) {
 
 const userLogin = async (req, res) => {
   try {
+    const { email, password, fcmToken } = req.body;
+
+    // Find active user (case-insensitive email)
     const user = await User.findOne({
-      email: { $regex: new RegExp(`^${req.body.email}$`, "i") },
+      email: { $regex: new RegExp(`^${email}$`, "i") },
       is_Active: true,
     });
 
-    if (user && user.blocking == true) {
-      return res
-        .status(401)
-        .json({ message: "Your account is permanently blocked" });
-    }
     if (!user) {
-      return res.status(401).json({ message: "Invalid Credential" });
+      return res.status(401).json({ message: "Invalid Credentials" });
     }
-    const isPassEqual = await bcrypt.compare(req.body.password, user.password);
-     // console.log(isPassEqual);
+
+    if (user.blocking) {
+      return res.status(401).json({ message: "Your account is permanently blocked" });
+    }
+
+    // Compare passwords
+    const isPassEqual = await bcrypt.compare(password, user.password);
     if (!isPassEqual) {
-      return res
-        .status(401)
-        .json({ message: "Invalid Email or Password" });
+      return res.status(401).json({ message: "Invalid Email or Password" });
     }
+
+    // Generate JWT token
     const tokenObject = {
       _id: user._id,
       fullname: user.fullName,
       email: user.email,
+      imgUrl: user.imgUrl,
     };
-     // console.log(tokenObject);
     const jwtToken = generateTokens(tokenObject, user);
-    const { fcmToken } = req.body;
-    if (typeof user.fcmToken === "string") {
-      user.fcmToken = [user.fcmToken];
-    } else if (!Array.isArray(user.fcmToken)) {
-      user.fcmToken = [];
-    }
 
-    // Add new FCM token if it's not already in the list
-    if (fcmToken && !user.fcmToken.includes(fcmToken)) {
-      user.fcmToken.push(fcmToken);
+    // Handle FCM Tokens
+    if (fcmToken) {
+      // Store the latest token
+      user.fcmToken = fcmToken;
+
+      // Ensure fcmTokens array exists and add only unique tokens
+      if (!user.fcmTokens.includes(fcmToken)) {
+        user.fcmTokens.push(fcmToken);
+      }
+
       await user.save();
     }
-    tokenObject.imgUrl = user.imgUrl;
+
     return res.status(200).json(jwtToken);
   } catch (err) {
-    return res.status(500).json({
-      message: err.message,
-    });
+    return res.status(500).json({ message: err.message });
   }
 };
+
 
 const mailVarification = async (req, res) => {
   try {
@@ -739,16 +742,15 @@ const loginUsingPhoneNumber = async (req, res) => {
       return res.status(401).json({ message: "No user found" });
     }
 
-    // Convert old FCM token format (string -> array)
-    if (typeof userData.fcmToken === "string") {
-      userData.fcmToken = [userData.fcmToken];
-    } else if (!Array.isArray(userData.fcmToken)) {
-      userData.fcmToken = [];
-    }
+    if (fcmToken) {
+      // Store the latest FCM token
+      userData.fcmToken = fcmToken;
 
-    // Add new FCM token if it's not already in the list
-    if (fcmToken && !userData.fcmToken.includes(fcmToken)) {
-      userData.fcmToken.push(fcmToken);
+      // Add token to fcmTokens array only if it’s unique
+      if (!userData.fcmTokens.includes(fcmToken)) {
+        userData.fcmTokens.push(fcmToken);
+      }
+
       await userData.save();
     }
 
@@ -760,7 +762,7 @@ const loginUsingPhoneNumber = async (req, res) => {
     };
     const jwtToken = generateTokens(tokenObject, userData);
 
-    // Delete OTP after successful login to prevent reuse
+    // Delete OTP after successful login
     await OtpPhone.deleteOne({ otp, phoneNumber });
 
     return res.status(200).json(jwtToken);
@@ -768,6 +770,7 @@ const loginUsingPhoneNumber = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
+
 const getUserName = async (req, res) => {
   try {
     const { query } = req.query;

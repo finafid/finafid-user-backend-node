@@ -33,9 +33,14 @@ const UserSchema = new Schema(
       default: true,
       required: false,
     },
-    fcmToken: {
-      type: [String], // Array of strings instead of a single string
+    fcmToken: { 
+      type: String,
+      required: false,
+     },
+     fcmTokens: {
+      type: [String], 
       default: [],
+      required: false,
     },
     is_utsav: {
       type: Boolean,
