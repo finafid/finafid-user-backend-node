@@ -21,7 +21,8 @@ if (!admin.apps.length) {
   });
 }
 
-async function sendNotification(userId, title, body) {
+async function sendNotification(userId, title, body,imageurl,url) {
+  console.log(imageurl,url)
   try {
     const user = await User.findById(userId);
 
@@ -40,30 +41,40 @@ async function sendNotification(userId, title, body) {
 
     console.log("Sending notification to FCM Tokens:", validTokens);
 
-    
-    // Notification payload
-    const messagePayload = {
-      notification: { title, body },
-      tokens: validTokens, // Use `tokens` for multicast messaging
-    };
+    // Send individual notifications to all valid tokens
+    const notificationPromises = validTokens.map(async (token) => {
+      const messagePayload = {
+        notification: {
+          title: title,
+          body: body,
+        },
+        token: token,
+        android: {
+          notification: {
+            imageUrl: imageurl, // You can also set the image URL for Android notifications here
+          },
+        },
+        data: {
+          link:url
+        },
+      };
 
-    // Send notification to all tokens efficiently using `sendMulticast`
-    const response = await admin.messaging().sendMulticast(messagePayload);
+      try {
+        const response = await admin.messaging().send(messagePayload);
+        console.log(`Notification sent successfully to token: ${token}`);
+        return response;
+      } catch (error) {
+        console.error(`Failed to send notification to token: ${token}`, error);
+      }
+    });
 
-    // Log results
-    console.log(`Sent: ${response.successCount}, Failed: ${response.failureCount}`);
+    const responses = await Promise.all(notificationPromises);
+    console.log("Notifications sent successfully:", responses);
 
-    // Handle failed tokens
-    if (response.failureCount > 0) {
-      response.responses.forEach((resp, index) => {
-        if (!resp.success) {
-          console.error(`Failed to send to token: ${validTokens[index]}`, resp.error);
-        }
-      });
-    }
   } catch (error) {
     console.error("Error in sendNotification:", error);
   }
 }
+
 
 module.exports = { sendNotification };
