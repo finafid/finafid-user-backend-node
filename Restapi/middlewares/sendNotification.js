@@ -55,7 +55,11 @@ async function sendNotification(userId, title, body,imageurl,url) {
           },
         },
         data: {
-          link:url
+          link: url, 
+          action_1: "VIEW_ORDER",
+           action_1_text: "View Order",
+          action_2: "CANCEL_ORDER",
+          action_2_text: "Cancel Order"
         },
       };
 

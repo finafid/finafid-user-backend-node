@@ -231,12 +231,28 @@ const sendMailVarification = async (req, res) => {
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
-    const msg = `<div style="font-family: Arial, sans-serif; color: #333; background-color: #f9f9f9; padding: 20px;">
-            <p style="margin-bottom: 10px;">Dear ${userData.fullName},</p>
-            <p style="margin-bottom: 10px;">The OTP for your email is ${g_otp}.</p>
-            <p style="margin-bottom: 10px;">Best regards,</p>
-            <p style="margin-bottom: 0;">The Finafid Team</p>
-        </div>`;
+    const msg = `<div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
+    <div style="background-color: #FF204E; color: #ffffff; padding: 20px;">
+      <h2 style="margin: 0;">Finafid</h2>
+    </div>
+    <div style="padding: 20px; color: #333333;">
+      <p style="margin-bottom: 16px;">Hi <strong>${userData.fullName}</strong>,</p>
+      <p style="margin-bottom: 16px;">We received a request to verify your email address. Please use the following One-Time Password (OTP) to complete the verification process:</p>
+      
+      <div style="background-color: #f1f1f1; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 2px; border-radius: 5px; margin: 20px 0;">
+        ${g_otp}
+      </div>
+
+      <p style="margin-bottom: 16px;"><strong>Note:</strong> This OTP is valid for <strong>10 minutes</strong> only.</p>
+      <p style="margin-bottom: 16px; color: #cc0000;"><strong>Do not share this OTP</strong> with anyone. Finafid will never ask you for your OTP via call, email, or message.</p>
+      <p style="margin-bottom: 16px;">If you did not request this, you can safely ignore this email.</p>
+      
+      <p style="margin-bottom: 0;">Regards,<br>The Finafid Team ~</p>
+    </div>
+    <div style="background-color: #f9f9f9; padding: 15px; text-align: center; font-size: 12px; color: #888888;">
+      © ${new Date().getFullYear()} Finafid. All rights reserved.
+    </div>
+  </div>`;
 
     const mail = await sendMail(userData.email, "Email Verification", msg);
      // console.log(mail);
