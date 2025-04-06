@@ -21,51 +21,70 @@ if (!admin.apps.length) {
   });
 }
 
-async function sendNotification(userId, title, body,imageurl,url) {
-  console.log(imageurl,url)
+async function sendNotification(userId, title, body, imageurl, url) {
+  console.log(imageurl, url);
   try {
     const user = await User.findById(userId);
 
-    if (!user || !user.fcmTokens || user.fcmTokens.length === 0) {
+    if (!user || (!user.fcmTokens && !user.fcmToken)) {
       console.error("No FCM tokens found for user");
       return;
     }
 
-    // Filter valid tokens
-    const validTokens = user.fcmTokens.filter(token => typeof token === "string" && token.trim() !== "");
+    const notificationPayload = {
+      notification: {
+        title,
+        body,
+      },
+      android: {
+        notification: {
+          imageUrl: imageurl,
+        },
+      },
+      data: {
+        link: url,
+        action_1: "VIEW_ORDER",
+        action_1_text: "View Order",
+        action_2: "CANCEL_ORDER",
+        action_2_text: "Cancel Order",
+      },
+    };
 
-    if (validTokens.length === 0) {
-      console.error("No valid FCM tokens found for user");
+    const fcmToken = user.fcmToken && user.fcmToken.trim();
+
+    // Step 1: Send to user.fcmToken if it's valid
+    if (fcmToken) {
+      try {
+        const singleTokenResponse = await admin.messaging().send({
+          ...notificationPayload,
+          token: fcmToken,
+        });
+        console.log(`Notification sent to user.fcmToken: ${fcmToken}`);
+      } catch (error) {
+        console.error(`Failed to send to user.fcmToken: ${fcmToken}`, error);
+      }
+    }
+
+    // Step 2: Send to all fcmTokens[] except fcmToken
+    const allOtherTokens = (user.fcmTokens || []).filter(
+      (token) =>
+        typeof token === "string" &&
+        token.trim() !== "" &&
+        token.trim() !== fcmToken 
+    );
+
+    if (allOtherTokens.length === 0) {
+      console.log("No additional tokens to send after user.fcmToken");
       return;
     }
 
-    console.log("Sending notification to FCM Tokens:", validTokens);
-
-    // Send individual notifications to all valid tokens
-    const notificationPromises = validTokens.map(async (token) => {
-      const messagePayload = {
-        notification: {
-          title: title,
-          body: body,
-        },
-        token: token,
-        android: {
-          notification: {
-            imageUrl: imageurl, // You can also set the image URL for Android notifications here
-          },
-        },
-        data: {
-          link: url, 
-          action_1: "VIEW_ORDER",
-           action_1_text: "View Order",
-          action_2: "CANCEL_ORDER",
-          action_2_text: "Cancel Order"
-        },
-      };
-
+    const notificationPromises = allOtherTokens.map(async (token) => {
       try {
-        const response = await admin.messaging().send(messagePayload);
-        console.log(`Notification sent successfully to token: ${token}`);
+        const response = await admin.messaging().send({
+          ...notificationPayload,
+          token,
+        });
+        console.log(`Notification sent to token: ${token}`);
         return response;
       } catch (error) {
         console.error(`Failed to send notification to token: ${token}`, error);
@@ -73,12 +92,13 @@ async function sendNotification(userId, title, body,imageurl,url) {
     });
 
     const responses = await Promise.all(notificationPromises);
-    console.log("Notifications sent successfully:", responses);
+    console.log("Notifications sent to remaining tokens:", responses);
 
   } catch (error) {
     console.error("Error in sendNotification:", error);
   }
 }
+
 
 
 module.exports = { sendNotification };

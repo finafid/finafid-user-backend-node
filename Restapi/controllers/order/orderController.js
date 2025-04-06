@@ -982,7 +982,8 @@ const RewardTransaction = require("../../models/reward/RewardTransaction");
     async function invoiceGenerate(orderDetails) {
        // console.log({ orderDetails: orderDetails });
       const invoiceData = {
-        invoiceNumber: "INVOICE" + Math.random().toString().slice(2, 10),
+        orderId:orderDetails._id,
+        invoiceNumber: "INV-" + Math.random().toString().slice(2, 10),
         date: new Date().toISOString().split("T")[0], // Formatted as YYYY-MM-DD
         customerName: orderDetails.userId.fullName,
         customerEmail: orderDetails.userId.email,

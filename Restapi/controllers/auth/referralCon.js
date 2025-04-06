@@ -4,8 +4,8 @@ const User = require("../../models/auth/userSchema");
 const genReferralCode = async (userId) => {
   try {
     const userData = await User.findById(userId);
-    const fullNamePart = userData.fullName.toString().split(" ")[0];
-    const code = fullNamePart + userId.toString().substring(0, 6);
+    const fullNamePart = userData.fullName.toString().toUpperCase().split(" ")[0];
+    const code = fullNamePart + userId.toString().toUpperCase().substring(0, 6);
     const newReferral = new Referral({
       userId,
       email: userData.email,
