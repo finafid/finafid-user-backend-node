@@ -80,8 +80,14 @@ const getAllVarients = async (req, res) => {
     const perPage = Math.max(parseInt(limit, 10), 1);
     const skip = (currentPage - 1) * perPage;
 
-    // Fetch variants with pagination and populate related fields
-    let variants = await Variant.find()
+    const filter = {};
+    if (query) {
+      // Create regex with case insensitive flag
+      filter.name = { $regex: query.split("").join(".*"), $options: "i" };
+    }
+
+    // Fetch variants with filter and pagination applied, along with populated related fields
+    const variants = await Variant.find(filter)
       .skip(skip)
       .limit(perPage)
       .populate({
@@ -91,17 +97,13 @@ const getAllVarients = async (req, res) => {
         },
       });
 
-    // Apply search query if provided
-    if (query) {
-      const regexQuery = new RegExp(query.split("").join(".*"), "i");
-      variants = variants.filter((element) => regexQuery.test(element.name));
-      if (variants.length === 0) {
-        return res.status(404).json({ message: "No matching entities found." });
-      }
+    // If no variants were found and a query was provided, return 404
+    if (query && variants.length === 0) {
+      return res.status(404).json({ message: "No matching entities found." });
     }
 
-    // Fetch total count of variants
-    const totalCount = await Variant.countDocuments();
+    // Fetch total count of variants matching the filter
+    const totalCount = await Variant.countDocuments(filter);
 
     // Return response with paginated data and total count
     return res.status(200).json({
