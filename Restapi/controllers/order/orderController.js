@@ -73,7 +73,8 @@ const placeOrder = async (req, res) => {
       }
 
       // Deduct wallet balance
-      walletDetails.balance -= req.body.total;
+      const ttotal = req.body.total
+      walletDetails.balance -= ttotal;
 
       const newWalletTransaction = new walletTransaction({
         userId: req.user._id,
@@ -130,7 +131,8 @@ const placeOrder = async (req, res) => {
       const rewardDetails = await Reward.findOne({ userId: req.user._id }).session(session);
 
       if (rewardDetails && rewardDetails.points >= req.body.rewardBalanceUsed) {
-        rewardDetails.points -= req.body.rewardBalanceUsed;
+        const rtotal = req.body.rewardBalanceUsed
+        rewardDetails.points -= rtotal;
 
         const newRewardTransaction = new rewardTransaction({
           userId: req.user._id,
