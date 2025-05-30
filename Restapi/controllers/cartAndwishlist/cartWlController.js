@@ -488,17 +488,9 @@ async function buyNowInfo (req, res){
 
     // 3️⃣ Build buyNowItem payload
     const buyNowItem = {
-      variantId:    variant._id,
-      sku:          variant.sku,
-      name:         variant.name || variant.attributes?.color || 'Item',
-      image:        variant.images?.[0] || null,
-      unitPrice,
-      quantity,
-      subtotal,
-      tax,
-      shippingCost: variant.shippingCost,
-      codAvailable: variant.cod,
-      total
+      _id:           variant._id,
+      itemQuantity:  quantity,
+      productId:     variant,
     }
 
     // 4️⃣ Define payment methods with COD availability
