@@ -45,8 +45,6 @@ const addToWishlist = async (req, res) => {
   }
 };
 
-
-
 const getTheWishlist = async (req, res) => {
   try {
     const userDetails = await wishList
@@ -461,6 +459,66 @@ async function removeItemFromCart(productIdList, userId) {
   return { message: "Items removed from cart successfully" };
 }
 
+
+async function buyNowInfo (req, res){
+  try {
+    const { variantId, quantity = 1 } = req.body
+
+    const variant = await variants
+      .findById(variantId)
+      .select('sku name attributes sellingPrice quantity taxModel taxPercent shippingCost images cod')
+    if (!variant) {
+      return res.status(404).json({ message: 'Variant not found' })
+    }
+    if (variant.quantity < quantity) {
+      return res.status(400).json({ message: 'Insufficient stock' })
+    }
+
+    // 2️⃣ Compute pricing
+    const unitPrice = variant.sellingPrice
+    const subtotal  = parseFloat((unitPrice * quantity).toFixed(2))
+
+    let tax = 0
+    if (variant.taxModel === 'exclude') {
+      tax = parseFloat((subtotal * (variant.taxPercent / 100)).toFixed(2))
+    } else {
+      tax = parseFloat((subtotal * (variant.taxPercent / (100 + variant.taxPercent))).toFixed(2))
+    }
+    const total = parseFloat((subtotal + (variant.taxModel === 'exclude' ? tax : 0)).toFixed(2))
+
+    // 3️⃣ Build buyNowItem payload
+    const buyNowItem = {
+      variantId:    variant._id,
+      sku:          variant.sku,
+      name:         variant.name || variant.attributes?.color || 'Item',
+      image:        variant.images?.[0] || null,
+      unitPrice,
+      quantity,
+      subtotal,
+      tax,
+      shippingCost: variant.shippingCost,
+      codAvailable: variant.cod,
+      total
+    }
+
+    // 4️⃣ Define payment methods with COD availability
+    const isCODAvailable = variant.cod === true
+    const paymentMethods = [
+      { lable: 'Wallet',   method: 'Wallet', available: false,    icon: 'mobile', image: 'https://finafid.com/image/mywallet.png' },
+      { lable: 'Card / UPI / Net Banking', method: 'PayU', available: true, icon: 'money',  image: 'https://finafid.com/image/payumoney.png' },
+      { lable: 'Cash on Delivery',       method: 'COD',    available: isCODAvailable, icon: 'mobile', image: 'https://finafid.com/image/cod.jpg' },
+    ]
+
+    // 5️⃣ Return the payload
+    return res.json({ buyNowItem, paymentMethods })
+  } catch (err) {
+    console.error('buynow-info error:', err)
+    return res.status(500).json({ message: 'Server error' })
+  }
+}
+
+
+
 module.exports = {
   addToWishlist,
   getTheWishlist,
@@ -471,5 +529,6 @@ module.exports = {
   clearCart,
   removeFromCart,
   removeItemFromCart,
-  validateCartForUtsav
+  validateCartForUtsav,
+  buyNowInfo
 };

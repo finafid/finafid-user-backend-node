@@ -95,6 +95,7 @@ const {
   deleteFromCart,
   clearCart,
   removeFromCart,
+  buyNowInfo
 } = require("../controllers/cartAndwishlist/cartWlController.js");
 const {
   placeOrder,
@@ -879,5 +880,6 @@ routs.post("/addRewardFromAdmin", addRewardFromAdmin);
 routs.get("/getRewardBalanceFromAdmin/:userId", getRewardBalanceFromAdmin);
 routs.get("/addRewardWallet", addRewardWallet);
 routs.get("/getTotalRewards", getTotalRewards); 
-routs.get("/getAmounts", getAmounts); 
+routs.get("/getAmounts", getAmounts);
+routs.post('/buynow-info', buyNowInfo) 
 module.exports = routs;
