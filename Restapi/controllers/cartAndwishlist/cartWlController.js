@@ -209,9 +209,10 @@ const addToCart = async (req, res) => {
 
 const getTheCart = async (req, res) => {
   try {
+    const userData = req.user;
     // 1) Fetch user’s cart and populate product details
     const userCartDetails = await cart
-      .findOne({ UserId: req.user._id })
+      .findOne({ UserId: userData._id })
       .populate({
         path: "cartItems",
         populate: {
@@ -222,12 +223,7 @@ const getTheCart = async (req, res) => {
         },
       });
 
-    const user = await User.findById(req.user._id).select("is_utsav").lean();
-    if (!user) {
-      const err = new Error("User not found");
-      err.statusCode = 404;
-      throw err;
-    }
+    
 
     // If empty or no cart, return zeros
     if (!userCartDetails || userCartDetails.cartItems.length === 0) {
@@ -247,6 +243,13 @@ const getTheCart = async (req, res) => {
         finalTotal: 0,
         paymentMethods: [],
       });
+    }
+
+    const user = await User.findById(userData._id).select("is_utsav").lean();
+    if (!user) {
+      const err = new Error("User not found");
+      err.statusCode = 404;
+      throw err;
     }
 
     // 2) Build a plain‐JS array for pricing calculation
