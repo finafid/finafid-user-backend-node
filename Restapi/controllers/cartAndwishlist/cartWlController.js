@@ -217,9 +217,10 @@ const getTheCart = async (req, res) => {
         path: "cartItems",
         populate: {
           path: "productId",
+          populate: { path: "productGroup", model: "Product" },
           select:
             "unitPrice sellingPrice taxPercent utsavPrice shippingCost cod productGroup",
-          populate: { path: "productGroup", model: "Product" },
+         
         },
       });
 
