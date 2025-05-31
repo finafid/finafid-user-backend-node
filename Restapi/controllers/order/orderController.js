@@ -1,5 +1,6 @@
 const order = require("../../models/Order/orderSc");
 const orderStatus = require("../../models/Order/OrderStatus");
+const { getBuyNowPricing } = require("../../services/pricingService");
 const Wallet = require("../../models/Wallet/wallet");
 const Reward = require("../../models/reward/Reward");
 const { authenticate, createOrder } = require("../../controllers/order/socket"); // Adjust the path to your Shiprocket module
@@ -1035,6 +1036,30 @@ const RewardTransaction = require("../../models/reward/RewardTransaction");
         });
       }
     };
+
+    const buyNowInfoController = async (req, res) => {
+  try {
+    const userId = req.user._id;                   // from auth middleware
+    const { variantId, quantity, couponCode } = req.body;
+
+    // Delegate to service
+    const payload = await getBuyNowPricing({
+      userId,
+      variantId,
+      quantity,
+      couponCode: couponCode || null,
+    });
+
+    // Respond with the full computed payload
+    return res.json(payload);
+  } catch (err) {
+    const status = err.statusCode || 500;
+    return res.status(status).json({ message: err.message });
+  }
+}
+
+
+
     module.exports = {
       placeOrder,
       getOrderDetails,
@@ -1049,4 +1074,5 @@ const RewardTransaction = require("../../models/reward/RewardTransaction");
       cancelDelivery,
       downloadInvoice,
       getSalesPercentageByCategory,
+      buyNowInfoController
     };

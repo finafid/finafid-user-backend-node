@@ -3,32 +3,33 @@ const wishList = require("../../models/productBag/wishListSc");
 const User = require("../../models/auth/userSchema");
 const ProductDetails = require("../../models/productBag/ProductDetails");
 const MemberShipPlan = require("../../models/Utsab/MembershipPlan");
+const variants = require("../../models/product/Varient");
 const addToWishlist = async (req, res) => {
   try {
     const userData = req.user;
     const { productId } = req.body;
 
-     // console.log(userData);
+    // console.log(userData);
     const userDetails = await wishList.findOne({ UserId: userData._id });
-     // console.log(userDetails)
+    // console.log(userDetails)
     if (!userDetails) {
       const newWishList = new wishList({
         UserId: userData._id,
         productIdList: [productId],
       });
       await newWishList.save();
-      const productIdList=await newWishList.populate('productIdList')
-    return res.status(200).json(productIdList)
+      const productIdList = await newWishList.populate('productIdList')
+      return res.status(200).json(productIdList)
     } else {
-      if(userDetails.productIdList.includes(productId)===true){
+      if (userDetails.productIdList.includes(productId) === true) {
         return res.status(200).json({
-          success:false,
-          message:"Item is already there"
+          success: false,
+          message: "Item is already there"
         })
       }
       userDetails.productIdList.push(productId);
       await userDetails.save();
-      const productIdList=await userDetails.populate('productIdList')
+      const productIdList = await userDetails.populate('productIdList')
       return res.status(200).json(productIdList)
     }
 
@@ -37,10 +38,10 @@ const addToWishlist = async (req, res) => {
     //   message: "Product added to wishlist successfully",
     // });
   } catch (error) {
-    
+
     return res.status(500).json({
       success: false,
-      message: error.message+" Internal server error",
+      message: error.message + " Internal server error",
     });
   }
 };
@@ -64,10 +65,10 @@ const getTheWishlist = async (req, res) => {
           },
         ],
       });
-// if (!userDetails){
-//   return res.status(401).json({message:"No item found"});
-// }
- return res.status(200).json(userDetails);
+    // if (!userDetails){
+    //   return res.status(401).json({message:"No item found"});
+    // }
+    return res.status(200).json(userDetails);
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -83,17 +84,17 @@ const deleteFromWishlist = async (req, res) => {
     const userDetails = await wishList.findOne({
       UserId: userData._id,
     });
-    
+
     if (!userDetails) {
       return res.status(500).json({
         success: false,
         message: "User wishlist is not there",
       });
     }
-    if(userDetails.productIdList.includes(productId)===false){
+    if (userDetails.productIdList.includes(productId) === false) {
       return res.status(200).json({
-        success:false,
-        message:"no such Item in wishList"
+        success: false,
+        message: "no such Item in wishList"
       })
     }
     const itemIndex = userDetails.productIdList.findIndex(
@@ -108,7 +109,7 @@ const deleteFromWishlist = async (req, res) => {
     }
 
     userDetails.productIdList.splice(itemIndex, 1);
-    
+
     await userDetails.save();
 
     return res.status(200).json({
@@ -122,14 +123,14 @@ const deleteFromWishlist = async (req, res) => {
     });
   }
 };
-const variants=require("../../models/product/Varient")
+
 const addToCart = async (req, res) => {
   try {
     const { productId, itemQuantity = 1 } = req.body;
     const userCartDetails = await cart.findOne({ UserId: req.user._id });
 
     // Fetch product 
-    
+
     const productDetails = await variants.findById(productId);
     if (!productDetails || productDetails.quantity === 0) {
       return res.status(400).json({
@@ -205,46 +206,190 @@ const addToCart = async (req, res) => {
   }
 };
 
-  
+
 const getTheCart = async (req, res) => {
   try {
-    const userData = req.user;
+    // 1) Fetch user’s cart and populate product details
     const userCartDetails = await cart
-      .findOne({ UserId: userData._id })
+      .findOne({ UserId: req.user._id })
       .populate({
         path: "cartItems",
         populate: {
           path: "productId",
-          populate: {
-            path: "productGroup",
-            model: "Product",
-          },
+          select:
+            "unitPrice sellingPrice taxPercent utsavPrice shippingCost cod productGroup",
+          populate: { path: "productGroup", model: "Product" },
         },
       });
 
+    const user = await User.findById(req.user._id).select("is_utsav").lean();
+    if (!user) {
+      const err = new Error("User not found");
+      err.statusCode = 404;
+      throw err;
+    }
+
+    // If empty or no cart, return zeros
     if (!userCartDetails || userCartDetails.cartItems.length === 0) {
       return res.status(200).json({
-        success: false,
-        message: "Cart is empty",
+        success: true,
+        cartItems: [],
+        pricing: {
+          subtotal: 0,
+          total: 0,
+          discount: 0,
+          tax: 0,
+          shippingCost: 0,
+          utsavTotal: 0,
+          utsavDiscount: 0,
+        },
+        couponDiscount: 0,
+        finalTotal: 0,
         paymentMethods: [],
       });
     }
 
-    // Calculate total cart amount
-   
-    // Check if all items in the cart have cod: true
-    const isCODAvailable = userCartDetails.cartItems.every(item => item.productId.cod === true);
+    // 2) Build a plain‐JS array for pricing calculation
+    const cartItems = userCartDetails.cartItems.map((ci) => ({
+      productId: {
+        unitPrice: ci.productId.unitPrice,
+        sellingPrice: ci.productId.sellingPrice,
+        taxPercent: ci.productId.taxPercent,
+        utsavPrice: ci.productId.utsavPrice,
+        shippingCost: ci.productId.shippingCost,
+        cod: ci.productId.cod,
+      },
+      itemQuantity: ci.itemQuantity,
+    }));
 
-    // Define payment methods
+    // 3) Check if user is an Utsav member
+    const isUtsavUser = Boolean(user.is_utsav);
+
+    // 4) Inline calculation of PriceDetails (sum over all items)
+    let subtotal = 0;
+    let totalBeforeShipping = 0;
+    let discount = 0;
+    let tax = 0;
+    let utsavTax = 0;
+    let shippingCost = 0;
+    let utsavTotal = 0;
+    let utsavDiscount = 0;
+
+    for (const item of cartItems) {
+      const {
+        unitPrice,
+        sellingPrice,
+        taxPercent,
+        utsavPrice,
+        shippingCost: itemShipping,
+      } = item.productId;
+      const qty = item.itemQuantity;
+      const unitSelling = unitPrice * qty;
+      // a) Determine which per‐unit price to charge: utsavPrice if member & available, else sellingPrice
+      const perUnitCharge = isUtsavUser && typeof utsavPrice === "number"
+        ? utsavPrice
+        : sellingPrice;
+
+      // b) Subtotal portion = perUnitCharge × qty
+      subtotal += unitSelling * qty;
+
+      // c) totalBeforeShipping portion = sellingPrice × qty
+      totalBeforeShipping += sellingPrice * qty;
+
+      // d) “discount” portion: (unitPrice − sellingPrice) × qty
+      const perUnitBaseDiscount = unitPrice - sellingPrice;
+      discount += perUnitBaseDiscount * qty;
+
+      // e) “tax” on selling portion:
+      const sellingPortion = sellingPrice * qty;
+      tax += (sellingPortion / (taxPercent + 100)) * taxPercent;
+
+      // f) “utsavTax” on utsav portion (or fallback to sellingPrice)
+      const upPortion = (typeof utsavPrice === "number" ? utsavPrice : sellingPrice) * qty;
+      utsavTax += (upPortion / (taxPercent + 100)) * taxPercent;
+
+      // g) Shipping cost sum:
+      shippingCost += itemShipping || 0;
+
+      // h) “utsavTotal” portion:
+      utsavTotal += (utsavPrice) * qty;
+
+      // i) “utsavDiscount” portion: (sellingPrice − utsavPrice) × qty (only if utsavPrice exists)
+      if (typeof utsavPrice === "number") {
+        utsavDiscount += (sellingPrice - utsavPrice) * qty;
+      }
+    }
+
+    // 5) Enforce ₹60 minimum shipping if totalBeforeShipping ≤ ₹499
+    if (totalBeforeShipping <= 499) {
+      shippingCost = Math.max(shippingCost, 60);
+    }
+
+    // 6) Finalize and round
+    subtotal = parseFloat(subtotal.toFixed(2));
+    const total = parseFloat((totalBeforeShipping + shippingCost).toFixed(2));
+    discount = parseFloat(discount.toFixed(2));
+    tax = parseFloat(tax.toFixed(2));
+    shippingCost = parseFloat(shippingCost.toFixed(2));
+    utsavTotal = parseFloat(utsavTotal.toFixed(2));
+    utsavDiscount = parseFloat(utsavDiscount.toFixed(2));
+
+    // 7) Hard‐code couponDiscount = 0 (adjust if you accept coupon inputs)
+    const couponDiscount = 0;
+
+    // 8) Compute final amount: (utsavTotal if member else total) − couponDiscount
+    let finalAmount = isUtsavUser ? utsavTotal : total;
+    finalAmount = parseFloat((finalAmount - couponDiscount).toFixed(2));
+    finalAmount = Math.max(finalAmount, 0);
+
+    // 9) Determine COD availability (all items must allow COD)
+    const isCODAvailable = userCartDetails.cartItems.every(
+      (ci) => ci.productId.cod === true
+    );
+
+    // 10) Build paymentMethods
     const paymentMethods = [
-      { lable:"Wallet",method: "Wallet", available: false,icon:"mobile",image: "https://finafid.com/image/mywallet.png"}, 
-      { lable:"Card / UPI / Net Banking",method: "PayU", available: true,icon:"money",image: "https://finafid.com/image/payumoney.png" }, 
-      { lable:"Cash on Delivery",method: "COD", available: isCODAvailable,icon:"mobile",image:"https://finafid.com/image/cod.jpg" },
+      {
+        label: "Wallet",
+        method: "Wallet",
+        available: true,
+        icon: "mobile",
+        image: "https://finafid.com/image/mywallet.png",
+      },
+      {
+        label: "Card / UPI / Net Banking",
+        method: "PayU",
+        available: true,
+        icon: "money",
+        image: "https://finafid.com/image/payumoney.png",
+      },
+      {
+        label: "Cash on Delivery",
+        method: "COD",
+        available: isCODAvailable,
+        icon: "mobile",
+        image: "https://finafid.com/image/cod.jpg",
+      },
     ];
 
+    // 11) Build the final “pricing” object
+    const pricing = {
+      subtotal,
+      total,
+      discount,
+      tax,
+      shippingCost,
+      utsavTotal,
+      utsavDiscount,
+    };
+
+    // 12) Return the response exactly in the requested shape
     return res.status(200).json({
       success: true,
       cartItems: userCartDetails.cartItems,
+      pricing,
+      couponDiscount,
+      finalTotal: finalAmount,
       paymentMethods,
     });
   } catch (error) {
@@ -254,6 +399,7 @@ const getTheCart = async (req, res) => {
     });
   }
 };
+
 
 
 const validateCartForUtsav = async (req, res) => {
@@ -295,14 +441,14 @@ const validateCartForUtsav = async (req, res) => {
     );
     // Check if the user has already completed their first order
     if (userData.firstOrderComplete) {
-      
+
 
       return res.status(200).json({
         success: true,
         isEligible: false,
-        message: 'You can earn ₹'+totalBasicReward+' as a reward for this order, which will be credited to your wallet.',
+        message: 'You can earn ₹' + totalBasicReward + ' as a reward for this order, which will be credited to your wallet.',
         totalBasicReward,
-       
+
       });
     }
 
@@ -311,15 +457,15 @@ const validateCartForUtsav = async (req, res) => {
       .filter(item => item.productId.isUtsav) // Filter items with `isUtsav: true`
       .reduce((total, item) => total + item.productId.sellingPrice * item.itemQuantity, 0);
 
-     // console.log(`Utsav Products Total Price: ${utsavTotalPrice}`);
-     // console.log(`Plan Threshold: ${planDetails.amount}`);
+    // console.log(`Utsav Products Total Price: ${utsavTotalPrice}`);
+    // console.log(`Plan Threshold: ${planDetails.amount}`);
 
     // Validate the cart against the Utsav membership plan threshold
     if (utsavTotalPrice >= planDetails.amount) {
       return res.status(200).json({
         success: true,
         isEligible: true,
-        totalBasicReward:totalBasicReward,
+        totalBasicReward: totalBasicReward,
         message: "The Products are eligible for UTSAV membership.",
         utsavTotalPrice,
         planThreshold: planDetails.amount,
@@ -328,11 +474,11 @@ const validateCartForUtsav = async (req, res) => {
       return res.status(200).json({
         success: false,
         isEligible: false,
-        totalBasicReward:totalBasicReward,
-        message: 'You can earn ₹'+totalBasicReward+' as a reward for this order, which will be credited to your wallet',
+        totalBasicReward: totalBasicReward,
+        message: 'You can earn ₹' + totalBasicReward + ' as a reward for this order, which will be credited to your wallet',
         utsavTotalPrice,
         planThreshold: planDetails.amount,
-        
+
       });
     }
   } catch (error) {
@@ -346,112 +492,112 @@ const validateCartForUtsav = async (req, res) => {
 
 
 const deleteFromCart = async (req, res) => {
-    try {
-      const { productId } = req.body;
-      const userCartDetails = await cart.findOne({ UserId: req.user._id });
-  
-      if (!userCartDetails) {
-        return res.status(404).json({
-          success: false,
-          message: "User cart is not found",
-        });
-      }
-  
-      const itemIndex = userCartDetails.cartItems.findIndex(
-        (item) => item.productId.toString() === productId
+  try {
+    const { productId } = req.body;
+    const userCartDetails = await cart.findOne({ UserId: req.user._id });
+
+    if (!userCartDetails) {
+      return res.status(404).json({
+        success: false,
+        message: "User cart is not found",
+      });
+    }
+
+    const itemIndex = userCartDetails.cartItems.findIndex(
+      (item) => item.productId.toString() === productId
+    );
+
+    if (itemIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found in cart",
+      });
+    }
+
+    userCartDetails.cartItems.splice(itemIndex, 1);
+
+    await userCartDetails.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Deleted successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message + " Internal server error",
+    });
+  }
+};
+const clearCart = async (req, res) => {
+  try {
+    const userCartDetails = await cart.findOne({ UserId: req.user._id });
+    if (!userCartDetails) {
+      return res.status(200).json({
+        success: false,
+        message: " Cart is empty",
+      });
+    }
+    const result = await cart.deleteOne({ UserId: req.user._id });
+    return res.status(200).json({
+      success: true,
+      message: " Deleted Successfully",
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message + " Internal server error",
+    });
+  }
+};
+const removeFromCart = async (req, res) => {
+  try {
+    const { productIdList } = req.body;
+    const userCartDetails = await cart.findOne({ UserId: req.user._id });
+    if (!userCartDetails) {
+      return res.status(404).json({
+        success: false,
+        message: "User cart is not found",
+      });
+    }
+
+    productIdList.forEach((element) => {
+      const index = userCartDetails.cartItems.findIndex(
+        (item) => item.productId.toString() === element.productId._id
       );
-  
-      if (itemIndex === -1) {
-        return res.status(404).json({
-          success: false,
-          message: "Product not found in cart",
-        });
+      if (index !== -1) {
+        userCartDetails.cartItems.splice(index, 1); // Remove item at the found index
       }
-  
-      userCartDetails.cartItems.splice(itemIndex, 1);
-      
-      await userCartDetails.save();
-  
-      return res.status(200).json({
-        success: true,
-        message: "Deleted successfully",
-      });
-    } catch (error) {
-      return res.status(500).json({
-        success: false,
-        message: error.message + " Internal server error",
-      });
-    }
-  };
-  const clearCart=async(req,res)=>{
-    try{
-        const userCartDetails = await cart.findOne({ UserId: req.user._id });
-        if(!userCartDetails){
-            return res.status(200).json({
-                success: false,
-                message:  " Cart is empty",
-              });
-        }
-        const result = await cart.deleteOne({ UserId: req.user._id });
-        return res.status(200).json({
-            success: true,
-            message: " Deleted Successfully",
-          });
+    });
 
-    }catch(error){
-        return res.status(500).json({
-            success: false,
-            message: error.message + " Internal server error",
-          });
-    }
-  };
-  const removeFromCart = async (req, res) => {
-    try {
-      const { productIdList } = req.body;
-      const userCartDetails = await cart.findOne({ UserId: req.user._id });
-      if (!userCartDetails) {
-        return res.status(404).json({
-          success: false,
-          message: "User cart is not found",
-        });
-      }
+    await userCartDetails.save();
 
-      productIdList.forEach((element) => {
-        const index = userCartDetails.cartItems.findIndex(
-          (item) => item.productId.toString() === element.productId._id
-        );
-        if (index !== -1) {
-          userCartDetails.cartItems.splice(index, 1); // Remove item at the found index
-        }
-      });
-
-      await userCartDetails.save();
-
-      return res.status(200).json({
-        success: true,
-        message: "Deleted successfully",
-      });
-    } catch (error) {
-      return res.status(500).json({
-        success: false,
-        message: error.message + " Internal server error",
-      });
-    }
-  };
+    return res.status(200).json({
+      success: true,
+      message: "Deleted successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message + " Internal server error",
+    });
+  }
+};
 async function removeItemFromCart(productIdList, userId) {
   const userCartDetails = await cart.findOne({ UserId: userId });
 
   if (!userCartDetails) {
     return { message: "Cart not found" };
   }
-   // console.log({ userCartDetails: userCartDetails });
+  // console.log({ userCartDetails: userCartDetails });
   productIdList.forEach((element) => {
-     // console.log(element.productId._id);
+    // console.log(element.productId._id);
     const index = userCartDetails.cartItems.findIndex(
       (item) => item.productId.toString() === element.productId._id.toString()
     );
     if (index !== -1) {
-       // console.log(`Removing item with ID: ${element.productId._id}`);
+      // console.log(`Removing item with ID: ${element.productId._id}`);
       userCartDetails.cartItems.splice(index, 1);
     }
   });
@@ -459,55 +605,6 @@ async function removeItemFromCart(productIdList, userId) {
   return { message: "Items removed from cart successfully" };
 }
 
-
-async function buyNowInfo (req, res){
-  try {
-    const { variantId, quantity = 1 } = req.body
-
-    const variant = await variants
-      .findById(variantId)
-      .select('sku name attributes sellingPrice quantity taxModel taxPercent shippingCost images cod')
-    if (!variant) {
-      return res.status(404).json({ message: 'Variant not found' })
-    }
-    if (variant.quantity < quantity) {
-      return res.status(400).json({ message: 'Insufficient stock' })
-    }
-
-    // 2️⃣ Compute pricing
-    const unitPrice = variant.sellingPrice
-    const subtotal  = parseFloat((unitPrice * quantity).toFixed(2))
-
-    let tax = 0
-    if (variant.taxModel === 'exclude') {
-      tax = parseFloat((subtotal * (variant.taxPercent / 100)).toFixed(2))
-    } else {
-      tax = parseFloat((subtotal * (variant.taxPercent / (100 + variant.taxPercent))).toFixed(2))
-    }
-    const total = parseFloat((subtotal + (variant.taxModel === 'exclude' ? tax : 0)).toFixed(2))
-
-    // 3️⃣ Build buyNowItem payload
-    const buyNowItem = {
-      _id:           variant._id,
-      itemQuantity:  quantity,
-      productId:     variant,
-    }
-
-    // 4️⃣ Define payment methods with COD availability
-    const isCODAvailable = variant.cod === true
-    const paymentMethods = [
-      { lable: 'Wallet',   method: 'Wallet', available: false,    icon: 'mobile', image: 'https://finafid.com/image/mywallet.png' },
-      { lable: 'Card / UPI / Net Banking', method: 'PayU', available: true, icon: 'money',  image: 'https://finafid.com/image/payumoney.png' },
-      { lable: 'Cash on Delivery',       method: 'COD',    available: isCODAvailable, icon: 'mobile', image: 'https://finafid.com/image/cod.jpg' },
-    ]
-
-    // 5️⃣ Return the payload
-    return res.json({ buyNowItem, paymentMethods })
-  } catch (err) {
-    console.error('buynow-info error:', err)
-    return res.status(500).json({ message: 'Server error' })
-  }
-}
 
 
 
@@ -521,6 +618,5 @@ module.exports = {
   clearCart,
   removeFromCart,
   removeItemFromCart,
-  validateCartForUtsav,
-  buyNowInfo
+  validateCartForUtsav
 };

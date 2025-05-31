@@ -1,4 +1,6 @@
 const express = require("express");
+const validateRequest = require("../middlewares/validateRequest.js");
+const { buyNowSchema } = require("../utils/validationSchemas");
 const {
   userLogin,
   userRegistration,
@@ -110,6 +112,7 @@ const {
   setDeliveryDate,
   cancelDelivery,
   downloadInvoice,
+  buyNowInfoController
 } = require("../controllers/order/orderController");
 const { upload, uploadImageToS3 } = require("../utils/fileUpload");
 
@@ -881,5 +884,10 @@ routs.get("/getRewardBalanceFromAdmin/:userId", getRewardBalanceFromAdmin);
 routs.get("/addRewardWallet", addRewardWallet);
 routs.get("/getTotalRewards", getTotalRewards); 
 routs.get("/getAmounts", getAmounts);
-routs.post('/buynow-info', buyNowInfo) 
+routs.post(
+  "/buyNowInfo",
+  auth,                // sets req.user (including is_utsav)
+  validateRequest(buyNowSchema),
+  buyNowInfoController
+);
 module.exports = routs;
