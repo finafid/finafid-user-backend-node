@@ -369,8 +369,8 @@ const updateStatus = async (req, res) => {
     }
     if (req.body.status == "Completed") {
       try {
-        
-         // console.log(orderDetail.userId._id);
+
+        // console.log(orderDetail.userId._id);
         const walletDetails = await Wallet.findOne({
           userId: new ObjectId(orderDetail.userId._id),
         });
@@ -395,9 +395,9 @@ const updateStatus = async (req, res) => {
           });
         }
         const utsavTotalPrice = orderDetail.orderItem
-        .filter(item => item.productId.isUtsav)
-        .reduce((total, item) => total + item.productId.sellingPrice * item.itemQuantity, 0);
-  
+          .filter(item => item.productId.isUtsav)
+          .reduce((total, item) => total + item.productId.sellingPrice * item.itemQuantity, 0);
+
         if (
           userData.is_utsav === false &&
           utsavTotalPrice >= planDetails.amount
@@ -413,18 +413,18 @@ const updateStatus = async (req, res) => {
           const referralDetails = await referral.findOne({
             userId: orderDetail.userId,
           });
-           // console.log({ referralDetails });
+          // console.log({ referralDetails });
 
           if (referralDetails && referralDetails.referred_by) {
             const referredUserData = await User.findById(
               referralDetails.referred_by
             );
-             // console.log({ referredUserData });
+            // console.log({ referredUserData });
 
             if (
               referredUserData &&
               referredUserData.is_utsav === true &&
-              userData.firstOrderComplete === false && 
+              userData.firstOrderComplete === false &&
               orderDetail.status !== "Completed"
             ) {
               // Reward ₹49 to the referrer
@@ -441,7 +441,7 @@ const updateStatus = async (req, res) => {
                   points: 49,
                   date: Date.now(),
                 });
-                 // console.log(newWalletTransaction);
+                // console.log(newWalletTransaction);
                 await newRewardTransaction.save();
                 walletDetailsOfReferredUser.transactions.push(
                   newRewardTransaction
@@ -456,623 +456,622 @@ const updateStatus = async (req, res) => {
           }
         }
 
-            const referralDetails = await referral.findOne({
-              userId: orderDetail.userId,
-            });
-             
-            if (referralDetails && referralDetails.referred_by) {
-              const referredUserData = await User.findById(
-                referralDetails.referred_by
-              ); 
-
-              if (referredUserData && referredUserData.is_utsav === true) {
-                let walletDetailsOfReferredUser = await Wallet.findOne({
-                  userId: referralDetails.referred_by,
-                });
-                let rewardDetailsOfReferredUser = await Reward.findOne({
-                  userId: referralDetails.referred_by,
-                });
-                if (
-                  walletDetailsOfReferredUser &&
-                  userData.firstOrderComplete == false
-                ) {   
-                   // console.log({ walletDetailsOfReferredUser });
-
-                  // Update referred user's wallet balance
-                  rewardDetailsOfReferredUser.points += planDetails.reward;
-                  const newRewardTransaction = new RewardTransaction({
-                    userId: referralDetails.referred_by,
-                    type: "credit",
-                    transaction_message: "Referral Reward",
-                    points: planDetails.reward,
-                    date: Date.now(),
-                  });
-                   // console.log(newWalletTransaction);
-                  await newRewardTransaction.save();
-                  rewardDetailsOfReferredUser.transactions.push(
-                    newRewardTransaction
-                  );
-                  await rewardDetailsOfReferredUser.save();
-                  userData.firstOrderComplete = true;
-                  await userData.save();
-                } else if (
-                  rewardDetailsOfReferredUser &&
-                  userData.firstOrderComplete == true &&
-                  userData.is_utsav === true
-                ) {
-                  rewardDetailsOfReferredUser.points += orderDetail.utsavReward;
-                  const newRewardTransaction = new RewardTransaction({
-                    userId: referralDetails.referred_by,
-                    type: "credit",
-                    transaction_message: "Referral Reward",
-                    points: orderDetail.utsavReward,
-                    date: Date.now(),
-                  });
-                  await newRewardTransaction.save();
-                  rewardDetailsOfReferredUser.transactions.push(
-                    newRewardTransaction
-                  );
-                  await rewardDetailsOfReferredUser.save();
-                }
-              }
-            }
-            // Add basic reward to the user's wallet
-            RewardDetails.points += orderDetail.basicReward;
-            const newRewardTransaction = new RewardTransaction({
-              userId: userData._id,
-              type: "credit",
-              transaction_message: "Referral Reward",
-              points: orderDetail.basicReward,
-              date: Date.now(),
-            });
-            await newRewardTransaction.save();
-            RewardDetails.transactions.push(newRewardTransaction);
-            await RewardDetails.save();
-            return res.status(200).json({
-              message: "Rewards processed successfully",
-              success: true,
-            });
-          } catch (err) {
-            console.error("Error processing rewards:", err.message);
-            return res.status(500).json({
-              message: "Internal server error",
-              success: false,
-              error: err.message,
-            });
-          }
-        }
-        async function orderStatusCanceled(OrderDetails) {
-          try {
-            const walletDetails = await Reward.findOne({
-              userId: OrderDetails.userId,
-            });
-             // console.log(walletDetails);
-            walletDetails.points =
-              walletDetails.points + OrderDetails.walletBalanceUsed;
-            await walletDetails.save();
-            const statusDetails = await orderStatus.findOne({
-              orderId: OrderDetails._id,
-            });
-            if (statusDetails.orderStatusDetails) {
-            }
-            const newWalletTransaction = new walletTransaction({
-              userId: OrderDetails.userId,
-              type: "credit",
-              transaction_message: "Refund From purchase",
-              points: OrderDetails.walletBalanceUsed,
-              date: Date.now(),
-            });
-            await newWalletTransaction.save();
-            walletDetails.transactions.push(newWalletTransaction);
-            await walletDetails.save();
-            await Promise.all(
-              OrderDetails.orderItem.map(async (item) => {
-                const productId = item.productId;
-                const quantityToReduce = item.itemQuantity;
-
-                await Variant.findByIdAndUpdate(
-                  productId,
-                  { $inc: { quantity: + quantityToReduce } },
-                  { new: true }
-                );
-              })
-            );
-          } catch (err) {
-            console.error("Error processing rewards:", err.message);
-            return res.status(500).json({
-              message: "Internal server error",
-              success: false,
-              error: err.message,
-            });
-          }
-        }
-        const statusDetails = await orderStatus.findOne({
-          orderId: req.params.orderId,
+        const referralDetails = await referral.findOne({
+          userId: orderDetail.userId,
         });
-        const newStatusDetails = {
-          status: req.body.status,
+
+        if (referralDetails && referralDetails.referred_by) {
+          const referredUserData = await User.findById(
+            referralDetails.referred_by
+          );
+
+          if (referredUserData && referredUserData.is_utsav === true) {
+            let walletDetailsOfReferredUser = await Wallet.findOne({
+              userId: referralDetails.referred_by,
+            });
+            let rewardDetailsOfReferredUser = await Reward.findOne({
+              userId: referralDetails.referred_by,
+            });
+            if (
+              walletDetailsOfReferredUser &&
+              userData.firstOrderComplete == false
+            ) {
+              // console.log({ walletDetailsOfReferredUser });
+
+              // Update referred user's wallet balance
+              rewardDetailsOfReferredUser.points += planDetails.reward;
+              const newRewardTransaction = new RewardTransaction({
+                userId: referralDetails.referred_by,
+                type: "credit",
+                transaction_message: "Referral Reward",
+                points: planDetails.reward,
+                date: Date.now(),
+              });
+              // console.log(newWalletTransaction);
+              await newRewardTransaction.save();
+              rewardDetailsOfReferredUser.transactions.push(
+                newRewardTransaction
+              );
+              await rewardDetailsOfReferredUser.save();
+              userData.firstOrderComplete = true;
+              await userData.save();
+            } else if (
+              rewardDetailsOfReferredUser &&
+              userData.firstOrderComplete == true &&
+              userData.is_utsav === true
+            ) {
+              rewardDetailsOfReferredUser.points += orderDetail.utsavReward;
+              const newRewardTransaction = new RewardTransaction({
+                userId: referralDetails.referred_by,
+                type: "credit",
+                transaction_message: "Referral Reward",
+                points: orderDetail.utsavReward,
+                date: Date.now(),
+              });
+              await newRewardTransaction.save();
+              rewardDetailsOfReferredUser.transactions.push(
+                newRewardTransaction
+              );
+              await rewardDetailsOfReferredUser.save();
+            }
+          }
+        }
+        // Add basic reward to the user's wallet
+        RewardDetails.points += orderDetail.basicReward;
+        const newRewardTransaction = new RewardTransaction({
+          userId: userData._id,
+          type: "credit",
+          transaction_message: "Referral Reward",
+          points: orderDetail.basicReward,
           date: Date.now(),
-        };
-        if (!statusDetails) {
-          const newStatus = new orderStatus({
-            orderStatusDetails: [newStatusDetails],
-            orderId: req.params.orderId,
-          });
-          await newStatus.save();
-          return res.status(200).json({
-            success: true,
-            orderDetail,
-          });
-        }
-        statusDetails.orderStatusDetails.push(newStatusDetails);
-        await statusDetails.save();
-        return res.status(200).json({
-          success: true,
-          orderDetail,
         });
-      } catch (error) {
+        await newRewardTransaction.save();
+        RewardDetails.transactions.push(newRewardTransaction);
+        await RewardDetails.save();
+        return res.status(200).json({
+          message: "Rewards processed successfully",
+          success: true,
+        });
+      } catch (err) {
+        console.error("Error processing rewards:", err.message);
         return res.status(500).json({
+          message: "Internal server error",
           success: false,
-          message: error.message + "internal server error",
+          error: err.message,
         });
       }
-    };
-
-    module.exports = updateStatus;
-    async function orderStatusConfirmed(orderDetails) {
+    }
+    async function orderStatusCanceled(OrderDetails) {
       try {
+        const walletDetails = await Reward.findOne({
+          userId: OrderDetails.userId,
+        });
+        // console.log(walletDetails);
+        walletDetails.points =
+          walletDetails.points + OrderDetails.walletBalanceUsed;
+        await walletDetails.save();
+        const statusDetails = await orderStatus.findOne({
+          orderId: OrderDetails._id,
+        });
+        if (statusDetails.orderStatusDetails) {
+        }
+        const newWalletTransaction = new walletTransaction({
+          userId: OrderDetails.userId,
+          type: "credit",
+          transaction_message: "Refund From purchase",
+          points: OrderDetails.walletBalanceUsed,
+          date: Date.now(),
+        });
+        await newWalletTransaction.save();
+        walletDetails.transactions.push(newWalletTransaction);
+        await walletDetails.save();
         await Promise.all(
-          orderDetails.orderItem.map(async (item) => {
+          OrderDetails.orderItem.map(async (item) => {
             const productId = item.productId;
             const quantityToReduce = item.itemQuantity;
 
             await Variant.findByIdAndUpdate(
               productId,
-              { $inc: { quantity: -quantityToReduce } },
+              { $inc: { quantity: + quantityToReduce } },
               { new: true }
             );
           })
         );
-      } catch (error) {
+      } catch (err) {
+        console.error("Error processing rewards:", err.message);
         return res.status(500).json({
+          message: "Internal server error",
           success: false,
-          message: error.message + "internal server error",
+          error: err.message,
         });
       }
     }
-    const getOrderByStatus = async (req, res) => {
-      try {
-        const orderDetails = await order.find({
-          status: req.body.status,
-        });
-        if (!orderDetails) {
-          return res.status(500).json({
-            success: false,
-            message: "No order",
-          });
-        }
-        return res.status(200).json({
-          success: true,
-          orderDetails,
-        });
-      } catch (error) {
-        return res.status(500).json({
-          success: false,
-          message: error.message + "internal server error",
-        });
-      }
+    const statusDetails = await orderStatus.findOne({
+      orderId: req.params.orderId,
+    });
+    const newStatusDetails = {
+      status: req.body.status,
+      date: Date.now(),
     };
-    const getAllOrder = async (req, res) => {
-      try {
-        // Get query parameters for filtering and pagination
-        const { status, page = 1, limit = 10, startDate, endDate, search } = req.query;
-    
-        // Create a date filter object if startDate and endDate are provided
-        let dateFilter = {};
-        if (startDate || endDate) {
-          dateFilter.createdAt = {};
-          if (startDate) {
-            dateFilter.createdAt.$gte = new Date(startDate);
-          }
-          if (endDate) {
-            const end = new Date(endDate);
-            end.setDate(end.getDate() + 1); // Include the entire endDate
-            dateFilter.createdAt.$lte = end;
-          }
-        }
-    
-        // Build search filter if 'search' query is provided
-        let searchFilter = {};
-        if (search) {
-          const regex = new RegExp(search, "i"); // Case-insensitive search
-          searchFilter = {
-            $or: [
-              { orderId: { $regex: regex } }, // Assuming `orderId` is the field you want to search
-              { "userId.name": { $regex: regex } }, // Search by user name, if relevant
-              { "userId.email": { $regex: regex } }, // Or by email
-            ],
-          };
-        }
-    
-        // Fetch all orders with filters applied
-        const allOrders = await order
-          .find({
-            $and: [
-              dateFilter,
-              searchFilter, // Add search filter here
-              {
-                $or: [
-                  { payment_complete: { $in: [true, false] } },
-                  { payment_method: { $in: ["COD", "Wallet"] } },
-                ],
-              },
-            ],
-          })
-          .populate("userId")
-          .populate({
-            path: "orderItem.productId",
-            model: "Variant",
-            populate: {
-              path: "productGroup",
-              model: "Product",
-            },
-          })
-          .sort({ createdAt: -1 });
-    
-        // Initialize status counts
-        const statusCount = {};
-        let totalIncome = 0;
-        let totalSales = 0;
-    
-        // Define status list and count orders per status
-        const statusList = [
-          "Pending",
-          "Confirmed",
-          "Shipping",
-          "Out For delivery",
-          "Delivered",
-          "Returned",
-          "Canceled",
-          "Completed",
-        ];
-    
-        // Count orders by status
-        statusList.forEach((status) => {
-          statusCount[status] = allOrders.filter(
-            (order) => order.status === status
-          ).length;
-        });
-    
-        // Calculate total income only for "Completed" orders
-        allOrders.forEach((order) => {
-          if (order.status === "Completed") {
-            totalIncome += order.totalPrice || 0;
-          }
-    
-          order.orderItem.forEach((item) => {
-            if (order.status === "Completed") {
-              totalSales += item.itemQuantity || 0; // Sum itemQuantity for sales
-            }
-          });
-        });
-    
-        // Apply status filter if specified
-        let filteredOrders = allOrders;
-        if (status) {
-          filteredOrders = allOrders.filter((order) => order.status === status);
-        }
-    
-        // Calculate pagination values
-        const skip = (page - 1) * limit;
-        const paginatedOrders = filteredOrders.slice(skip, skip + parseInt(limit));
-    
-        // Calculate total pages for pagination
-        const totalOrders = filteredOrders.length;
-        const totalPages = Math.ceil(totalOrders / limit);
-    
-        // Return response with paginated orders, status count, and total income
-        return res.status(200).json({
-          success: true,
-          orderDetails: paginatedOrders, // Paginated orders
-          totalOrders, // Total count of filtered orders (before pagination)
-          totalPages, // Total number of pages
-          currentPage: page, // Current page number
-          statusCount, // Status count
-          totalIncome, // Total income from completed orders
-          totalSales, // Total sales from completed orders
-        });
-      } catch (err) {
-        return res.status(500).json({
-          success: false,
-          message: `${err.message} internal server error`,
-        });
-      }
-    };
-    
-
-    const getSalesPercentageByCategory = async (req, res) => {
-      try {
-        const { startDate, endDate } = req.query;
-
-        // Date filter
-        let dateFilter = {};
-        if (startDate || endDate) {
-          dateFilter.createdAt = {};
-          if (startDate) {
-            dateFilter.createdAt.$gte = new Date(startDate);
-          }
-          if (endDate) {
-            const end = new Date(endDate);
-            end.setDate(end.getDate() + 1); // Include the entire endDate
-            dateFilter.createdAt.$lte = end;
-          }
-        }
-
-        // Fetch orders with populated productTypeId names
-        const orders = await order.find(dateFilter).populate({
-          path: "orderItem.productId",
-          model: "Variant",
-          populate: {
-            path: "productGroup",
-            model: "Product",
-            populate: {
-              path: "productTypeId",
-              select: "name",
-            },
-          },
-        });
-
-        // Calculate total product sales by category
-        const categorySales = {};
-
-        orders.forEach((order) => {
-          order.orderItem.forEach((item) => {
-            const productTypeName =
-              item.productId?.productGroup?.productTypeId?.name;
-            const quantitySold = item.itemQuantity || 0; // Default to 0 if quantity is undefined
-
-            if (productTypeName) {
-              if (!categorySales[productTypeName]) {
-                categorySales[productTypeName] = 0;
-              }
-              categorySales[productTypeName] += quantitySold;
-            }
-          });
-        });
-
-        // Calculate total quantity and prepare data
-        const totalQuantitySold = Object.values(categorySales).reduce(
-          (sum, count) => sum + count,
-          0
-        );
-
-        const categorySalesData = Object.keys(categorySales).map((category) => ({
-          category,
-          product_sold: categorySales[category],
-          percentage: ((categorySales[category] / totalQuantitySold) * 100).toFixed(
-            2
-          ),
-        }));
-
-        return res.status(200).json({
-          success: true,
-          data: categorySalesData,
-        });
-      } catch (err) {
-        return res.status(500).json({
-          success: false,
-          message: `${err.message} - internal server error`,
-        });
-      }
-    };
-
-    const editOrder = async (req, res) => {
-      try {
-        const orderDetails = await order.findOne({
-          _id: req.params.orderId,
-        })((orderDetails.locality = req.body.locality));
-        orderDetails.city = req.body.address.city;
-        orderDetails.street = req.body.address.street;
-        orderDetails.houseNumber = req.body.address.houseNumber;
-        orderDetails.pinCode = req.body.address.pinCode;
-        orderDetails.landMark = req.body.address.landMark;
-        orderDetails.state = req.body.address.state;
-        orderDetails.status = req.body.status;
-        orderDetails.totalPrice = req.body.total;
-        orderDetails.discount = req.body.discount;
-        orderDetails.subtotal = req.body.subtotal;
-        orderDetails.tax = req.body.tax;
-        orderDetails.payment_method = req.body.payment_method;
-        orderDetails.payment_complete = req.body.payment_complete;
-        orderDetails.walletBalanceUsed = req.body.walletBalanceUsed;
-        await orderDetails.save();
-        return res.status(500).json({
-          success: true,
-          message: "updated successfully",
-        });
-      } catch (err) {
-        return res.status(500).json({
-          success: false,
-          message: err.message + " internal server error",
-        });
-      }
-    };
-    const orderStatusDetails = async (req, res) => {
-      try {
-        const statusDetails = await orderStatus.findOne({
-          orderId: req.params.orderId,
-        });
-        if (!statusDetails) {
-          return res.status(500).json({
-            success: false,
-            message: "internal server error",
-          });
-        }
-        return res.status(200).json({
-          success: true,
-          statusDetails,
-        });
-      } catch (err) {
-        return res.status(500).json({
-          success: false,
-          message: err.message + "internal server error",
-        });
-      }
-    };
-    async function updateStatusDetails(orderId, status = "Pending") {
-      const statusDetails = await orderStatus.findOne({
-        orderId,
+    if (!statusDetails) {
+      const newStatus = new orderStatus({
+        orderStatusDetails: [newStatusDetails],
+        orderId: req.params.orderId,
       });
-      const newStatusDetails = {
-        status: status,
-        date: Date.now(),
-      };
-      if (!statusDetails) {
-        const newStatus = new orderStatus({
-          orderStatusDetails: [newStatusDetails],
-          orderId,
-        });
-         // console.log({ newStatus: newStatus });
-        await newStatus.save();
-      }
-      if (statusDetails) {
-        statusDetails.orderStatusDetails.push(newStatusDetails);
-        await statusDetails.save();
-      }
+      await newStatus.save();
+      return res.status(200).json({
+        success: true,
+        orderDetail,
+      });
     }
-    const cancelDelivery = async (req, res) => {
-      try {
-        const orderDetails = await order.findById(req.params.orderId);
-        if (!orderDetails) {
-          return res.status(400).json({
-            success: false,
-            message: "No order found",
-          });
-        }
-        orderDetails.status = "Canceled";
-        await orderDetails.save();
-        return res.status(200).json({
-          success: true,
-          message: "Order cancelled successful",
-        });
-      } catch (err) {
-        return res.status(500).json({
-          success: false,
-          message: err.message + " internal server error",
-        });
-      }
-    };
-    const setDeliveryDate = async (req, res) => {
-      try {
-        const orderDetails = await order.findById(req.param.orderId);
-        if (!orderDetails) {
-          return res.status(400).json({
-            success: false,
-            message: "No order found",
-          });
-        }
-        orderDetails.expectedDeliveryDate = req.body.date;
-        await orderDetails.save();
-      } catch (err) {
-        return res.status(500).json({
-          success: false,
-          message: err.message + " internal server error",
-        });
-      }
-    };
-    const { generateAndUploadInvoice } = require("../../utils/invoiceGenerator");
-const RewardTransaction = require("../../models/reward/RewardTransaction");
-    async function invoiceGenerate(orderDetails) {
-       // console.log({ orderDetails: orderDetails });
-      const invoiceData = {
-        orderId:orderDetails._id,
-        invoiceNumber: "INV-" + Math.random().toString().slice(2, 10),
-        date: new Date().toISOString().split("T")[0], // Formatted as YYYY-MM-DD
-        customerName: orderDetails.userId.fullName,
-        customerEmail: orderDetails.userId.email,
-        customerPhoneNumber: orderDetails.userId.phone,
-        customerAddress: `${orderDetails.address.locality}, ${orderDetails.address.city}, ${orderDetails.address.state}, ${orderDetails.address.pinCode}`,
-        payment_method: orderDetails.payment_method,
-        items: orderDetails.orderItem.map((item) => ({
-          name: item.productId.productGroup.name,
-          quantity: item.itemQuantity,
-          unitPrice: item.unitPrice,
-          discount: item.discount,
-          price: item.sellingPrice,
-        })),
+    statusDetails.orderStatusDetails.push(newStatusDetails);
+    await statusDetails.save();
+    return res.status(200).json({
+      success: true,
+      orderDetail,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message + "internal server error",
+    });
+  }
+};
 
-        subtotal: orderDetails.subtotal,
-        discount: orderDetails.discount,
-        gst: orderDetails.tax,
-        couponDiscount: orderDetails.couponDiscount,
-        utsavDiscount: orderDetails.utsavDiscount,
-        shipping: orderDetails.shippingCost,
-        total: orderDetails.totalPrice,
-      };
-       // console.log({ invoiceData: invoiceData });
-      const fileName = await generateAndUploadInvoice(invoiceData);
-      const invoiceLink = fileName;
-       // console.log({ invoiceLink: invoiceLink });
-      orderDetails.invoicePath = invoiceLink;
-      await orderDetails.save();
-
-       // console.log(`Invoice generated and uploaded successfully: ${invoiceLink}`);
-    }
-
-    const downloadInvoice = async (req, res) => {
-      try {
-        const orderDetails = await order.findById(req.params.orderId);
-         // console.log(orderDetails.invoicePath);
-        if (!orderDetails || orderDetails.invoicePath == "false") {
-          return res.status(400).json({
-            message: " No order details",
-          });
-        }
-        return res.status(200).json({ invoicePath: orderDetails.invoicePath });
-      } catch (err) {
-        return res.status(500).json({
-          success: false,
-          message: err.message + " internal server error",
-        });
-      }
-    };
-
-    const buyNowInfoController = async (req, res) => {
+module.exports = updateStatus;
+async function orderStatusConfirmed(orderDetails) {
   try {
-    const userId = req.user._id;                   // from auth middleware
-    const { variantId, quantity, couponCode } = req.body;
+    await Promise.all(
+      orderDetails.orderItem.map(async (item) => {
+        const productId = item.productId;
+        const quantityToReduce = item.itemQuantity;
 
-    // Delegate to service
+        await Variant.findByIdAndUpdate(
+          productId,
+          { $inc: { quantity: -quantityToReduce } },
+          { new: true }
+        );
+      })
+    );
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message + "internal server error",
+    });
+  }
+}
+const getOrderByStatus = async (req, res) => {
+  try {
+    const orderDetails = await order.find({
+      status: req.body.status,
+    });
+    if (!orderDetails) {
+      return res.status(500).json({
+        success: false,
+        message: "No order",
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      orderDetails,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message + "internal server error",
+    });
+  }
+};
+const getAllOrder = async (req, res) => {
+  try {
+    // Get query parameters for filtering and pagination
+    const { status, page = 1, limit = 10, startDate, endDate, search } = req.query;
+
+    // Create a date filter object if startDate and endDate are provided
+    let dateFilter = {};
+    if (startDate || endDate) {
+      dateFilter.createdAt = {};
+      if (startDate) {
+        dateFilter.createdAt.$gte = new Date(startDate);
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setDate(end.getDate() + 1); // Include the entire endDate
+        dateFilter.createdAt.$lte = end;
+      }
+    }
+
+    // Build search filter if 'search' query is provided
+    let searchFilter = {};
+    if (search) {
+      const regex = new RegExp(search, "i"); // Case-insensitive search
+      searchFilter = {
+        $or: [
+          { orderId: { $regex: regex } }, // Assuming `orderId` is the field you want to search
+          { "userId.name": { $regex: regex } }, // Search by user name, if relevant
+          { "userId.email": { $regex: regex } }, // Or by email
+        ],
+      };
+    }
+
+    // Fetch all orders with filters applied
+    const allOrders = await order
+      .find({
+        $and: [
+          dateFilter,
+          searchFilter, // Add search filter here
+          {
+            $or: [
+              { payment_complete: { $in: [true, false] } },
+              { payment_method: { $in: ["COD", "Wallet"] } },
+            ],
+          },
+        ],
+      })
+      .populate("userId")
+      .populate({
+        path: "orderItem.productId",
+        model: "Variant",
+        populate: {
+          path: "productGroup",
+          model: "Product",
+        },
+      })
+      .sort({ createdAt: -1 });
+
+    // Initialize status counts
+    const statusCount = {};
+    let totalIncome = 0;
+    let totalSales = 0;
+
+    // Define status list and count orders per status
+    const statusList = [
+      "Pending",
+      "Confirmed",
+      "Shipping",
+      "Out For delivery",
+      "Delivered",
+      "Returned",
+      "Canceled",
+      "Completed",
+    ];
+
+    // Count orders by status
+    statusList.forEach((status) => {
+      statusCount[status] = allOrders.filter(
+        (order) => order.status === status
+      ).length;
+    });
+
+    // Calculate total income only for "Completed" orders
+    allOrders.forEach((order) => {
+      if (order.status === "Completed") {
+        totalIncome += order.totalPrice || 0;
+      }
+
+      order.orderItem.forEach((item) => {
+        if (order.status === "Completed") {
+          totalSales += item.itemQuantity || 0; // Sum itemQuantity for sales
+        }
+      });
+    });
+
+    // Apply status filter if specified
+    let filteredOrders = allOrders;
+    if (status) {
+      filteredOrders = allOrders.filter((order) => order.status === status);
+    }
+
+    // Calculate pagination values
+    const skip = (page - 1) * limit;
+    const paginatedOrders = filteredOrders.slice(skip, skip + parseInt(limit));
+
+    // Calculate total pages for pagination
+    const totalOrders = filteredOrders.length;
+    const totalPages = Math.ceil(totalOrders / limit);
+
+    // Return response with paginated orders, status count, and total income
+    return res.status(200).json({
+      success: true,
+      orderDetails: paginatedOrders, // Paginated orders
+      totalOrders, // Total count of filtered orders (before pagination)
+      totalPages, // Total number of pages
+      currentPage: page, // Current page number
+      statusCount, // Status count
+      totalIncome, // Total income from completed orders
+      totalSales, // Total sales from completed orders
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: `${err.message} internal server error`,
+    });
+  }
+};
+
+
+const getSalesPercentageByCategory = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    // Date filter
+    let dateFilter = {};
+    if (startDate || endDate) {
+      dateFilter.createdAt = {};
+      if (startDate) {
+        dateFilter.createdAt.$gte = new Date(startDate);
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setDate(end.getDate() + 1); // Include the entire endDate
+        dateFilter.createdAt.$lte = end;
+      }
+    }
+
+    // Fetch orders with populated productTypeId names
+    const orders = await order.find(dateFilter).populate({
+      path: "orderItem.productId",
+      model: "Variant",
+      populate: {
+        path: "productGroup",
+        model: "Product",
+        populate: {
+          path: "productTypeId",
+          select: "name",
+        },
+      },
+    });
+
+    // Calculate total product sales by category
+    const categorySales = {};
+
+    orders.forEach((order) => {
+      order.orderItem.forEach((item) => {
+        const productTypeName =
+          item.productId?.productGroup?.productTypeId?.name;
+        const quantitySold = item.itemQuantity || 0; // Default to 0 if quantity is undefined
+
+        if (productTypeName) {
+          if (!categorySales[productTypeName]) {
+            categorySales[productTypeName] = 0;
+          }
+          categorySales[productTypeName] += quantitySold;
+        }
+      });
+    });
+
+    // Calculate total quantity and prepare data
+    const totalQuantitySold = Object.values(categorySales).reduce(
+      (sum, count) => sum + count,
+      0
+    );
+
+    const categorySalesData = Object.keys(categorySales).map((category) => ({
+      category,
+      product_sold: categorySales[category],
+      percentage: ((categorySales[category] / totalQuantitySold) * 100).toFixed(
+        2
+      ),
+    }));
+
+    return res.status(200).json({
+      success: true,
+      data: categorySalesData,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: `${err.message} - internal server error`,
+    });
+  }
+};
+
+const editOrder = async (req, res) => {
+  try {
+    const orderDetails = await order.findOne({
+      _id: req.params.orderId,
+    })((orderDetails.locality = req.body.locality));
+    orderDetails.city = req.body.address.city;
+    orderDetails.street = req.body.address.street;
+    orderDetails.houseNumber = req.body.address.houseNumber;
+    orderDetails.pinCode = req.body.address.pinCode;
+    orderDetails.landMark = req.body.address.landMark;
+    orderDetails.state = req.body.address.state;
+    orderDetails.status = req.body.status;
+    orderDetails.totalPrice = req.body.total;
+    orderDetails.discount = req.body.discount;
+    orderDetails.subtotal = req.body.subtotal;
+    orderDetails.tax = req.body.tax;
+    orderDetails.payment_method = req.body.payment_method;
+    orderDetails.payment_complete = req.body.payment_complete;
+    orderDetails.walletBalanceUsed = req.body.walletBalanceUsed;
+    await orderDetails.save();
+    return res.status(500).json({
+      success: true,
+      message: "updated successfully",
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message + " internal server error",
+    });
+  }
+};
+const orderStatusDetails = async (req, res) => {
+  try {
+    const statusDetails = await orderStatus.findOne({
+      orderId: req.params.orderId,
+    });
+    if (!statusDetails) {
+      return res.status(500).json({
+        success: false,
+        message: "internal server error",
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      statusDetails,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message + "internal server error",
+    });
+  }
+};
+async function updateStatusDetails(orderId, status = "Pending") {
+  const statusDetails = await orderStatus.findOne({
+    orderId,
+  });
+  const newStatusDetails = {
+    status: status,
+    date: Date.now(),
+  };
+  if (!statusDetails) {
+    const newStatus = new orderStatus({
+      orderStatusDetails: [newStatusDetails],
+      orderId,
+    });
+    // console.log({ newStatus: newStatus });
+    await newStatus.save();
+  }
+  if (statusDetails) {
+    statusDetails.orderStatusDetails.push(newStatusDetails);
+    await statusDetails.save();
+  }
+}
+const cancelDelivery = async (req, res) => {
+  try {
+    const orderDetails = await order.findById(req.params.orderId);
+    if (!orderDetails) {
+      return res.status(400).json({
+        success: false,
+        message: "No order found",
+      });
+    }
+    orderDetails.status = "Canceled";
+    await orderDetails.save();
+    return res.status(200).json({
+      success: true,
+      message: "Order cancelled successful",
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message + " internal server error",
+    });
+  }
+};
+const setDeliveryDate = async (req, res) => {
+  try {
+    const orderDetails = await order.findById(req.param.orderId);
+    if (!orderDetails) {
+      return res.status(400).json({
+        success: false,
+        message: "No order found",
+      });
+    }
+    orderDetails.expectedDeliveryDate = req.body.date;
+    await orderDetails.save();
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message + " internal server error",
+    });
+  }
+};
+const { generateAndUploadInvoice } = require("../../utils/invoiceGenerator");
+const RewardTransaction = require("../../models/reward/RewardTransaction");
+async function invoiceGenerate(orderDetails) {
+  // console.log({ orderDetails: orderDetails });
+  const invoiceData = {
+    orderId: orderDetails._id,
+    invoiceNumber: "INV-" + Math.random().toString().slice(2, 10),
+    date: new Date().toISOString().split("T")[0], // Formatted as YYYY-MM-DD
+    customerName: orderDetails.userId.fullName,
+    customerEmail: orderDetails.userId.email,
+    customerPhoneNumber: orderDetails.userId.phone,
+    customerAddress: `${orderDetails.address.locality}, ${orderDetails.address.city}, ${orderDetails.address.state}, ${orderDetails.address.pinCode}`,
+    payment_method: orderDetails.payment_method,
+    items: orderDetails.orderItem.map((item) => ({
+      name: item.productId.productGroup.name,
+      quantity: item.itemQuantity,
+      unitPrice: item.unitPrice,
+      discount: item.discount,
+      price: item.sellingPrice,
+    })),
+
+    subtotal: orderDetails.subtotal,
+    discount: orderDetails.discount,
+    gst: orderDetails.tax,
+    couponDiscount: orderDetails.couponDiscount,
+    utsavDiscount: orderDetails.utsavDiscount,
+    shipping: orderDetails.shippingCost,
+    total: orderDetails.totalPrice,
+  };
+  // console.log({ invoiceData: invoiceData });
+  const fileName = await generateAndUploadInvoice(invoiceData);
+  const invoiceLink = fileName;
+  // console.log({ invoiceLink: invoiceLink });
+  orderDetails.invoicePath = invoiceLink;
+  await orderDetails.save();
+
+  // console.log(`Invoice generated and uploaded successfully: ${invoiceLink}`);
+}
+
+const downloadInvoice = async (req, res) => {
+  try {
+    const orderDetails = await order.findById(req.params.orderId);
+    // console.log(orderDetails.invoicePath);
+    if (!orderDetails || orderDetails.invoicePath == "false") {
+      return res.status(400).json({
+        message: " No order details",
+      });
+    }
+    return res.status(200).json({ invoicePath: orderDetails.invoicePath });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message + " internal server error",
+    });
+  }
+};
+
+const buyNowInfoController = async (req, res) => {
+  try {
+    const userId = req.user._id; 
+    const { variantId, quantity = 1, couponCode = null, usereward = false } = req.body;
+
     const payload = await getBuyNowPricing({
       userId,
       variantId,
       quantity,
-      couponCode: couponCode || null,
+      couponCode,
+      rewardbalUsed: usereward,
     });
 
-    // Respond with the full computed payload
     return res.json(payload);
   } catch (err) {
     const status = err.statusCode || 500;
     return res.status(status).json({ message: err.message });
   }
-}
+};
 
 
 
-    module.exports = {
-      placeOrder,
-      getOrderDetails,
-      getOrderById,
-      updateStatus,
-      getOrderByStatus,
-      getAllOrder,
-      editOrder,
-      orderStatusDetails,
-      updateStatusDetails,
-      setDeliveryDate,
-      cancelDelivery,
-      downloadInvoice,
-      getSalesPercentageByCategory,
-      buyNowInfoController
-    };
+module.exports = {
+  placeOrder,
+  getOrderDetails,
+  getOrderById,
+  updateStatus,
+  getOrderByStatus,
+  getAllOrder,
+  editOrder,
+  orderStatusDetails,
+  updateStatusDetails,
+  setDeliveryDate,
+  cancelDelivery,
+  downloadInvoice,
+  getSalesPercentageByCategory,
+  buyNowInfoController
+};

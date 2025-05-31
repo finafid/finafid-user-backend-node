@@ -1,43 +1,74 @@
+// controllers/cartAndWishlistController.js
+
 const Variant = require("../models/product/Varient");
 const Coupon  = require("../models/Coupons/coupons");
 const User    = require("../models/auth/userSchema");
+const Reward  = require("../models/reward/Reward");
 
 /**
-* @typedef {Object} PriceDetails
- * @property {number} subtotal       - ∑(unitPrice × quantity)
- * @property {number} total          - ∑(sellingPrice × quantity) + shipping (with ₹60 min if ≤ ₹499)
- * @property {number} discount       - subtotal − (sellingPrice × quantity)
- * @property {number} tax            - total tax portion on sellingPrice
- * @property {number} utsavTax       - total tax portion on utsavPrice
- * @property {number} shippingCost   - total shipping (with ₹60 min if needed)
- * @property {number} utsavTotal     - ∑(utsavPrice × quantity)
- * @property {number} utsavDiscount  - total − utsavTotal
- *
  * getBuyNowPricing:
- *   - userId:    ObjectId of the logged‐in user
- *   - variantId: ObjectId of the variant to purchase
- *   - quantity:  Number of units
- *   - couponCode: (string|null) optional coupon code
+ *   - userId:        ObjectId of the logged‐in user
+ *   - variantId:     ObjectId of the variant to purchase
+ *   - quantity:      Number of units
+ *   - couponCode:    (string|null) optional coupon code
+ *   - rewardbalUsed: (boolean) whether the user wants to apply reward points
  *
  * Steps:
  *   1) Fetch User → read is_utsav
  *   2) Fetch Variant → ensure is_active & in‐stock
- *   3) Determine:
- *         unitPrice   = (isUtsavUser && variant.utsavPrice != null) ? utsavPrice : sellingPrice
- *         variantBase = { unitPrice, sellingPrice, utsavPrice, taxPercent, shippingCost }
- *   4) Compute PriceDetails exactly as calculatePrices() would do for a single‐item cart
- *   5) Compute variantUtsavDiscount = (variant.utsavDiscount × quantity) if isUtsavUser
- *   6) Validate & apply coupon (percentage vs. flat), capping so final total never < 0
- *   7) Return:
- *        {
- *          variant: { …, requestedQuantity },
- *          pricing: PriceDetails merged with couponDiscount,
- *          paymentMethods: [ Wallet, PayU, COD(if available) ]
- *        }
+ *   3) Determine unitPriceToCharge:
+ *        if (isUtsavUser && variant.utsavPrice != null) → utsavPrice
+ *        else                                  → sellingPrice
  *
- * (No writes to the database occur.)
+ *   4) Compute each field (for exactly one‐item “Buy Now”):
+ *        ● sellingPortion    = sellingPrice × quantity
+ *        ● utsavPortion      = (utsavPrice or sellingPrice) × quantity
+ *        ● subtotal          = unitPriceToCharge × quantity
+ *        ● totalBeforeShipping = sellingPortion
+ *        ● shippingCost      = variant.shippingCost (₹60 min if totalBeforeShipping ≤ 499)
+ *        ● total             = totalBeforeShipping + shippingCost
+ *        ● discount          = (unitPrice − sellingPrice) × quantity
+ *        ● tax               = (sellingPortion / (100 + taxPercent)) × taxPercent
+ *        ● utsavTotal        = utsavPortion
+ *        ● utsavDiscount     = (sellingPrice − utsavPrice) × quantity
+ *
+ *   5) Apply coupon if provided:
+ *        couponDiscount = either flat or percentage on sellingPortion,
+ *        capped so that final payable never < 0
+ *
+ *   6) Compute amountAfterCoupon depending on Utsav‐status:
+ *      - if isUtsavUser:   amountAfterCoupon = utsavTotal − couponDiscount
+ *      - else:             amountAfterCoupon = total − couponDiscount
+ *
+ *   7) If rewardbalUsed is true, fetch Reward document,
+ *        rewardUsed = min(availablePoints, amountAfterCoupon).
+ *
+ *   8) finalTotal = amountAfterCoupon − rewardUsed.
+ *
+ *   9) Build paymentMethods (COD only if variant.cod === true).
+ *
+ *  10) Return JSON:
+ *       {
+ *         variant: { …, requestedQuantity },
+ *         pricing: {
+ *           subtotal, total, discount, tax,
+ *           shippingCost, utsavTotal, utsavDiscount
+ *         },
+ *         couponDiscount,
+ *         rewardUsed,
+ *         finalTotal,
+ *         paymentMethods: [ … ]
+ *       }
+ *
+ *  No writes to the database occur here.
  */
-async function getBuyNowPricing({ userId, variantId, quantity, couponCode }) {
+async function getBuyNowPricing({
+  userId,
+  variantId,
+  quantity,
+  couponCode,
+  rewardbalUsed,
+}) {
   // 1) Fetch user → read is_utsav
   const user = await User.findById(userId).select("is_utsav").lean();
   if (!user) {
@@ -47,20 +78,19 @@ async function getBuyNowPricing({ userId, variantId, quantity, couponCode }) {
   }
   const isUtsavUser = Boolean(user.is_utsav);
 
-  // 2) Fetch variant → ensure is_active & stock
+  // 2) Fetch variant → ensure is_active & in-stock
   const variant = await Variant.findById(variantId)
     .select(`
-      attributes
-      name
-      sku
-      quantity
       unitPrice
       sellingPrice
       utsavPrice
+      utsavDiscount
       taxPercent
-      cod
       shippingCost
+      cod
+      quantity
       is_active
+      images
     `)
     .lean();
 
@@ -80,65 +110,68 @@ async function getBuyNowPricing({ userId, variantId, quantity, couponCode }) {
     throw err;
   }
 
-  // 3) Determine which price to charge per unit:
-  //    - If user is Utsav and variant.utsavPrice exists, use that, else use sellingPrice
-  const unitPriceToCharge = isUtsavUser && typeof variant.utsavPrice === "number"
-    ? variant.utsavPrice
-    : variant.sellingPrice;
+  // 3) Determine per-unit price to charge
+  const unitPriceToCharge =
+    isUtsavUser && typeof variant.utsavPrice === "number"
+      ? variant.utsavPrice
+      : variant.sellingPrice;
 
-  // 4) Compute “base discount” = (unitPrice – sellingPrice) × quantity
-  //    (This is the difference between the “list price” (unitPrice) and actual sellingPrice.)
-  const perUnitBaseDiscount = variant.unitPrice - variant.sellingPrice;
-  const totalBaseDiscount = parseFloat((perUnitBaseDiscount * quantity).toFixed(2));
+  // 4a) Compute “sellingPortion” and “utsavPortion”
+  const sellingPortion = parseFloat(
+    (variant.sellingPrice * quantity).toFixed(2)
+  );
+  const utsavPortion = parseFloat(
+    (
+      (typeof variant.utsavPrice === "number"
+        ? variant.utsavPrice
+        : variant.sellingPrice) *
+      quantity
+    ).toFixed(2)
+  );
 
-  // 5) Compute “Utsav discount” = (sellingPrice – utsavPrice) × quantity (if Utsav member)
-  let perUnitUtsavDiscount = 0;
-  if (isUtsavUser && typeof variant.utsavPrice === "number") {
-    perUnitUtsavDiscount = variant.sellingPrice - variant.utsavPrice;
-  }
-  const totalUtsavDiscount = parseFloat((perUnitUtsavDiscount * quantity).toFixed(2));
-
-  // 6) Compute the “selling portion” and “utsav portion” for tax:
-  const sellingPortion = variant.unitPrice * quantity;
-  const utsavPortion  = (typeof variant.utsavPrice === "number"
-    ? variant.utsavPrice
-    : variant.sellingPrice) * quantity;
-
-  // 7) Subtotal (based on the price we’ll actually charge) = unitPriceToCharge × quantity
+  // 4b) Subtotal = unitPriceToCharge × quantity
   const subtotal = parseFloat((unitPriceToCharge * quantity).toFixed(2));
 
-  // 8) Compute totalBeforeShipping = sellingPortion
-  let totalBeforeShipping = parseFloat(sellingPortion.toFixed(2));
+  // 4c) totalBeforeShipping = sellingPortion
+  let totalBeforeShipping = sellingPortion;
 
-  // 9) Determine shippingCost (flat per‐item shippingCost, but enforce ₹60 minimum if ≤ ₹499)
+  // 4d) shippingCost (flat shippingCost, ₹60 min if totalBeforeShipping ≤ ₹499)
   let shippingCost = variant.shippingCost || 0;
   if (totalBeforeShipping <= 499) {
     shippingCost = Math.max(shippingCost, 60);
   }
-  const totalWithShipping = parseFloat((totalBeforeShipping + shippingCost).toFixed(2));
+  shippingCost = parseFloat(shippingCost.toFixed(2));
 
-  // 10) Compute “discount” field = totalBaseDiscount 
-  //     (we no longer do subtotal – sellingPortion; instead use (unitPrice – sellingPrice)×qty)
-  const discount = totalBaseDiscount;
+  // 4e) total = totalBeforeShipping + shippingCost
+  const total = parseFloat((totalBeforeShipping + shippingCost).toFixed(2));
 
-  // 11) Compute “tax” on the sellingPortion:
-  //     tax = (sellingPortion / (100 + taxPercent)) × taxPercent
+  // 4f) discount = (unitPrice − sellingPrice) × quantity
+  const perUnitBaseDiscount = variant.unitPrice - variant.sellingPrice;
+  const totalBaseDiscount = parseFloat(
+    (perUnitBaseDiscount * quantity).toFixed(2)
+  );
+
+  // 4g) tax = (sellingPortion / (100 + taxPercent)) × taxPercent
   const tax = parseFloat(
-    ((sellingPortion / (variant.taxPercent + 100)) * variant.taxPercent).toFixed(2)
+    (
+      (sellingPortion / (variant.taxPercent + 100)) *
+      variant.taxPercent
+    ).toFixed(2)
   );
 
-  // 12) Compute “utsavTax” on the utsavPortion:
-  const utsavTax = parseFloat(
-    ((utsavPortion / (variant.taxPercent + 100)) * variant.taxPercent).toFixed(2)
-  );
+  // 4h) utsavTotal = utsavPortion
+  const utsavTotal = utsavPortion;
 
-  // 13) Compute “utsavTotal” = utsavPortion
-  const utsavTotal = parseFloat(utsavPortion.toFixed(2));
+  // 4i) utsavDiscount = (sellingPrice − utsavPrice) × quantity (only if utsavPrice exists)
+  let totalUtsavDiscount = 0;
+  if (isUtsavUser && typeof variant.utsavPrice === "number") {
+    const perUnitUtsavDiscount = variant.sellingPrice - variant.utsavPrice;
+    totalUtsavDiscount = parseFloat(
+      (perUnitUtsavDiscount * quantity).toFixed(2)
+    );
+  }
 
-  // 14) Compute cart‐level “utsavDiscount” = (totalWithShipping – utsavTotal)
-  const utsavDiscount = parseFloat((totalWithShipping - utsavTotal).toFixed(2));
-
-  // 15) Validate & apply coupon if provided:
+  // 5) Apply coupon if provided
   let couponDiscount = 0;
   if (couponCode) {
     const now = new Date();
@@ -155,7 +188,7 @@ async function getBuyNowPricing({ userId, variantId, quantity, couponCode }) {
       throw err;
     }
 
-    // Check minimum purchase on “sellingPortion”
+    // Check minimum purchase on sellingPortion
     if (sellingPortion < coupon.Minimum_Purchase) {
       const err = new Error(
         `Coupon applies only on orders with subtotal ≥ ₹${coupon.Minimum_Purchase}`
@@ -164,7 +197,6 @@ async function getBuyNowPricing({ userId, variantId, quantity, couponCode }) {
       throw err;
     }
 
-    // Apply percentage vs. flat coupon
     if (coupon.Discount_Type.toLowerCase() === "percentage") {
       couponDiscount = parseFloat(
         ((sellingPortion * coupon.Discount_Value) / 100).toFixed(2)
@@ -173,54 +205,84 @@ async function getBuyNowPricing({ userId, variantId, quantity, couponCode }) {
       couponDiscount = parseFloat(coupon.Discount_Value.toFixed(2));
     }
 
-    // Cap couponDiscount so (totalWithShipping − totalUtsavDiscount) ≥ 0
-    const maxAllowed = parseFloat((totalWithShipping - totalUtsavDiscount).toFixed(2));
-    if (couponDiscount > maxAllowed) {
-      couponDiscount = maxAllowed;
+    // Cap couponDiscount so final never < 0 for whichever total we use
+    if (isUtsavUser) {
+      // cap against utsavTotal
+      const maxAllowed = parseFloat((utsavTotal).toFixed(2));
+      if (couponDiscount > maxAllowed) {
+        couponDiscount = maxAllowed;
+      }
+    } else {
+      // cap against total
+      const maxAllowed = parseFloat((total).toFixed(2));
+      if (couponDiscount > maxAllowed) {
+        couponDiscount = maxAllowed;
+      }
     }
   }
 
-  // 16) Final total after all discounts:
-  const finalTotal = parseFloat(
-    (totalWithShipping - totalBaseDiscount - totalUtsavDiscount - couponDiscount).toFixed(2)
-  );
+  // 6) Compute amountAfterCoupon depending on Utsav status
+  let amountAfterCoupon;
+  if (isUtsavUser) {
+    // Utsav members pay utsavTotal, then subtract coupon
+    amountAfterCoupon = parseFloat((utsavTotal - couponDiscount).toFixed(2));
+  } else {
+    // Non-Utsav pay total, then subtract coupon
+    amountAfterCoupon = parseFloat((total - couponDiscount).toFixed(2));
+  }
+  amountAfterCoupon = Math.max(amountAfterCoupon, 0);
 
-  // 17) Determine payment methods:
+  // 7) If rewardbalUsed === true, apply reward points
+  let rewardUsed = 0;
+  if (rewardbalUsed) {
+    const rewardDoc = await Reward.findOne({ userId }).lean();
+    const availablePoints = rewardDoc ? rewardDoc.points : 0;
+    // 1 point = ₹1
+    rewardUsed = Math.min(availablePoints, amountAfterCoupon);
+    rewardUsed = parseFloat(rewardUsed.toFixed(2));
+  }
+
+  // 8) finalTotal = amountAfterCoupon − rewardUsed
+  let finalTotal = parseFloat((amountAfterCoupon - rewardUsed).toFixed(2));
+  finalTotal = Math.max(finalTotal, 0);
+
+  // 9) Determine paymentMethods (COD only if variant.cod === true)
   const paymentMethods = [
     {
-      label:     "Wallet",
-      method:    "Wallet",
+      label: "Wallet",
+      method: "Wallet",
       available: true,
-      icon:      "mobile",
-      image:     "https://finafid.com/image/mywallet.png",
+      icon: "mobile",
+      image: "https://finafid.com/image/mywallet.png",
     },
     {
-      label:     "Card / UPI / Net Banking",
-      method:    "PayU",
+      label: "Card / UPI / Net Banking",
+      method: "PayU",
       available: true,
-      icon:      "money",
-      image:     "https://finafid.com/image/payumoney.png",
+      icon: "money",
+      image: "https://finafid.com/image/payumoney.png",
     },
     {
-      label:     "Cash on Delivery",
-      method:    "COD",
+      label: "Cash on Delivery",
+      method: "COD",
       available: variant.cod === true,
-      icon:      "mobile",
-      image:     "https://finafid.com/image/cod.jpg",
+      icon: "mobile",
+      image: "https://finafid.com/image/cod.jpg",
     },
   ];
 
-  // 18) Build PriceDetails exactly like your frontend needs:
+  // 10) Build the final PriceDetails object
   const priceDetails = {
-    subtotal:totalWithShipping,                           // unitPriceToCharge × quantity
-    total: subtotal,           // sellingPortion + shipping
-    discount: totalBaseDiscount,        // (unitPrice − sellingPrice) × quantity
-    tax,                                // tax portion on sellingPortion
-    shippingCost,                       // flat shipping (≥ ₹60 if needed)
-    utsavTotal,                         // utsavPortion
-    utsavDiscount: totalUtsavDiscount,  // (selling + shipping − utsavPortion)
+    subtotal,           // unitPriceToCharge × qty
+    total,              // totalBeforeShipping + shippingCost
+    discount: totalBaseDiscount,      // (unitPrice − sellingPrice)× qty
+    tax,                // tax portion on sellingPortion
+    shippingCost,       // final shippingCost after ₹60 minimum if needed
+    utsavTotal,         // ∑(utsavPrice × qty)
+    utsavDiscount: totalUtsavDiscount // ∑((sellingPrice − utsavPrice) × qty)
   };
 
+  // 11) Return the assembled payload
   return {
     variant: {
       ...variant,
@@ -228,10 +290,12 @@ async function getBuyNowPricing({ userId, variantId, quantity, couponCode }) {
     },
     pricing: priceDetails,
     couponDiscount,
+    rewardUsed,
     finalTotal,
     paymentMethods,
   };
 }
+
 module.exports = {
   getBuyNowPricing,
 };

@@ -4,6 +4,7 @@ const User = require("../../models/auth/userSchema");
 const ProductDetails = require("../../models/productBag/ProductDetails");
 const MemberShipPlan = require("../../models/Utsab/MembershipPlan");
 const variants = require("../../models/product/Varient");
+const Reward = require("../../models/reward/Reward");
 const addToWishlist = async (req, res) => {
   try {
     const userData = req.user;
@@ -471,9 +472,8 @@ const getNewCart = async (req, res) => {
         path: "cartItems",
         populate: {
           path: "productId",
-          populate: { path: "productGroup", model: "Product" },
           select:
-            "unitPrice sellingPrice taxPercent utsavPrice shippingCost cod productGroup",
+            "unitPrice sellingPrice taxPercent utsavPrice shippingCost cod name attributes images",
          
         },
       });
@@ -596,16 +596,30 @@ const getNewCart = async (req, res) => {
     const couponDiscount = 0;
 
     // 8) Compute final amount: (utsavTotal if member else total) − couponDiscount
-    let finalAmount = isUtsavUser ? utsavTotal : total;
-    finalAmount = parseFloat((finalAmount - couponDiscount).toFixed(2));
+    let amountAfterCoupon = isUtsavUser ? utsavTotal : total;
+    amountAfterCoupon = parseFloat((amountAfterCoupon - couponDiscount).toFixed(2));
+    amountAfterCoupon = Math.max(amountAfterCoupon, 0);
+
+    let rewardUsed = 0;
+    if (req.query.useReward === "true") {
+      // Fetch the user's reward balance
+      const rewardDoc = await Reward.findOne({ userId: req.user._id }).lean();
+      const availablePoints = rewardDoc ? rewardDoc.points : 0;
+      // We assume 1 point = ₹1
+      rewardUsed = Math.min(availablePoints, amountAfterCoupon);
+      rewardUsed = parseFloat(rewardUsed.toFixed(2));
+    }
+
+    // 9) Final total after reward:
+    let finalAmount = parseFloat((amountAfterCoupon - rewardUsed).toFixed(2));
     finalAmount = Math.max(finalAmount, 0);
 
-    // 9) Determine COD availability (all items must allow COD)
+    // 10) Determine COD availability (all items must allow COD)
     const isCODAvailable = userCartDetails.cartItems.every(
       (ci) => ci.productId.cod === true
     );
 
-    // 10) Build paymentMethods
+    // 11) Build paymentMethods
     const paymentMethods = [
       {
         label: "Wallet",
@@ -630,7 +644,7 @@ const getNewCart = async (req, res) => {
       },
     ];
 
-    // 11) Build the final “pricing” object
+    // 12) Build the final “pricing” object
     const pricing = {
       subtotal,
       total,
@@ -641,12 +655,13 @@ const getNewCart = async (req, res) => {
       utsavDiscount,
     };
 
-    // 12) Return the response exactly in the requested shape
+    // 13) Return the response exactly in the requested shape
     return res.status(200).json({
       success: true,
       cartItems: userCartDetails.cartItems,
       pricing,
       couponDiscount,
+      rewardUsed,
       finalTotal: finalAmount,
       paymentMethods,
     });
