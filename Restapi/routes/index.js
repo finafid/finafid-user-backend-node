@@ -97,7 +97,7 @@ const {
   deleteFromCart,
   clearCart,
   removeFromCart,
-  buyNowInfo
+  getNewCart
 } = require("../controllers/cartAndwishlist/cartWlController.js");
 const {
   placeOrder,
@@ -886,8 +886,9 @@ routs.get("/getTotalRewards", getTotalRewards);
 routs.get("/getAmounts", getAmounts);
 routs.post(
   "/buyNowInfo",
-  auth,                // sets req.user (including is_utsav)
+  auth,                
   validateRequest(buyNowSchema),
   buyNowInfoController
 );
+routs.get("/getcart", auth, getNewCart);
 module.exports = routs;
