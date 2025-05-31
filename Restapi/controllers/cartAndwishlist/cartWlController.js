@@ -210,190 +210,42 @@ const addToCart = async (req, res) => {
 const getTheCart = async (req, res) => {
   try {
     const userData = req.user;
-    // 1) Fetch user’s cart and populate product details
     const userCartDetails = await cart
       .findOne({ UserId: userData._id })
       .populate({
         path: "cartItems",
         populate: {
           path: "productId",
-          populate: { path: "productGroup", model: "Product" },
-          select:
-            "unitPrice sellingPrice taxPercent utsavPrice shippingCost cod productGroup",
-         
+          populate: {
+            path: "productGroup",
+            model: "Product",
+          },
         },
       });
 
-    
-
-    // If empty or no cart, return zeros
     if (!userCartDetails || userCartDetails.cartItems.length === 0) {
       return res.status(200).json({
-        success: true,
-        cartItems: [],
-        pricing: {
-          subtotal: 0,
-          total: 0,
-          discount: 0,
-          tax: 0,
-          shippingCost: 0,
-          utsavTotal: 0,
-          utsavDiscount: 0,
-        },
-        couponDiscount: 0,
-        finalTotal: 0,
+        success: false,
+        message: "Cart is empty",
         paymentMethods: [],
       });
     }
 
-    const user = await User.findById(userData._id).select("is_utsav").lean();
-    if (!user) {
-      const err = new Error("User not found");
-      err.statusCode = 404;
-      throw err;
-    }
+    // Calculate total cart amount
+   
+    // Check if all items in the cart have cod: true
+    const isCODAvailable = userCartDetails.cartItems.every(item => item.productId.cod === true);
 
-    // 2) Build a plain‐JS array for pricing calculation
-    const cartItems = userCartDetails.cartItems.map((ci) => ({
-      productId: {
-        unitPrice: ci.productId.unitPrice,
-        sellingPrice: ci.productId.sellingPrice,
-        taxPercent: ci.productId.taxPercent,
-        utsavPrice: ci.productId.utsavPrice,
-        shippingCost: ci.productId.shippingCost,
-        cod: ci.productId.cod,
-      },
-      itemQuantity: ci.itemQuantity,
-    }));
-
-    // 3) Check if user is an Utsav member
-    const isUtsavUser = Boolean(user.is_utsav);
-
-    // 4) Inline calculation of PriceDetails (sum over all items)
-    let subtotal = 0;
-    let totalBeforeShipping = 0;
-    let discount = 0;
-    let tax = 0;
-    let utsavTax = 0;
-    let shippingCost = 0;
-    let utsavTotal = 0;
-    let utsavDiscount = 0;
-
-    for (const item of cartItems) {
-      const {
-        unitPrice,
-        sellingPrice,
-        taxPercent,
-        utsavPrice,
-        shippingCost: itemShipping,
-      } = item.productId;
-      const qty = item.itemQuantity;
-      const unitSelling = unitPrice * qty;
-      // a) Determine which per‐unit price to charge: utsavPrice if member & available, else sellingPrice
-      const perUnitCharge = isUtsavUser && typeof utsavPrice === "number"
-        ? utsavPrice
-        : sellingPrice;
-
-      // b) Subtotal portion = perUnitCharge × qty
-      subtotal += unitSelling * qty;
-
-      // c) totalBeforeShipping portion = sellingPrice × qty
-      totalBeforeShipping += sellingPrice * qty;
-
-      // d) “discount” portion: (unitPrice − sellingPrice) × qty
-      const perUnitBaseDiscount = unitPrice - sellingPrice;
-      discount += perUnitBaseDiscount * qty;
-
-      // e) “tax” on selling portion:
-      const sellingPortion = sellingPrice * qty;
-      tax += (sellingPortion / (taxPercent + 100)) * taxPercent;
-
-      // f) “utsavTax” on utsav portion (or fallback to sellingPrice)
-      const upPortion = (typeof utsavPrice === "number" ? utsavPrice : sellingPrice) * qty;
-      utsavTax += (upPortion / (taxPercent + 100)) * taxPercent;
-
-      // g) Shipping cost sum:
-      shippingCost += itemShipping || 0;
-
-      // h) “utsavTotal” portion:
-      utsavTotal += (utsavPrice) * qty;
-
-      // i) “utsavDiscount” portion: (sellingPrice − utsavPrice) × qty (only if utsavPrice exists)
-      if (typeof utsavPrice === "number") {
-        utsavDiscount += (sellingPrice - utsavPrice) * qty;
-      }
-    }
-
-    // 5) Enforce ₹60 minimum shipping if totalBeforeShipping ≤ ₹499
-    if (totalBeforeShipping <= 499) {
-      shippingCost = Math.max(shippingCost, 60);
-    }
-
-    // 6) Finalize and round
-    subtotal = parseFloat(subtotal.toFixed(2));
-    const total = parseFloat((totalBeforeShipping + shippingCost).toFixed(2));
-    discount = parseFloat(discount.toFixed(2));
-    tax = parseFloat(tax.toFixed(2));
-    shippingCost = parseFloat(shippingCost.toFixed(2));
-    utsavTotal = parseFloat(utsavTotal.toFixed(2));
-    utsavDiscount = parseFloat(utsavDiscount.toFixed(2));
-
-    // 7) Hard‐code couponDiscount = 0 (adjust if you accept coupon inputs)
-    const couponDiscount = 0;
-
-    // 8) Compute final amount: (utsavTotal if member else total) − couponDiscount
-    let finalAmount = isUtsavUser ? utsavTotal : total;
-    finalAmount = parseFloat((finalAmount - couponDiscount).toFixed(2));
-    finalAmount = Math.max(finalAmount, 0);
-
-    // 9) Determine COD availability (all items must allow COD)
-    const isCODAvailable = userCartDetails.cartItems.every(
-      (ci) => ci.productId.cod === true
-    );
-
-    // 10) Build paymentMethods
+    // Define payment methods
     const paymentMethods = [
-      {
-        label: "Wallet",
-        method: "Wallet",
-        available: true,
-        icon: "mobile",
-        image: "https://finafid.com/image/mywallet.png",
-      },
-      {
-        label: "Card / UPI / Net Banking",
-        method: "PayU",
-        available: true,
-        icon: "money",
-        image: "https://finafid.com/image/payumoney.png",
-      },
-      {
-        label: "Cash on Delivery",
-        method: "COD",
-        available: isCODAvailable,
-        icon: "mobile",
-        image: "https://finafid.com/image/cod.jpg",
-      },
+      { lable:"Wallet",method: "Wallet", available: false,icon:"mobile",image: "https://finafid.com/image/mywallet.png"}, 
+      { lable:"Card / UPI / Net Banking",method: "PayU", available: true,icon:"money",image: "https://finafid.com/image/payumoney.png" }, 
+      { lable:"Cash on Delivery",method: "COD", available: isCODAvailable,icon:"mobile",image:"https://finafid.com/image/cod.jpg" },
     ];
 
-    // 11) Build the final “pricing” object
-    const pricing = {
-      subtotal,
-      total,
-      discount,
-      tax,
-      shippingCost,
-      utsavTotal,
-      utsavDiscount,
-    };
-
-    // 12) Return the response exactly in the requested shape
     return res.status(200).json({
       success: true,
       cartItems: userCartDetails.cartItems,
-      pricing,
-      couponDiscount,
-      finalTotal: finalAmount,
       paymentMethods,
     });
   } catch (error) {
