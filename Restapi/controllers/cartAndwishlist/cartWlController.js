@@ -5,6 +5,7 @@ const ProductDetails = require("../../models/productBag/ProductDetails");
 const MemberShipPlan = require("../../models/Utsab/MembershipPlan");
 const variants = require("../../models/product/Varient");
 const Reward = require("../../models/reward/Reward");
+const Coupon = require("../../models/Coupons/coupons");
 const addToWishlist = async (req, res) => {
   try {
     const userData = req.user;
@@ -465,6 +466,7 @@ async function removeItemFromCart(productIdList, userId) {
 const getNewCart = async (req, res) => {
   try {
     const userData = req.user;
+    const couponCodeRaw = (req.query.couponCode || "").trim().toUpperCase();
     // 1) Fetch user’s cart and populate product details
     const userCartDetails = await cart
       .findOne({ UserId: userData._id })
@@ -593,11 +595,63 @@ const getNewCart = async (req, res) => {
     utsavDiscount = parseFloat(utsavDiscount.toFixed(2));
 
     // 7) Hard‐code couponDiscount = 0 (adjust if you accept coupon inputs)
-    const couponDiscount = 0;
+    let couponDiscount = 0;
+    if (couponCodeRaw) {
+      const now = new Date();
+      const coupon = await Coupon.findOne({
+        code: couponCodeRaw,
+        status: true,
+        Start_Date: { $lte: now },
+        Expire_Date: { $gte: now },
+      }).lean();
 
-    // 8) Compute final amount: (utsavTotal if member else total) − couponDiscount
-    let amountAfterCoupon = isUtsavUser ? utsavTotal : total;
-    amountAfterCoupon = parseFloat((amountAfterCoupon - couponDiscount).toFixed(2));
+      if (!coupon) {
+        const err = new Error("Invalid or expired coupon code");
+        err.statusCode = 400;
+        throw err;
+      }
+
+      // Use totalBeforeShipping as the “sellingPortion” for minimum‐purchase check
+      if (totalBeforeShipping < coupon.Minimum_Purchase) {
+        const err = new Error(
+          `Coupon requires a minimum purchase of ₹${coupon.Minimum_Purchase}`
+        );
+        err.statusCode = 400;
+        throw err;
+      }
+
+      // Compute discount value
+      if (coupon.Discount_Type.toLowerCase() === "percentage") {
+        couponDiscount = parseFloat(
+          ((totalBeforeShipping * coupon.Discount_Value) / 100).toFixed(2)
+        );
+      } else {
+        couponDiscount = parseFloat(coupon.Discount_Value.toFixed(2));
+      }
+
+      // Cap couponDiscount so final never < 0
+      if (isUtsavUser) {
+        const maxAllowed = parseFloat(utsavTotal.toFixed(2));
+        if (couponDiscount > maxAllowed) {
+          couponDiscount = maxAllowed;
+        }
+      } else {
+        const maxAllowed = parseFloat(total.toFixed(2));
+        if (couponDiscount > maxAllowed) {
+          couponDiscount = maxAllowed;
+        }
+      }
+    }
+
+    // 8) Compute amountAfterCoupon depending on Utsav status
+    let amountAfterCoupon;
+    if (isUtsavUser) {
+      // Utsav members pay utsavTotal, then subtract coupon
+      amountAfterCoupon = parseFloat((utsavTotal - couponDiscount).toFixed(2));
+    } else {
+      // Non-Utsav pay total, then subtract coupon
+      amountAfterCoupon = parseFloat((total - couponDiscount).toFixed(2));
+    }
     amountAfterCoupon = Math.max(amountAfterCoupon, 0);
 
     let rewardUsed = 0;

@@ -14,5 +14,10 @@ exports.buyNowSchema = Joi.object({
     .trim()
     .uppercase()
     .optional()
-    .allow("")             // allow empty string if no coupon
+    .allow(""),          // allow empty string if no coupon   
+   usereward: Joi.boolean()
+    .truthy("true")
+    .falsy("false")
+    .optional()
+    .default(false)         // allow empty string if no coupon
 });

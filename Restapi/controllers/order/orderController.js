@@ -1040,8 +1040,8 @@ const downloadInvoice = async (req, res) => {
 const buyNowInfoController = async (req, res) => {
   try {
     const userId = req.user._id; 
-    const { variantId, quantity = 1, couponCode = null, usereward = false } = req.body;
-
+    const { variantId, quantity = 1, couponCode = null, usereward } = req.body;
+    console.log(req.body)
     const payload = await getBuyNowPricing({
       userId,
       variantId,

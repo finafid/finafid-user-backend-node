@@ -296,6 +296,213 @@ async function getBuyNowPricing({
   };
 }
 
+async function calculateCartPricing(userId, items, couponCode = "", useReward = false) {
+  // 1) Fetch User → read is_utsav
+  const user = await User.findById(userId).select("is_utsav").lean();
+  if (!user) throw new Error("User not found");
+  const isUtsavUser = Boolean(user.is_utsav);
+
+  // 2) Load each Variant by productId; check is_active & stock
+  const detailedItems = [];
+  for (const it of items) {
+    const variant = await Variant.findById(it.productId)
+      .select(`
+        name
+        sku
+        attributes
+        images
+        unitPrice
+        sellingPrice
+        utsavPrice
+        utsavDiscount
+        taxPercent
+        shippingCost
+        cod
+        quantity
+        is_active
+      `)
+      .lean();
+
+    if (!variant) throw new Error(`Variant ${it.productId} not found`);
+    if (!variant.is_active) throw new Error(`Variant ${it.productId} is not active`);
+    if (variant.quantity < it.itemQuantity) throw new Error(`Product ${variant._id} out of stock`);
+
+    detailedItems.push({ variant, qty: it.itemQuantity });
+  }
+
+  // 3) Initialize aggregators
+  let subtotal = 0;
+  let totalBeforeShipping = 0;
+  let totalBaseDiscount = 0;
+  let totalTax = 0;
+  let totalShipping = 0;
+  let totalUtsavPortion = 0;
+  let totalUtsavDiscount = 0;
+
+  // 4) Build cartItems array with per-item details
+  const cartItems = detailedItems.map(({ variant, qty }) => {
+    const {
+      _id: productId,
+      name,
+      sku,
+      attributes,
+      images,
+      unitPrice,
+      sellingPrice,
+      utsavPrice,
+      taxPercent,
+      shippingCost: itemShipping,
+      cod,
+    } = variant;
+
+    // 4a) Choose per-unit charge
+    const perUnitCharge = isUtsavUser && typeof utsavPrice === "number"
+      ? utsavPrice
+      : sellingPrice;
+
+    // 4b) Subtotal aggregation (sum of MRP × qty)
+    subtotal += unitPrice * qty;
+
+    // 4c) totalBeforeShipping aggregation (sum of sellingPrice × qty)
+    const itemSellingPortion = sellingPrice * qty;
+    totalBeforeShipping += itemSellingPortion;
+
+    // 4d) totalBaseDiscount aggregation
+    const perItemDiscount = (unitPrice - sellingPrice) * qty;
+    totalBaseDiscount += perItemDiscount;
+
+    // 4e) totalTax aggregation
+    const itemTax = parseFloat(
+      ((itemSellingPortion / (taxPercent + 100)) * taxPercent).toFixed(2)
+    );
+    totalTax += itemTax;
+
+    // 4f) totalShipping aggregation (just sum all itemShipping)
+    totalShipping += itemShipping || 0;
+
+    // 4g) totalUtsavPortion aggregation
+    const itemUtsavPortion = (typeof utsavPrice === "number" ? utsavPrice : sellingPrice) * qty;
+    totalUtsavPortion += itemUtsavPortion;
+
+    // 4h) totalUtsavDiscount aggregation
+    let perItemUtsavDiscount = 0;
+    if (isUtsavUser && typeof utsavPrice === "number") {
+      perItemUtsavDiscount = (sellingPrice - utsavPrice) * qty;
+      totalUtsavDiscount += perItemUtsavDiscount;
+    }
+
+    return {
+      productId,
+      name,
+      sku,
+      attributes,
+      images,
+      itemQuantity: qty,
+      unitPrice,
+      sellingPrice,
+      utsavPrice,
+      taxPercent,
+      shippingCost: itemShipping,
+      cod,
+      perItemDiscount: parseFloat(perItemDiscount.toFixed(2)),
+      perItemTax: itemTax,
+      perItemUtsavDiscount: parseFloat(perItemUtsavDiscount.toFixed(2)),
+    };
+  });
+
+  // 5) Enforce ₹60 minimum shipping if totalBeforeShipping ≤ ₹499
+  if (totalBeforeShipping <= 499) {
+    totalShipping = Math.max(totalShipping, 60);
+  }
+  totalShipping = parseFloat(totalShipping.toFixed(2));
+
+  // 6) Compute total = totalBeforeShipping + totalShipping
+  const total = parseFloat((totalBeforeShipping + totalShipping).toFixed(2));
+
+  // 7) Round other aggregates
+  subtotal = parseFloat(subtotal.toFixed(2));
+  totalBaseDiscount = parseFloat(totalBaseDiscount.toFixed(2));
+  totalTax = parseFloat(totalTax.toFixed(2));
+  totalUtsavPortion = parseFloat(totalUtsavPortion.toFixed(2));
+  totalUtsavDiscount = parseFloat(totalUtsavDiscount.toFixed(2));
+
+  // 8) Apply coupon if present
+  let couponDiscount = 0;
+  if (couponCode.trim() !== "") {
+    const now = new Date();
+    const coupon = await Coupon.findOne({
+      code: couponCode.trim().toUpperCase(),
+      status: true,
+      Start_Date: { $lte: now },
+      Expire_Date: { $gte: now },
+    }).lean();
+
+    if (!coupon) throw new Error("Invalid or expired coupon code");
+    if (totalBeforeShipping < coupon.Minimum_Purchase) {
+      throw new Error(`Coupon requires minimum purchase ₹${coupon.Minimum_Purchase}`);
+    }
+
+    if (coupon.Discount_Type.toLowerCase() === "percentage") {
+      couponDiscount = parseFloat(
+        ((totalBeforeShipping * coupon.Discount_Value) / 100).toFixed(2)
+      );
+    } else {
+      couponDiscount = parseFloat(coupon.Discount_Value.toFixed(2));
+    }
+
+    // Cap couponDiscount so it never exceeds payable amount
+    if (isUtsavUser) {
+      couponDiscount = Math.min(couponDiscount, totalUtsavPortion);
+    } else {
+      couponDiscount = Math.min(couponDiscount, total);
+    }
+  }
+
+  // 9) Compute amountAfterCoupon
+  let amountAfterCoupon;
+  if (isUtsavUser) {
+    amountAfterCoupon = parseFloat((totalUtsavPortion - couponDiscount).toFixed(2));
+  } else {
+    amountAfterCoupon = parseFloat((total - couponDiscount).toFixed(2));
+  }
+  amountAfterCoupon = Math.max(amountAfterCoupon, 0);
+
+  // 10) Apply reward points if requested
+  let rewardUsed = 0;
+  if (useReward) {
+    const rewardDoc = await Reward.findOne({ userId }).lean();
+    const availablePoints = rewardDoc ? rewardDoc.points : 0;
+    rewardUsed = Math.min(availablePoints, amountAfterCoupon);
+    rewardUsed = parseFloat(rewardUsed.toFixed(2));
+  }
+
+  // 11) Compute finalTotal
+  let finalTotal = parseFloat((amountAfterCoupon - rewardUsed).toFixed(2));
+  finalTotal = Math.max(finalTotal, 0);
+
+  // 12) Build final “pricing” object
+  const pricing = {
+    subtotal,      // Σ(unitPrice × qty)
+    total,         // Σ(sellingPrice × qty) + shipping
+    discount: totalBaseDiscount,   // Σ((unitPrice − sellingPrice) × qty)
+    tax: totalTax,                 // Σ(per-item tax)
+    shippingCost: totalShipping,   // Σ(per-item shipping, with ₹60 min)
+    utsavTotal: totalUtsavPortion, // Σ((utsavPrice or sellingPrice) × qty)
+    utsavDiscount: totalUtsavDiscount // Σ((sellingPrice − utsavPrice) × qty)
+  };
+
+  return {
+    cartItems,
+    pricing,
+    couponDiscount,
+    rewardUsed,
+    finalTotal
+  };
+}
+
+
+
 module.exports = {
   getBuyNowPricing,
+  calculateCartPricing
 };

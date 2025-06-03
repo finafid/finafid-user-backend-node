@@ -114,6 +114,10 @@ const {
   downloadInvoice,
   buyNowInfoController
 } = require("../controllers/order/orderController");
+const {
+  placeOrderv2,
+  updateStatusv2,
+} = require("../controllers/order/orderControllerv2.js");
 const { upload, uploadImageToS3 } = require("../utils/fileUpload");
 
 const {
@@ -553,6 +557,7 @@ routs.get("/clearCart", auth, clearCart);
 routs.post("/removeFromCart", auth, removeFromCart);
 //order
 routs.post("/placeOrder", auth, apiKeyMiddleware, placeOrder);
+routs.post("/placeOrdernew", auth, apiKeyMiddleware, placeOrderv2);
 routs.get("/getOrderDetails", auth, getOrderDetails);
 routs.get("/getOrderById/:orderId", auth, getOrderById);
 routs.post("/updateStatus/:orderId", auth, updateStatus);
