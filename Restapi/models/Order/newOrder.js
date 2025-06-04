@@ -235,7 +235,9 @@ const OrderSchema = new Schema(
       itemsPrice: { type: Number, required: true, min: 0 },
       taxPrice: { type: Number, required: true, min: 0 },
       shippingPrice: { type: Number, required: true, min: 0 },
+      couponDiscount: { type: Number, required: true, min: 0 },
       discountPrice: { type: Number, required: true, min: 0 },
+      utsavDiscount: { type: Number, required: true, min: 0 },
       totalPrice: { type: Number, required: true, min: 0 }
     },
 

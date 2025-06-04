@@ -137,7 +137,9 @@ const placeOrderv2 = async (req, res) => {
         itemsPrice: pricing.subtotal,
         taxPrice: pricing.tax,
         shippingPrice: pricing.shippingCost,
-        discountPrice: pricing.discount + couponDiscount,
+        discountPrice: pricing.discount,
+        couponDiscount:couponDiscount,
+        utsavDiscount:pricing.utsavDiscount,
         totalPrice: finalTotal,
       },
 
