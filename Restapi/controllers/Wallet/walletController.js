@@ -2,6 +2,7 @@ const Wallet = require("../../models/Wallet/wallet");
 const Transaction = require("./../../models/Wallet/WalletTransaction");
 const User = require("../../models/auth/userSchema");
 const amounts = ["100", "200", "300", "500"];
+const bcrypt = require("bcrypt");
 const getTotalBalance = async (req, res) => {
   try {
     const totalBalance = await Wallet.aggregate([
@@ -218,6 +219,222 @@ const getAmounts = async (req, res) => {
     });
   }
 };
+const setWalletPin = async (req, res) => {
+  try {
+    const userId = req.user._id;       // assume req.user is set by your auth middleware
+    const { pin, securityQuestion, securityAnswer } = req.body;
+
+    // 1) Validate inputs:
+    if (!pin || !/^\d{4}$/.test(pin)) {
+      return res.status(400).json({
+        success: false,
+        message: "PIN must be exactly 4 digits."
+      });
+    }
+    if (!securityQuestion || typeof securityQuestion !== "string" || securityQuestion.trim() === "") {
+      return res.status(400).json({
+        success: false,
+        message: "Security question is required."
+      });
+    }
+    if (!securityAnswer || typeof securityAnswer !== "string" || securityAnswer.trim() === "") {
+      return res.status(400).json({
+        success: false,
+        message: "Security answer is required."
+      });
+    }
+
+    // 2) Fetch (or create) the user’s Wallet:
+    let wallet = await Wallet.findOne({ userId });
+    if (!wallet) {
+      wallet = new Wallet({ userId, balance: 0 });
+    }
+
+    // 3) Prevent overwriting if PIN already exists:
+    if (wallet.pinHash) {
+      return res.status(400).json({
+        success: false,
+        message: "PIN already set. Use 'change PIN' or 'reset PIN' instead."
+      });
+    }
+
+    // 4) Hash the PIN and the security answer:
+    const saltRounds = 10;
+    const pinHash = await bcrypt.hash(pin, saltRounds);
+    const answerHash = await bcrypt.hash(securityAnswer.trim(), saltRounds);
+
+    // 5) Save to wallet:
+    wallet.pinHash = pinHash;
+    wallet.isPinRequired = true;
+    wallet.securityQuestion = securityQuestion.trim();
+    wallet.securityAnswerHash = answerHash;
+
+    await wallet.save();
+
+    return res.json({
+      success: true,
+      message: "Wallet PIN and security question set successfully."
+    });
+  } catch (err) {
+    console.error("setWalletPin error:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error." });
+  }
+}
+const resetPin = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { securityAnswer, newPin } = req.body;
+
+    // 1) Validate inputs
+    if (!securityAnswer || typeof securityAnswer !== "string" || securityAnswer.trim() === "") {
+      return res
+        .status(400)
+        .json({ success: false, message: "securityAnswer is required." });
+    }
+    if (!newPin || !/^\d{4}$/.test(newPin)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "newPin must be exactly 4 digits." });
+    }
+
+    // 2) Find wallet record
+    const wallet = await Wallet.findOne({ userId });
+    if (!wallet || !wallet.securityAnswerHash) {
+      return res.status(404).json({
+        success: false,
+        message: "No security question set or wallet not found."
+      });
+    }
+
+    // 3) Verify the provided answer
+    const isAnswerMatch = await bcrypt.compare(
+      securityAnswer.trim(),
+      wallet.securityAnswerHash
+    );
+    if (!isAnswerMatch) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Incorrect security answer." });
+    }
+
+    // 4) At this point, user is authenticated by answering the question.
+    //    Hash the new PIN and save:
+    const saltRounds = 10;
+    const newPinHash = await bcrypt.hash(newPin, saltRounds);
+    wallet.pinHash = newPinHash;
+
+    // Optionally, you could clear the security question/answer to force them to set a new one:
+    // wallet.securityQuestion = undefined;
+    // wallet.securityAnswerHash = undefined;
+
+    await wallet.save();
+
+    return res.json({
+      success: true,
+      message: "Your PIN has been reset successfully."
+    });
+  } catch (err) {
+    console.error("resetViaSecurityQuestion error:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error." });
+  }
+}
+const changeWalletPin = async (req, res) =>{
+  try {
+    const userId = req.user._id;    // assume req.user is populated by your auth middleware
+    const { oldPin, newPin } = req.body;
+
+    // 1) Validate inputs
+    if (!oldPin || !/^\d{4}$/.test(oldPin)) {
+      return res.status(400).json({
+        success: false,
+        message: "Current PIN (oldPin) is required and must be 4 digits."
+      });
+    }
+    if (!newPin || !/^\d{4}$/.test(newPin)) {
+      return res.status(400).json({
+        success: false,
+        message: "New PIN is required and must be 4 digits."
+      });
+    }
+    if (oldPin === newPin) {
+      return res.status(400).json({
+        success: false,
+        message: "New PIN must be different from the current PIN."
+      });
+    }
+
+    // 2) Fetch the user’s Wallet document
+    const wallet = await Wallet.findOne({ userId });
+    if (!wallet) {
+      return res.status(404).json({
+        success: false,
+        message: "No wallet found for this user."
+      });
+    }
+
+    // 3) Ensure a PIN is already set; if not, disallow overwrite
+    if (!wallet.pinHash) {
+      return res.status(400).json({
+        success: false,
+        message: "No existing PIN found. Use 'set PIN' endpoint to create a new PIN first."
+      });
+    }
+
+    // 4) Compare oldPin against stored hash
+    const isMatch = await bcrypt.compare(oldPin, wallet.pinHash);
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: "Current PIN is incorrect."
+      });
+    }
+
+    // 5) Hash and save the newPin
+    const saltRounds = 10;
+    const newHash = await bcrypt.hash(newPin, saltRounds);
+    wallet.pinHash = newHash;
+    await wallet.save();
+
+    return res.json({
+      success: true,
+      message: "Wallet PIN changed successfully."
+    });
+  } catch (err) {
+    console.error("changeWalletPin error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error."
+    });
+  }
+} 
+const getResetQuestion = async (req, res) =>{
+  try {
+    const userId = req.user._id;
+    const wallet = await Wallet.findOne({ userId }).lean();
+
+    if (!wallet || !wallet.securityQuestion) {
+      return res.status(404).json({
+        success: false,
+        message: "No security question set for this user."
+      });
+    }
+
+    return res.json({
+      success: true,
+      securityQuestion: wallet.securityQuestion
+    });
+  } catch (err) {
+    console.error("getSecurityQuestion error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error."
+    });
+  }
+}
 
 
 module.exports = {
@@ -228,5 +445,9 @@ module.exports = {
   getBalanceFromAdmin,
   addWallet,
   getTotalBalance,
-  getAmounts
+  getAmounts,
+  setWalletPin,
+  resetPin,
+  changeWalletPin,
+  getResetQuestion
 };

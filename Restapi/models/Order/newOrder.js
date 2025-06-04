@@ -60,12 +60,6 @@ const OrderItemSchema = new Schema(
       default: 0,
       min: 0
     },
-    subtotal: {
-      type: Number,
-      required: true,
-      min: 0
-      // = (sellingPrice * quantity) + taxAmount − discount
-    },
     images: [
       {
         type: String,
@@ -317,25 +311,7 @@ const OrderSchema = new Schema(
       default: 0,
       min: 0
     },
-    is_utsav: {
-      type: Boolean,
-      default: false
-    },
-    rewardBalanceUsed: {
-      type: Number,
-      default: 0,
-      min: 0
-    },
-    couponDiscount: {
-      type: Number,
-      default: 0,
-      min: 0
-    },
-    utsavDiscount: {
-      type: Number,
-      default: 0,
-      min: 0
-    },
+    
     expectedDeliveryDate: {
       type: Date,
       default: null

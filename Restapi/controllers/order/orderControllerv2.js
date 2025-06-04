@@ -10,38 +10,43 @@ const User = require("../../models/auth/userSchema");
 const MembershipPlan = require("../../models/Utsab/MembershipPlan");
 const Referral = require("../../models/auth/referral");
 const Transaction = require("../../models/payment/paymentSc");
-
+const bcrypt = require("bcrypt");
 const { calculateCartPricing } = require("../../services/pricingService");
 const sendSms = require("./smsService");
 const sendOrderConfirmationEmail = require("./emailService");
 const { generateAndUploadInvoice } = require("../../utils/invoiceGenerator");
 const { getSocketInstance } = require("../../socket");
-
-
-/**
- * placeOrder v2 (with transaction‐based stock rollback)
- *
- * req.body:
- * {
- *   orderItems: [ { productId, itemQuantity } ],
- *   shippingAddress: { fullName, phoneNumber, addressLine1, addressLine2, city, state, country, postalCode, landmark },
- *   billingAddress: { ... }       // optional
- *   paymentInfo: {
- *     method: "Wallet"|"COD"|"PayU",
- *     couponCode: "WELCOME100",   // optional (already trimmed/uppercased)
- *     useReward: true             // optional
- *   },
- *   notes: "Any instructions"      // optional
- * }
- */
 const placeOrderv2 = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
     const userId = req.user._id;
+    const { paymentInfo } = req.body;
 
-    // 1) Calculate pricing (this DOES NOT modify stock yet)
+
+    if (paymentInfo.method === "Wallet") {
+      
+      const walletDoc = await Wallet.findOne({ userId }).session(session);
+      if (!walletDoc) {
+        throw new Error("No wallet found for this user.");
+      }
+      if (walletDoc.isPinRequired) {
+        const providedPin = paymentInfo.walletPin;
+        if (!providedPin || !/^\d{4}$/.test(providedPin)) {
+          throw new Error("Wallet PIN is required and must be 4 digits.");
+        }
+
+        const isPinMatch = await bcrypt.compare(providedPin, walletDoc.pinHash);
+        if (!isPinMatch) {
+          throw new Error("Incorrect wallet PIN.");
+        }
+      }
+      
+    }
+
+
+
     const {
       cartItems,
       pricing,
@@ -65,7 +70,9 @@ const placeOrderv2 = async (req, res) => {
 
     // 3) If paying by Wallet, deduct wallet balance (in same session)
     const { method } = req.body.paymentInfo;
+    const providedPin = paymentInfo.walletPin;
     if (method === "Wallet") {
+
       const walletDoc = await Wallet.findOne({ userId }).session(session);
       if (!walletDoc || walletDoc.balance < finalTotal) {
         throw new Error("Insufficient wallet balance!");
@@ -102,7 +109,7 @@ const placeOrderv2 = async (req, res) => {
 
     // 7) Build the new Order document
     const newOrder = new Order({
-      orderNumber: `FD${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Date.now().toString().slice(-6)}`,
+      orderNumber: `FD${Date.now().toString().slice(-6)}${new Date().toISOString().slice(0, 10).replace(/-/g, "")}`,
       userId,
       cartId: req.body.cartId || null,
 
@@ -117,7 +124,7 @@ const placeOrderv2 = async (req, res) => {
 
         return {
           variantId: ci.productId,
-          sku: ci.suk,      // or fill from actual variant.sku if preferred
+          sku: ci.sku,      // or fill from actual variant.sku if preferred
           name: ci.name,               // fill if needed
           attributes: {},         // fill if needed
           quantity: ci.itemQuantity,
@@ -125,11 +132,9 @@ const placeOrderv2 = async (req, res) => {
           sellingPrice: ci.sellingPrice,
           discount: (ci.unitPrice - ci.sellingPrice) * ci.itemQuantity,
           taxPercent: ci.taxPercent,
-          taxAmount: taxAmt,
-          subtotal: subtotalLine,
-          images: [],             // optional from variant.images
+          images: ci.images,             // optional from variant.images
           isActive: true,
-          requestedQuantity: 0,
+          requestedQuantity: ci.itemQuantity,
         };
       }),
 
@@ -138,9 +143,11 @@ const placeOrderv2 = async (req, res) => {
         taxPrice: pricing.tax,
         shippingPrice: pricing.shippingCost,
         discountPrice: pricing.discount,
-        couponDiscount:couponDiscount,
-        utsavDiscount:pricing.utsavDiscount,
+        couponDiscount: couponDiscount,
+        utsavDiscount: pricing.utsavDiscount,
         totalPrice: finalTotal,
+        rewardBalanceUsed: rewardUsed,
+        couponDiscount: couponDiscount,
       },
 
       shippingAddress: req.body.shippingAddress,
@@ -176,16 +183,10 @@ const placeOrderv2 = async (req, res) => {
         ipAddress: req.ip || "",
         userAgent: req.headers["user-agent"] || "",
         notes: req.body.notes || "",
-        couponCode: (req.body.paymentInfo.couponCode || "").trim().toUpperCase(),
-        appliedWalletAmount: method === "Wallet" ? finalTotal : 0,
+        couponCode: (req.body.paymentInfo.couponCode || "").trim().toUpperCase()
       },
-
       utsavReward: totalUtsavReward,
       basicReward: totalBasicReward,
-      is_utsav: isUtsavUser,
-      rewardBalanceUsed: rewardUsed,
-      couponDiscount: couponDiscount,
-      utsavDiscount: pricing.utsavDiscount,
       expectedDeliveryDate,
       shippingCost: pricing.shippingCost,
     });
@@ -220,6 +221,7 @@ const placeOrderv2 = async (req, res) => {
       userId,
     });
     await newTxn.save({ session });
+
 
     // Attach transactionId to order
     newOrder.paymentInfo.transactionId = newTxn._id;

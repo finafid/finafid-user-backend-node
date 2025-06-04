@@ -10,6 +10,23 @@ const walletSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    isPinRequired: {
+      type: Boolean,
+      default: false
+    },
+    pinHash: {
+      type: String,
+      required: false, 
+    },
+    securityQuestion: {
+      type: String,
+      required: false
+    },
+    securityAnswerHash: {
+      type: String,
+      required: false
+    },
+    
     transactions: [
       {
         type: mongoose.Schema.Types.ObjectId,

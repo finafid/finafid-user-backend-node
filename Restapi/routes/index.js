@@ -171,7 +171,11 @@ const {
   getBalanceFromAdmin,
   addWallet,
   getTotalBalance,
-  getAmounts
+  getAmounts,
+  setWalletPin,
+  resetPin,
+  changeWalletPin,
+  getResetQuestion
 } = require("../controllers/Wallet/walletController.js");
 const {
   totalIncome,
@@ -889,6 +893,10 @@ routs.get("/getRewardBalanceFromAdmin/:userId", getRewardBalanceFromAdmin);
 routs.get("/addRewardWallet", addRewardWallet);
 routs.get("/getTotalRewards", getTotalRewards); 
 routs.get("/getAmounts", getAmounts);
+routs.post("/setWalletPin",auth, setWalletPin);
+routs.post("/resetWalletPin",auth, resetPin);
+routs.post("/changeWalletPin",auth, changeWalletPin);
+routs.get("/getResetQuestion",auth, getResetQuestion);
 routs.post(
   "/buyNowInfo",
   auth,                
