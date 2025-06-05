@@ -24,10 +24,21 @@ const getAllUtsavProduct = async (req, res) => {
       })
       .lean();
 
+
+
+      const validProducts = allProducts.filter((product) => {
+      return (
+        product.productGroup !== null &&
+        product.productGroup._id &&
+        product.attributes &&
+        typeof product.attributes.color === "string"
+      );
+    });
+
     // Deduplicate products by color using Map
     const uniqueProducts = Array.from(
       new Map(
-        allProducts.map((product) => [
+        validProducts.map((product) => [
           `${product.productGroup._id}_${product.attributes.color}`,
           product,
         ])
