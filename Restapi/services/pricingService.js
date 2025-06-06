@@ -81,6 +81,8 @@ async function getBuyNowPricing({
   // 2) Fetch variant → ensure is_active & in-stock
   const variant = await Variant.findById(variantId)
     .select(`
+      name 
+      attributes
       unitPrice
       sellingPrice
       utsavPrice
