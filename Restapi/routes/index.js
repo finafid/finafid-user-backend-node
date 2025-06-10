@@ -824,8 +824,6 @@ routs.post("/paymentResponse", paymentResponse);
 routs.post("/paymentDetail", auth, paymentDetail);
 routs.post("/success", paymentResponse);
 routs.post("/failure", paymentResponse);
-
-//searchengine
 routs.get(
   "/getAllProductInformationBasedOnProduct",
   getAllProductInformationBasedOnProduct
@@ -833,13 +831,8 @@ routs.get(
 routs.get("/getSearchData", getSearchDataFirst);
 routs.get("/getSearchDataSecond", getSearchDataSecond);
 routs.get("/productSearchDirectory", productSearchDirectory);
-//routs.get("/searchAndIterate", searchAndIterate);
-//routs.get("/searchEntityByName", searchEntityByName);
-
-//google login
 routs.get("/google", loginWithGoogle);
 routs.get("/google/callback", googleCallback);
-//fashion Category
 routs.post(
   "/createFashionCategory",
   upload.single("logoImg"),

@@ -436,15 +436,20 @@ const getResetQuestion = async (req, res) =>{
   }
 }
 
-const getPinRequirement = async (req, res, next) => {
+const getPinRequirement = async (req, res) => {
   try {
-    const wallet = await Wallet.findOne({ userId: req.user._id });
-    if (!wallet) return res.status(404).json({ success: false, message: 'Wallet not found' });
-    res.json({ success: true, isPinRequired: wallet.isPinRequired });
+    const userId = req.user._id;
+    const wallet = await Wallet.findOne({ userId });
+    return res.json({ 
+      isPinRequired: wallet?.isPinRequired || false,
+      hasPin: !!wallet?.pinHash
+    });
   } catch (err) {
-    next(err);
+    console.error('getPinRequired error:', err);
+    return res.status(500).json({ success: false, message: 'Internal server error.' });
   }
 };
+
 
 const updatePinRequirement = async (req, res, next) => {
   try {
