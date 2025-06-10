@@ -175,7 +175,9 @@ const {
   setWalletPin,
   resetPin,
   changeWalletPin,
-  getResetQuestion
+  getResetQuestion,
+  getPinRequirement,
+  updatePinRequirement
 } = require("../controllers/Wallet/walletController.js");
 const {
   totalIncome,
@@ -904,4 +906,7 @@ routs.post(
   buyNowInfoController
 );
 routs.get("/getcart", auth, getNewCart);
+
+routs.get('/pin-required', auth, getPinRequirement);
+routs.put('/pin-required', auth, updatePinRequirement);
 module.exports = routs;

@@ -436,6 +436,36 @@ const getResetQuestion = async (req, res) =>{
   }
 }
 
+const getPinRequirement = async (req, res, next) => {
+  try {
+    const wallet = await Wallet.findOne({ userId: req.user._id });
+    if (!wallet) return res.status(404).json({ success: false, message: 'Wallet not found' });
+    res.json({ success: true, isPinRequired: wallet.isPinRequired });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const updatePinRequirement = async (req, res, next) => {
+  try {
+    const { isPinRequired } = req.body;
+    if (typeof isPinRequired !== 'boolean') {
+      return res.status(400).json({ success: false, message: '`isPinRequired` must be boolean' });
+    }
+
+    const wallet = await Wallet.findOneAndUpdate(
+      { userId: req.user._id },
+      { isPinRequired },
+      { new: true }
+    );
+    if (!wallet) return res.status(404).json({ success: false, message: 'Wallet not found' });
+
+    res.json({ success: true, isPinRequired: wallet.isPinRequired });
+  } catch (err) {
+    next(err);
+  }
+};
+
 
 module.exports = {
   addBalance,
@@ -449,5 +479,7 @@ module.exports = {
   setWalletPin,
   resetPin,
   changeWalletPin,
-  getResetQuestion
+  getResetQuestion,
+  getPinRequirement,
+  updatePinRequirement
 };
