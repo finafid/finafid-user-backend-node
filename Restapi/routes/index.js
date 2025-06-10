@@ -403,6 +403,7 @@ const {
 const {
   handleWebhook,
 } = require("../controllers/webhooks/webhookController.js");
+const { appupdate } = require("../controllers/AppUpdate/index.js");
 //user Authentication
 routs.post("/register", userRegistrationValidation, userRegistration);
 routs.post("/login", userLoginValidation, userLogin);
@@ -902,4 +903,5 @@ routs.get("/getcart", auth, getNewCart);
 
 routs.get('/pin-required', auth, getPinRequirement);
 routs.put('/pin-required', auth, updatePinRequirement);
+routs.get('/check-app-version', appupdate);
 module.exports = routs;
