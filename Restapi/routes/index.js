@@ -835,7 +835,7 @@ routs.get("/getSearchDataSecond", getSearchDataSecond);
 routs.get("/productSearchDirectory", productSearchDirectory);
 routs.get("/google", loginWithGoogle);
 routs.get("/google/callback", googleCallback);
-routes.post("/auth/google-native", googleNativeAuth)
+routs.post("/auth/google-native", googleNativeAuth)
 routs.post(
   "/createFashionCategory",
   upload.single("logoImg"),
