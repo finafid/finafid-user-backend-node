@@ -1,114 +1,85 @@
 const { google } = require("googleapis");
-const User = require("../../models/auth/userSchema");
+const User      = require("../../models/auth/userSchema");
+const jwt       = require("jsonwebtoken");
+
+// read from process.env
+const CALLBACK_URL        = process.env.GOOGLE_CALLBACK_URL;
+const FRONTEND_CALLBACK   = process.env.FRONTEND_CALLBACK_URL;
+
 const oauth2Client = new google.auth.OAuth2(
   process.env.google_clientId,
   process.env.google_clientSecret,
-  "https://finafid-backend-node-e762fd401cc5.herokuapp.com/api/v1/google/callback"
+  CALLBACK_URL                         // ← UPDATED
 );
+
 const GOOGLE_SCOPES = [
   "https://www.googleapis.com/auth/userinfo.profile",
   "https://www.googleapis.com/auth/userinfo.email",
 ];
-const jwt = require("jsonwebtoken");
+
 function generateTokens(tokenObject) {
-  const accessToken = jwt.sign(tokenObject, process.env.SECRET, {
-    expiresIn: "7d",
-  });
-  const refreshToken = jwt.sign(tokenObject, process.env.SECRET, {
-    expiresIn: "365d",
-  });
+  const accessToken  = jwt.sign(tokenObject, process.env.SECRET, { expiresIn: "7d" });
+  const refreshToken = jwt.sign(tokenObject, process.env.SECRET, { expiresIn: "365d" });
   return { accessToken, refreshToken };
 }
+
 const loginWithGoogle = (req, res) => {
   try {
-    // Generate a URL that asks for profile and email permissions
     const authUrl = oauth2Client.generateAuthUrl({
-      access_type: "offline",
-      response_type: "code",
-      prompt: "consent",
-      scope: GOOGLE_SCOPES,
+      access_type:  "offline",
+      response_type:"code",
+      prompt:       "consent",
+      scope:        GOOGLE_SCOPES,
     });
-    // Redirect to the auth URL
     res.redirect(authUrl);
   } catch (error) {
-    res.status(500).send({
-      success: false,
-      message: error.message,
-    });
+    res.status(500).json({ success:false, message:error.message });
   }
 };
 
-// Google callback function || method GET
 const googleCallback = async (req, res) => {
   try {
-    // Validate the request
-    if (!req.query.code) {
-      return res.status(400).send({
-        success: false,
-        message: "Invalid request",
-      });
+    const code = req.query.code;
+    if (!code) {
+      return res.status(400).json({ success:false, message:"Invalid request" });
     }
 
-    // Get the access token from the code
-    const { tokens } = await oauth2Client.getToken(req.query.code);
-    // Set the credentials
+    // exchange code → tokens
+    const { tokens } = await oauth2Client.getToken(code);
     oauth2Client.setCredentials(tokens);
-    // Set the auth token
-    const oauth2 = google.oauth2({
-      auth: oauth2Client,
-      version: "v2",
-    });
 
-    // Get user info from Google
+    const oauth2 = google.oauth2({ auth:oauth2Client, version:"v2" });
     const { data } = await oauth2.userinfo.get();
 
-    // Check if the user already exists
-    let user = await User.findOne({ email: data.email, 
-      is_Active:true }).select(
-      "-password"
-    );
-
-    // If the user doesn't exist, create a new one; otherwise, log in
+    let user = await User.findOne({ email:data.email, is_Active:true });
     if (!user) {
       user = await new User({
-        fullName: data.name,
-        email: data.email,
-        googleId: data.id,
-        email_validation: data.verified_email,
-        phone: 90909090,
-        password: "Google123",
-        imgUrl: `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(
-          data.name || email
-        )}`,
+        fullName:        data.name,
+        email:           data.email,
+        googleId:        data.id,
+        email_validation:data.verified_email,
+        phone:           90909090,
+        password:        "Google123",
+        imgUrl:          `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(data.name)}`
       }).save();
-    } else {
-      // Update the Google ID if it doesn't exist
-      if (!user.googleId) {
-        user.googleId = data.id;
-        await user.save();
-      }
+    } else if (!user.googleId) {
+      user.googleId = data.id;
+      await user.save();
     }
 
-    // Create a payload to store in JWT
-    const payload = {
-      _id: user._id,
-      fullname: user.fullName,
-      email: user.email,
-    };
-     // console.log({payload:payload});
-    // Generate a JWT token
+    const payload = { _id:user._id, fullname:user.fullName, email:user.email };
+    const { accessToken, refreshToken } = generateTokens(payload);
 
-    const token = await generateTokens(payload);
+    // ← UPDATED: send them back to your front-end URL
+    const redirectTo = `${FRONTEND_CALLBACK}?success=true`
+      + `&accessToken=${encodeURIComponent(accessToken)}`
+      + `&refreshToken=${encodeURIComponent(refreshToken)}`;
 
-
-    const redirectUrl = `https://finafid.com/auth/callback?success=true&message=User%20Logged%20in%20Successfully&accessToken=${token.accessToken}&refreshToken=${token.refreshToken}`;
-
-    return res.redirect(redirectUrl);
+    return res.redirect(redirectTo);
   } catch (error) {
-    return res.redirect("https://finafid.com/auth/callback?success=false");
+    console.error(error);
+    return res.redirect(`${FRONTEND_CALLBACK}?success=false`);
   }
 };
-module.exports = {
-  googleCallback,
-  loginWithGoogle,
-};
+
+module.exports = { loginWithGoogle, googleCallback };
