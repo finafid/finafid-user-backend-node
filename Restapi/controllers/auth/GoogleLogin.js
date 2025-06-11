@@ -156,8 +156,13 @@ const googleCallback = async (req, res) => {
   }
 }
 
+const GOOGLE_WEB_CLIENT_ID = process.env.google_clientId
+
+// Create Google OAuth client for token verification
+const googleClient = new OAuth2Client()
+
 // NEW FUNCTION: Handle native Google Sign-In from mobile app
-const googleNativeAuth = async (req, res) => {
+const googleNativeAuth  = async (req, res) => {
   try {
     const { idToken, serverAuthCode, user } = req.body
 
@@ -165,6 +170,7 @@ const googleNativeAuth = async (req, res) => {
       hasIdToken: !!idToken,
       hasServerAuthCode: !!serverAuthCode,
       user: user ? { email: user.email, name: user.name } : null,
+      idTokenLength: idToken?.length || 0,
     })
 
     if (!idToken) {
@@ -174,14 +180,12 @@ const googleNativeAuth = async (req, res) => {
       })
     }
 
-    // Import OAuth2Client for token verification
-    const { OAuth2Client } = require("google-auth-library")
-    const googleClient = new OAuth2Client(process.env.google_clientId)
+    // Verify the ID token with Web Client ID only
+    console.log("Verifying ID token with Web Client ID:", GOOGLE_WEB_CLIENT_ID?.substring(0, 20) + "...")
 
-    // Verify the ID token
     const ticket = await googleClient.verifyIdToken({
       idToken,
-      audience: process.env.google_clientId,
+      audience: GOOGLE_WEB_CLIENT_ID, // Only use Web Client ID
     })
 
     const payload = ticket.getPayload()
@@ -190,9 +194,10 @@ const googleNativeAuth = async (req, res) => {
       email: payload.email,
       name: payload.name,
       emailVerified: payload.email_verified,
+      audience: payload.aud,
     })
 
-    // Find or create user in your database (same logic as your existing callback)
+    // Find or create user in your database
     let existingUser = await User.findOne({ email: payload.email, is_Active: true })
 
     if (!existingUser) {
@@ -208,6 +213,7 @@ const googleNativeAuth = async (req, res) => {
           payload.picture ||
           user?.photo ||
           `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(payload.name || "User")}`,
+        is_Active: true,
       })
 
       await existingUser.save()
@@ -222,7 +228,7 @@ const googleNativeAuth = async (req, res) => {
       console.log("Updated existing user with Google ID")
     }
 
-    // Generate your app's JWT tokens (same as your existing logic)
+    // Generate your app's JWT tokens
     const tokenPayload = {
       _id: existingUser._id,
       fullname: existingUser.fullName,
@@ -230,9 +236,9 @@ const googleNativeAuth = async (req, res) => {
     }
     const { accessToken, refreshToken } = generateTokens(tokenPayload)
 
-    console.log("Native authentication successful for user:", existingUser._id)
+    console.log("Authentication successful for user:", existingUser._id)
 
-    // Return tokens to the mobile client
+    // Return tokens to the client
     res.json({
       success: true,
       accessToken,
@@ -247,11 +253,22 @@ const googleNativeAuth = async (req, res) => {
     })
   } catch (error) {
     console.error("Google native auth error:", error)
+    console.error("Error details:", {
+      message: error.message,
+      name: error.name,
+    })
 
     if (error.message?.includes("Token used too early") || error.message?.includes("Invalid token")) {
       return res.status(401).json({
         success: false,
         message: "Invalid Google token",
+      })
+    }
+
+    if (error.message?.includes("Invalid audience")) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid client ID configuration",
       })
     }
 
