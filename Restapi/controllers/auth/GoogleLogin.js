@@ -5,7 +5,7 @@ const jwt = require("jsonwebtoken")
 // read from process.env
 const CALLBACK_URL = process.env.GOOGLE_CALLBACK_URL
 const FRONTEND_CALLBACK = process.env.FRONTEND_CALLBACK_URL
-const MOBILE_CALLBACK = process.env.MOBILE_CALLBACK_URL // Add this to your .env
+const MOBILE_CALLBACK = process.env.MOBILE_CALLBACK_URL
 
 const oauth2Client = new google.auth.OAuth2(process.env.google_clientId, process.env.google_clientSecret, CALLBACK_URL)
 
@@ -156,4 +156,115 @@ const googleCallback = async (req, res) => {
   }
 }
 
-module.exports = { loginWithGoogle, googleCallback }
+// NEW FUNCTION: Handle native Google Sign-In from mobile app
+const googleNativeAuth = async (req, res) => {
+  try {
+    const { idToken, serverAuthCode, user } = req.body
+
+    console.log("Received Google native auth request:", {
+      hasIdToken: !!idToken,
+      hasServerAuthCode: !!serverAuthCode,
+      user: user ? { email: user.email, name: user.name } : null,
+    })
+
+    if (!idToken) {
+      return res.status(400).json({
+        success: false,
+        message: "ID token is required",
+      })
+    }
+
+    // Import OAuth2Client for token verification
+    const { OAuth2Client } = require("google-auth-library")
+    const googleClient = new OAuth2Client(process.env.google_clientId)
+
+    // Verify the ID token
+    const ticket = await googleClient.verifyIdToken({
+      idToken,
+      audience: process.env.google_clientId,
+    })
+
+    const payload = ticket.getPayload()
+    console.log("Verified Google user:", {
+      googleId: payload.sub,
+      email: payload.email,
+      name: payload.name,
+      emailVerified: payload.email_verified,
+    })
+
+    // Find or create user in your database (same logic as your existing callback)
+    let existingUser = await User.findOne({ email: payload.email, is_Active: true })
+
+    if (!existingUser) {
+      // Create new user
+      existingUser = new User({
+        fullName: payload.name || user?.name || "Google User",
+        email: payload.email,
+        googleId: payload.sub,
+        email_validation: payload.email_verified || false,
+        phone: 90909090,
+        password: "Google123",
+        imgUrl:
+          payload.picture ||
+          user?.photo ||
+          `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(payload.name || "User")}`,
+      })
+
+      await existingUser.save()
+      console.log("Created new user:", existingUser._id)
+    } else if (!existingUser.googleId) {
+      // Update existing user with Google ID
+      existingUser.googleId = payload.sub
+      if (payload.picture && !existingUser.imgUrl) {
+        existingUser.imgUrl = payload.picture
+      }
+      await existingUser.save()
+      console.log("Updated existing user with Google ID")
+    }
+
+    // Generate your app's JWT tokens (same as your existing logic)
+    const tokenPayload = {
+      _id: existingUser._id,
+      fullname: existingUser.fullName,
+      email: existingUser.email,
+    }
+    const { accessToken, refreshToken } = generateTokens(tokenPayload)
+
+    console.log("Native authentication successful for user:", existingUser._id)
+
+    // Return tokens to the mobile client
+    res.json({
+      success: true,
+      accessToken,
+      refreshToken,
+      user: {
+        id: existingUser._id,
+        fullName: existingUser.fullName,
+        email: existingUser.email,
+        imgUrl: existingUser.imgUrl,
+        emailVerified: existingUser.email_validation,
+      },
+    })
+  } catch (error) {
+    console.error("Google native auth error:", error)
+
+    if (error.message?.includes("Token used too early") || error.message?.includes("Invalid token")) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid Google token",
+      })
+    }
+
+    res.status(500).json({
+      success: false,
+      message: "Authentication failed",
+      error: error.message,
+    })
+  }
+}
+
+module.exports = {
+  loginWithGoogle,
+  googleCallback,
+  googleNativeAuth, // Export the new function
+}
