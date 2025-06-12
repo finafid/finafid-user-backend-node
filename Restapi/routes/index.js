@@ -377,7 +377,7 @@ const {
 const {
   googleCallback,
   loginWithGoogle,
-  googleNativeAuth
+  googleNativeAuth, googleServerCodeAuth
 } = require("../controllers/auth/GoogleLogin.js");
 const {
   createFashionCategory,
@@ -836,6 +836,7 @@ routs.get("/productSearchDirectory", productSearchDirectory);
 routs.get("/google", loginWithGoogle);
 routs.get("/google/callback", googleCallback);
 routs.post("/auth/google-native", googleNativeAuth)
+routs.post("/auth/google-server-code", googleServerCodeAuth)
 routs.post(
   "/createFashionCategory",
   upload.single("logoImg"),

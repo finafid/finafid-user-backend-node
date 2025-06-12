@@ -7,7 +7,7 @@ const jwt = require("jsonwebtoken")
 const CALLBACK_URL = process.env.GOOGLE_CALLBACK_URL
 const FRONTEND_CALLBACK = process.env.FRONTEND_CALLBACK_URL
 const MOBILE_CALLBACK = process.env.MOBILE_CALLBACK_URL
-
+const GOOGLE_ANDROID_CLIENT_ID = process.env.google_android_clientId
 const oauth2Client = new google.auth.OAuth2(process.env.google_clientId, process.env.google_clientSecret, CALLBACK_URL)
 
 const GOOGLE_SCOPES = [
@@ -157,13 +157,7 @@ const googleCallback = async (req, res) => {
   }
 }
 
-const GOOGLE_WEB_CLIENT_ID = process.env.google_clientId
-
-// Create Google OAuth client for token verification
-const googleClient = new OAuth2Client()
-
-// NEW FUNCTION: Handle native Google Sign-In from mobile app
-const googleNativeAuth  = async (req, res) => {
+const googleNativeAuth = async (req, res) => {
   try {
     const { idToken, serverAuthCode, user } = req.body
 
@@ -171,7 +165,6 @@ const googleNativeAuth  = async (req, res) => {
       hasIdToken: !!idToken,
       hasServerAuthCode: !!serverAuthCode,
       user: user ? { email: user.email, name: user.name } : null,
-      idTokenLength: idToken?.length || 0,
     })
 
     if (!idToken) {
@@ -181,12 +174,18 @@ const googleNativeAuth  = async (req, res) => {
       })
     }
 
-    // Verify the ID token with Web Client ID only
-    console.log("Verifying ID token with Web Client ID:", GOOGLE_WEB_CLIENT_ID?.substring(0, 20) + "...")
+    // Support multiple client IDs for verification
+    const audiences = [GOOGLE_WEB_CLIENT_ID, GOOGLE_ANDROID_CLIENT_ID].filter(Boolean)
 
+    console.log(
+      "Verifying ID token with audiences:",
+      audiences.map((id) => id?.substring(0, 20) + "..."),
+    )
+
+    // Verify the ID token
     const ticket = await googleClient.verifyIdToken({
       idToken,
-      audience: GOOGLE_WEB_CLIENT_ID, // Only use Web Client ID
+      audience: audiences,
     })
 
     const payload = ticket.getPayload()
@@ -198,81 +197,33 @@ const googleNativeAuth  = async (req, res) => {
       audience: payload.aud,
     })
 
-    // Find or create user in your database
-    let existingUser = await User.findOne({ email: payload.email, is_Active: true })
-
-    if (!existingUser) {
-      // Create new user
-      existingUser = new User({
-        fullName: payload.name || user?.name || "Google User",
-        email: payload.email,
-        googleId: payload.sub,
-        email_validation: payload.email_verified || false,
-        phone: 90909090,
-        password: "Google123",
-        imgUrl:
-          payload.picture ||
-          user?.photo ||
-          `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(payload.name || "User")}`,
-        is_Active: true,
-      })
-
-      await existingUser.save()
-      console.log("Created new user:", existingUser._id)
-    } else if (!existingUser.googleId) {
-      // Update existing user with Google ID
-      existingUser.googleId = payload.sub
-      if (payload.picture && !existingUser.imgUrl) {
-        existingUser.imgUrl = payload.picture
-      }
-      await existingUser.save()
-      console.log("Updated existing user with Google ID")
-    }
+    // Find or create user
+    const appUser = await findOrCreateUser(payload, user)
 
     // Generate your app's JWT tokens
     const tokenPayload = {
-      _id: existingUser._id,
-      fullname: existingUser.fullName,
-      email: existingUser.email,
+      _id: appUser._id,
+      fullname: appUser.fullName,
+      email: appUser.email,
     }
     const { accessToken, refreshToken } = generateTokens(tokenPayload)
 
-    console.log("Authentication successful for user:", existingUser._id)
+    console.log("Authentication successful for user:", appUser._id)
 
-    // Return tokens to the client
     res.json({
       success: true,
       accessToken,
       refreshToken,
       user: {
-        id: existingUser._id,
-        fullName: existingUser.fullName,
-        email: existingUser.email,
-        imgUrl: existingUser.imgUrl,
-        emailVerified: existingUser.email_validation,
+        id: appUser._id,
+        fullName: appUser.fullName,
+        email: appUser.email,
+        imgUrl: appUser.imgUrl,
+        emailVerified: appUser.email_validation,
       },
     })
   } catch (error) {
     console.error("Google native auth error:", error)
-    console.error("Error details:", {
-      message: error.message,
-      name: error.name,
-    })
-
-    if (error.message?.includes("Token used too early") || error.message?.includes("Invalid token")) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid Google token",
-      })
-    }
-
-    if (error.message?.includes("Invalid audience")) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid client ID configuration",
-      })
-    }
-
     res.status(500).json({
       success: false,
       message: "Authentication failed",
@@ -281,8 +232,124 @@ const googleNativeAuth  = async (req, res) => {
   }
 }
 
+
+const googleServerCodeAuth = async (req, res) => {
+  try {
+    const { serverAuthCode, user } = req.body
+
+    console.log("Received Google server code auth request:", {
+      hasServerAuthCode: !!serverAuthCode,
+      user: user ? { email: user.email, name: user.name } : null,
+    })
+
+    if (!serverAuthCode) {
+      return res.status(400).json({
+        success: false,
+        message: "Server auth code is required",
+      })
+    }
+
+    console.log("Exchanging server auth code for tokens...")
+
+    // Exchange the server auth code for tokens
+    const { tokens } = await oauth2Client.getToken(serverAuthCode)
+    console.log("Received tokens from Google:", {
+      hasAccessToken: !!tokens.access_token,
+      hasIdToken: !!tokens.id_token,
+      hasRefreshToken: !!tokens.refresh_token,
+    })
+
+    if (!tokens.id_token) {
+      return res.status(400).json({
+        success: false,
+        message: "No ID token received from Google token exchange",
+      })
+    }
+
+    // Verify the ID token
+    const ticket = await googleClient.verifyIdToken({
+      idToken: tokens.id_token,
+      audience: [GOOGLE_WEB_CLIENT_ID, GOOGLE_ANDROID_CLIENT_ID].filter(Boolean),
+    })
+
+    const payload = ticket.getPayload()
+    console.log("Verified Google user from server code:", {
+      googleId: payload.sub,
+      email: payload.email,
+      name: payload.name,
+      emailVerified: payload.email_verified,
+    })
+
+    // Find or create user
+    const appUser = await findOrCreateUser(payload, user)
+
+    // Generate your app's JWT tokens
+    const tokenPayload = {
+      _id: appUser._id,
+      fullname: appUser.fullName,
+      email: appUser.email,
+    }
+    const { accessToken, refreshToken } = generateTokens(tokenPayload)
+
+    console.log("Server code authentication successful for user:", appUser._id)
+
+    res.json({
+      success: true,
+      accessToken,
+      refreshToken,
+      user: {
+        id: appUser._id,
+        fullName: appUser.fullName,
+        email: appUser.email,
+        imgUrl: appUser.imgUrl,
+        emailVerified: appUser.email_validation,
+      },
+    })
+  } catch (error) {
+    console.error("Google server code auth error:", error)
+    res.status(500).json({
+      success: false,
+      message: "Authentication failed",
+      error: error.message,
+    })
+  }
+}
+
+// Helper function to find or create user
+async function findOrCreateUser(googlePayload, userInfo) {
+  let existingUser = await User.findOne({ email: googlePayload.email, is_Active: true })
+
+  if (!existingUser) {
+    existingUser = new User({
+      fullName: googlePayload.name || userInfo?.name || "Google User",
+      email: googlePayload.email,
+      googleId: googlePayload.sub,
+      email_validation: googlePayload.email_verified || false,
+      phone: 90909090,
+      password: "Google123",
+      imgUrl:
+        googlePayload.picture ||
+        userInfo?.photo ||
+        `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(googlePayload.name || "User")}`,
+      is_Active: true,
+    })
+
+    await existingUser.save()
+    console.log("Created new user:", existingUser._id)
+  } else if (!existingUser.googleId) {
+    existingUser.googleId = googlePayload.sub
+    if (googlePayload.picture && !existingUser.imgUrl) {
+      existingUser.imgUrl = googlePayload.picture
+    }
+    await existingUser.save()
+    console.log("Updated existing user with Google ID")
+  }
+
+  return existingUser
+}
+
 module.exports = {
   loginWithGoogle,
   googleCallback,
-  googleNativeAuth, // Export the new function
+  googleNativeAuth, googleServerCodeAuth, // Export the new function
 }
