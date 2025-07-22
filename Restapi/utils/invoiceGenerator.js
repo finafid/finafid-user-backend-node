@@ -173,12 +173,13 @@ async function generateAndUploadInvoice(invoiceData) {
     y += 15;
     const cgst = invoiceData.gst / 2;
     const sgst = invoiceData.gst / 2;
+    const gstPercent = ((invoiceData.gst / invoiceData.total) * 100).toFixed(2);
 
-    doc.text('CGST (9%):', summaryX, y, { width: 100 })
+    doc.text(`CGST (${(gstPercent / 2)}%):`, summaryX, y, { width: 100 })
       .text(`${cgst.toFixed(2)}`, summaryX + 100, y, { width: 88, align: 'right' });
 
     y += 15;
-    doc.text('SGST (9%):', summaryX, y, { width: 100 })
+    doc.text(`CGST (${(gstPercent / 2)}%):`, summaryX, y, { width: 100 })
       .text(`${sgst.toFixed(2)}`, summaryX + 100, y, { width: 88, align: 'right' });
 
     // Total
