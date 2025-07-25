@@ -787,15 +787,14 @@ function generateRandomPassword(length = 12) {
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+[]{}|;:,.<>?";
   let password = "";
   for (let i = 0; i < length; i++) {
-    const randomIndex = Math.floor(Math.random() * chars.length);
-    password += chars[randomIndex];
+    password += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return password;
 }
 
 const signupAndLoginWithOtp = async (req, res) => {
   try {
-    const { phone, otp, fullName, email, referralCode, fcmToken, password } = req.body;
+    let { phone, otp, fullName, email, referralCode, fcmToken, password } = req.body;
 
     // 1. Verify OTP
     const otpDetails = await OtpPhone.findOne({ otp, phone });
@@ -808,14 +807,16 @@ const signupAndLoginWithOtp = async (req, res) => {
     if (user) {
       return res.status(400).json({ message: "User already exists, please log in" });
     }
+
+    // 3. Generate a random password if none provided
     if (!password) {
       password = generateRandomPassword(12);
     }
 
-    // Hash the password before saving
+    // 4. Hash the password before saving
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 3. Create new user
+    // 5. Create new user
     const newUser = new User({
       phone,
       fullName,
@@ -824,23 +825,24 @@ const signupAndLoginWithOtp = async (req, res) => {
       is_Active: true,
       blocking: false,
       imgUrl: `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(fullName || email || phone)}`,
-      fcmTokens: fcmToken ? [fcmToken] : [],  // Initialize fcmTokens array with the provided token if any
+      fcmTokens: fcmToken ? [fcmToken] : [],
     });
     await newUser.save();
 
-    // 4. Check and redeem referral code if provided
+    // 6. Redeem referral code if provided
     if (referralCode) {
       await redeemedReferral(referralCode, newUser._id);
     }
 
+    // 7. Create wallet for new user
     const walletDetails = new Wallet({
       userId: newUser._id,
       balance: 0,
       transactions: [],
     });
-     await walletDetails.save();
+    await walletDetails.save();
 
-    // 5. Generate tokens and respond
+    // 8. Prepare token payload and generate JWT token
     const tokenObject = {
       _id: newUser._id,
       fullname: newUser.fullName,
@@ -849,13 +851,20 @@ const signupAndLoginWithOtp = async (req, res) => {
     };
     const jwtToken = generateTokens(tokenObject, newUser);
 
-    return res.status(201).json(jwtToken);
+    // 9. Respond with JWT token
+    // Optionally, for debugging or user notification, you can return the generated password:
+    // Be careful about security implications if sending back password in API response!
+    return res.status(201).json({
+      token: jwtToken,
+      message: "User registered and logged in successfully",
+      ...(req.body.password ? {} : { generatedPassword: password }),
+    });
 
   } catch (error) {
+    console.error("Error in signupAndLoginWithOtp:", error);
     return res.status(500).json({ message: error.message });
   }
 };
-
 
 
 const getUserName = async (req, res) => {
