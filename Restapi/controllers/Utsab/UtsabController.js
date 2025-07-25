@@ -565,6 +565,75 @@ const getMemberById = async (req, res) => {
   }
 };
 
+const getMemberByIdadmin = async (req, res) => {
+  try {
+    // Get userId from URL param instead of req.user
+    const userId = req.params.id;
+
+    // pagination
+    const page  = parseInt(req.query.page,  10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 100;
+    const skip  = (page - 1) * limit;
+
+    // 1) basic user + address
+    const [ userData, address ] = await Promise.all([
+      User.findById(userId),
+      Address.findOne({ userId, isDefault: true })
+    ]);
+
+    // 2) reward summary & transactions
+    const rewardDoc = await Reward
+      .findOne({ userId })
+      .populate('transactions');
+
+    const rewardSummary = {
+      points: rewardDoc?.points || 0,
+      transactions: rewardDoc?.transactions || []
+    };
+
+    // 3) referral + spend-per-referree
+    const referralDetails = await Referral.findOne({ userId })
+      .populate('referred_by')
+      .populate({
+        path: 'referred_user',
+        model: 'user'
+      });
+
+    const referredUsers = referralDetails?.referred_user || [];
+    const referralCount = referredUsers.length;
+
+    // paginate the referred users
+    const pageSlice = referredUsers.slice(skip, skip + limit);
+    const membersWithDetails = await Promise.all(
+      pageSlice.map(async member => {
+        try {
+          const { totalSpend } = await totalSpendOfMember(member._id);
+          return { ...member._doc, totalSpend };
+        } catch {
+          return { ...member._doc, totalSpend: 0 };
+        }
+      })
+    );
+
+    // build the response
+    const response = {};
+    if (userData)       response.userData            = userData;
+    if (address)        response.address             = address;
+    response.rewardSummary  = rewardSummary;
+    response.referralCount  = referralCount;
+    response.referralDetails = {
+      ...referralDetails?._doc,
+      referred_user: membersWithDetails
+    };
+
+    return res.status(200).json(response);
+  } catch (error) {
+    console.error('getMemberById error:', error);
+    return res.status(500).json({ message: `${error.message} Internal Server Error` });
+  }
+};
+
+
 
 
 const totalSpendOfMemberSingle = async (req, res) => {
@@ -701,4 +770,5 @@ module.exports = {
   approveLeaderRequest,
   getAllApprovedLeader,
   getLeaderDetails,
+  getMemberByIdadmin
 };

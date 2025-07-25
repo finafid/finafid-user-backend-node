@@ -311,6 +311,7 @@ const {
   approveBorrowRequest,
   approveLeaderRequest,
   getAllApprovedLeader,
+  getMemberByIdadmin
 } = require("../controllers/Utsab/UtsabController.js");
 const {
   getAllReviews,
@@ -746,7 +747,7 @@ routs.get("/getAllMemberList", getAllMemberList);
 routs.post("/addBorrowMembershipPlan", addBorrowMembershipPlan);
 routs.get("/getReferralDetails/:userId", getReferralDetailsSingle);
 routs.get("/getMembers",auth, getMemberById);
-routs.get("/getMemberById", getMemberById);
+routs.get("/getMemberById/:id", authad, getMemberByIdadmin);
 routs.get("/getBorrowMemberShipPlan", getBorrowMemberShipPlan);
 routs.get("/getAllWalletTransaction", getAllWalletTransaction);
 routs.post("/approveBorrowRequest/:requestId", approveBorrowRequest);
