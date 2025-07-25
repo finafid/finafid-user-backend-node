@@ -21,6 +21,7 @@ const {
   validAccessToken,
   changePhoneNumber,
   loginUsingPhoneNumber,
+  signupAndLoginWithOtp,
   sendOtpToPhone,
   getUserName,
 } = require("../controllers/auth");
@@ -863,6 +864,7 @@ routs.get(
 );
 routs.get("/getAllFashionBlog", getAllFashionBlog);
 routs.post("/loginUsingPhoneNumber", loginUsingPhoneNumber);
+routs.post("/signupAndLoginWithOtp", signupAndLoginWithOtp);
 routs.post("/sendOtpToPhone", sendOtpToPhone);
 routs.post("/activeBrandById/:brandId", activeBrandById);
 routs.post("/activeCategoryById/:categoryId", activeCategoryById);

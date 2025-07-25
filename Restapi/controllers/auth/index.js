@@ -782,6 +782,63 @@ const loginUsingPhoneNumber = async (req, res) => {
   }
 };
 
+const signupAndLoginWithOtp = async (req, res) => {
+  try {
+    const { phone, otp, fullName, email, referralCode, fcmToken } = req.body;
+
+    // 1. Verify OTP
+    const otpDetails = await OtpPhone.findOne({ otp, phone });
+    if (!otpDetails) {
+      return res.status(401).json({ message: "Invalid OTP or phone number" });
+    }
+
+    // 2. Check if user already exists
+    let user = await User.findOne({ phone, is_Active: true, blocking: false });
+    if (user) {
+      return res.status(400).json({ message: "User already exists, please log in" });
+    }
+
+    // 3. Create new user
+    const newUser = new User({
+      phone,
+      fullName,
+      email,
+      is_Active: true,
+      blocking: false,
+      imgUrl: `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(fullName || email || phone)}`,
+      fcmTokens: fcmToken ? [fcmToken] : [],  // Initialize fcmTokens array with the provided token if any
+    });
+    await newUser.save();
+
+    // 4. Check and redeem referral code if provided
+    if (referralCode) {
+      await redeemedReferral(referralCode, newUser._id);
+    }
+
+    const walletDetails = new Wallet({
+      userId: newUser._id,
+      balance: 0,
+      transactions: [],
+    });
+     await walletDetails.save();
+
+    // 5. Generate tokens and respond
+    const tokenObject = {
+      _id: newUser._id,
+      fullname: newUser.fullName,
+      email: newUser.email,
+      imgUrl: newUser.imgUrl,
+    };
+    const jwtToken = generateTokens(tokenObject, newUser);
+
+    return res.status(201).json(jwtToken);
+
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+
 
 const getUserName = async (req, res) => {
   try {
@@ -830,6 +887,7 @@ module.exports = {
   validAccessToken,
   changePhoneNumber,
   loginUsingPhoneNumber,
+  signupAndLoginWithOtp,
   sendOtpToPhone,
   getUserName,
 };
