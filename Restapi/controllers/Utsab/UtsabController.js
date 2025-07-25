@@ -498,72 +498,66 @@ const getBorrowMemberShipPlan = async (req, res) => {
 const getMemberById = async (req, res) => {
   try {
     const userId = req.user._id;
+    const { page = 1, limit = 100 } = req.query; 
 
-    // pagination
-    const page  = parseInt(req.query.page,  10) || 1;
-    const limit = parseInt(req.query.limit, 10) || 100;
-    const skip  = (page - 1) * limit;
+    const userData = await User.findById(userId);
+    const address = await Address.findOne({
+      userId,
+      isDefault: true,
+    });
 
-    // 1) basic user + address
-    const [ userData, address ] = await Promise.all([
-      User.findById(userId),
-      Address.findOne({ userId, isDefault: true })
-    ]);
+    const walletTransactionDetails = await walletTransaction
+      .find({ userId })
+      .populate("userId")
+      .limit(parseInt(limit))
+      .skip((parseInt(page) - 1) * parseInt(limit));
 
-    // 2) reward summary & transactions
-    //    assumes rewardSchema has ref:'RewardTransaction' on transactions[]
-    const rewardDoc = await Reward
-      .findOne({ userId })
-      .populate('transactions');
-
-    const rewardSummary = {
-      points: rewardDoc?.points || 0,
-      transactions: rewardDoc?.transactions || []
-    };
-
-    // 3) referral + spend-per-referree
     const referralDetails = await Referral.findOne({ userId })
-      .populate('referred_by')
+      .populate("referred_by")
       .populate({
-        path: 'referred_user',
-        model: 'user'    // lowercase if your User model is registered as 'user'
+        path: "referred_user",
+        model: "user",
       });
 
-    const referredUsers = referralDetails?.referred_user || [];
-    const referralCount = referredUsers.length;
+    let membersWithDetails = [];
+    if (referralDetails && referralDetails.referred_user) {
+      const paginatedReferredUsers = referralDetails.referred_user.slice(
+        (parseInt(page) - 1) * parseInt(limit),
+        parseInt(page) * parseInt(limit)
+      );
 
-    // paginate the referred users
-    const pageSlice = referredUsers.slice(skip, skip + limit);
-    const membersWithDetails = await Promise.all(
-      pageSlice.map(async member => {
-        try {
-          const { totalSpend } = await totalSpendOfMember(member._id);
-          return { ...member._doc, totalSpend };
-        } catch {
-          return { ...member._doc, totalSpend: 0 };
-        }
-      })
-    );
+      membersWithDetails = await Promise.all(
+        paginatedReferredUsers.map(async (member) => {
+          try {
+            const totalSpendData = await totalSpendOfMember(member._id);
+            return {
+              ...member._doc,
+              totalSpend: totalSpendData.totalSpend,
+            };
+          } catch (error) {
+            console.error(`Error fetching details for userId ${member._id}:`, error);
+            return { ...member._doc, totalSpend: 0 };
+          }
+        })
+      );
+    }
 
-    // build the response
     const response = {};
-    if (userData)       response.userData            = userData;
-    if (address)        response.address             = address;
-    response.rewardSummary  = rewardSummary;
-    response.referralCount  = referralCount;
-    response.referralDetails = {
-      ...referralDetails?._doc,
-      referred_user: membersWithDetails
-    };
+    if (userData) response.userData = userData;
+    if (address) response.address = address;
+    if (walletTransactionDetails) response.walletTransactionDetails = walletTransactionDetails;
+    if (referralDetails) {
+      response.referralDetails = {
+        ...referralDetails._doc,
+        referred_user: membersWithDetails,
+      };
+    }
 
     return res.status(200).json(response);
   } catch (error) {
-    console.error('getMemberById error:', error);
-    return res
-      .status(500)
-      .json({ message: `${error.message} Internal Server Error` });
+    return res.status(500).json({ message: error.message + " Internal Server Error" });
   }
-};
+}
 
 const getMemberByIdadmin = async (req, res) => {
   try {
