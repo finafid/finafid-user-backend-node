@@ -746,6 +746,7 @@ routs.get("/getAllMemberList", getAllMemberList);
 routs.post("/addBorrowMembershipPlan", addBorrowMembershipPlan);
 routs.get("/getReferralDetails/:userId", getReferralDetailsSingle);
 routs.get("/getMembers",auth, getMemberById);
+routs.get("/getMemberById", getMemberById);
 routs.get("/getBorrowMemberShipPlan", getBorrowMemberShipPlan);
 routs.get("/getAllWalletTransaction", getAllWalletTransaction);
 routs.post("/approveBorrowRequest/:requestId", approveBorrowRequest);
