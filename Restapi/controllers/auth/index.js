@@ -754,7 +754,7 @@ const loginUsingPhoneNumber = async (req, res) => {
     });
 
     if (!userData) {
-      return res.status(401).json({ message: "No user found" });
+      return res.status(300).json({ newuser:true, message: "Complete your sign up" });
     }
 
     // Create token payload
