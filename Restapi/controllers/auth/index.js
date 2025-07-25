@@ -782,9 +782,20 @@ const loginUsingPhoneNumber = async (req, res) => {
   }
 };
 
+function generateRandomPassword(length = 12) {
+  const chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+[]{}|;:,.<>?";
+  let password = "";
+  for (let i = 0; i < length; i++) {
+    const randomIndex = Math.floor(Math.random() * chars.length);
+    password += chars[randomIndex];
+  }
+  return password;
+}
+
 const signupAndLoginWithOtp = async (req, res) => {
   try {
-    const { phone, otp, fullName, email, referralCode, fcmToken } = req.body;
+    const { phone, otp, fullName, email, referralCode, fcmToken, password } = req.body;
 
     // 1. Verify OTP
     const otpDetails = await OtpPhone.findOne({ otp, phone });
@@ -797,12 +808,19 @@ const signupAndLoginWithOtp = async (req, res) => {
     if (user) {
       return res.status(400).json({ message: "User already exists, please log in" });
     }
+    if (!password) {
+      password = generateRandomPassword(12);
+    }
+
+    // Hash the password before saving
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     // 3. Create new user
     const newUser = new User({
       phone,
       fullName,
       email,
+      password: hashedPassword,
       is_Active: true,
       blocking: false,
       imgUrl: `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(fullName || email || phone)}`,
