@@ -1,11 +1,8 @@
 const mongoose = require("mongoose");
-const ObjectId = mongoose.Types.ObjectId;
-const order = require("../../models/Order/orderSc");
-const User = require("../../models/auth/userSchema");
+const Order = require("../../models/Order/orderSc"); // Your order model
+const orderStatusModel = require("../../models/Order/OrderStatus"); // Order status history model
 const { getSocketInstance } = require("../../socket");
-const sendOrderConfirmationEmail = require("./emailService").sendOrderConfirmationEmail;
 const sendSms = require("./smsService");
-const orderStatus = require("../../models/Order/OrderStatus");
 const { verifyPayUSignature } = require("../../utils/verifyPayUSignature");
 
 const PAYU_SECRET_KEY = process.env.PAYU_SECRET_KEY;
@@ -14,14 +11,18 @@ const PAYU_SECRET_KEY = process.env.PAYU_SECRET_KEY;
  * Helper to add status history entry
  */
 async function addOrderStatusHistory(orderId, status, note = "") {
-  let statusDetails = await orderStatus.findOne({ orderId });
+  let statusDetails = await orderStatusModel.findOne({ orderId });
   const statusEntry = { status, updatedAt: new Date(), note };
 
   if (!statusDetails) {
-    statusDetails = new orderStatus({ orderId, orderStatusDetails: [statusEntry] });
+    statusDetails = new orderStatusModel({
+      orderId,
+      orderStatusDetails: [statusEntry],
+    });
   } else {
     statusDetails.orderStatusDetails.push(statusEntry);
   }
+
   await statusDetails.save();
 }
 
@@ -44,52 +45,59 @@ const updatePaymentStatusPayU = async (req, res) => {
       return res.status(400).json({ success: false, message: "Missing order identifier (txnid)" });
     }
 
-    // Find order using orderNumber (adjust if you use _id or different field)
-    const orderDetail = await order.findOne({ orderNumber: txnid }).populate("userId");
+    // Find order using your internal orderId (string) which corresponds to txnid
+    // Change if you use another field for matching:
+    const orderDetail = await Order.findOne({ orderId: txnid }).populate("userId");
+
     if (!orderDetail) {
       return res.status(404).json({ success: false, message: "Order not found" });
     }
 
-    let newOrderStatus = orderDetail.orderStatus; // default keep current status
+    let newOrderStatus = orderDetail.status; // default keep current status
 
-    // Map events and status to order updates
-    if (event === "payment_success" || paymentStatus === "success" || paymentStatus === "Completed") {
-      orderDetail.paymentInfo.paymentStatus = "Completed";
-      orderDetail.paymentInfo.isPaid = true;
-      orderDetail.paymentInfo.paidAt = new Date();
-      orderDetail.paymentInfo.transactionId = mihpayid || orderDetail.paymentInfo.transactionId;
+    // Normalize paymentStatus to lowercase for consistent comparison
+    const normalizedPaymentStatus = paymentStatus ? paymentStatus.toLowerCase() : "";
+
+    // Handle payment success cases
+    if (event === "payment_success" || normalizedPaymentStatus === "success" || normalizedPaymentStatus === "completed") {
+      orderDetail.payment_complete = true;
+      orderDetail.updatedAt = new Date();
+
+      // It's helpful to store mihpayid as PayU payment reference if you want
+      orderDetail.transactionId = mihpayid ? mongoose.Types.ObjectId.isValid(mihpayid) ? mongoose.Types.ObjectId(mihpayid) : orderDetail.transactionId : orderDetail.transactionId;
 
       newOrderStatus = "Confirmed";
-      orderDetail.orderStatus = newOrderStatus;
-    } else if (event === "payment_failure" || paymentStatus === "failure" || paymentStatus === "Failed") {
-      orderDetail.paymentInfo.paymentStatus = "Failed";
-      orderDetail.paymentInfo.isPaid = false;
+      orderDetail.status = newOrderStatus;
+    } 
+    // Handle payment failure cases
+    else if (event === "payment_failure" || normalizedPaymentStatus === "failure" || normalizedPaymentStatus === "failed") {
+      orderDetail.payment_complete = false;
 
-      newOrderStatus = "Payment Failed";
-      orderDetail.orderStatus = newOrderStatus;
-    } else {
-      // For other event/status types, you can log or handle later
-      newOrderStatus = orderDetail.orderStatus;
-    }
+      newOrderStatus = "Failed"; // Your schema enum uses "Failed" (not "Payment Failed")
+      orderDetail.status = newOrderStatus;
+    } 
+    // Other cases, keep status as is
 
     await orderDetail.save();
 
     // Add to order status history
-    await addOrderStatusHistory(orderDetail._id, newOrderStatus, `Updated via PayU webhook event: ${event || paymentStatus}`);
+    await addOrderStatusHistory(
+      orderDetail._id,
+      newOrderStatus,
+      `Updated via PayU webhook event: ${event || paymentStatus}`
+    );
 
     // Emit socket event to notify frontend
     const io = getSocketInstance();
     io.emit("orderStatusUpdated", { orderId: orderDetail._id, status: newOrderStatus });
 
-    // Send confirmation email & SMS on successful payment
+    // Send confirmation SMS on successful payment
     if (newOrderStatus === "Confirmed" && orderDetail.userId) {
-      await sendOrderConfirmationEmail(orderDetail, orderDetail.userId);
-
       if (orderDetail.userId.is_Active && !orderDetail.userId.blocking) {
         await sendSms("messageForOrderConfirmed", {
           phoneNumber: orderDetail.userId.phone,
-          totalOrder: orderDetail.pricing?.totalPrice || 0,
-          itemName: orderDetail.orderNumber,
+          totalOrder: orderDetail.totalPrice || 0,
+          itemName: orderDetail.orderId,
         });
       }
     }
