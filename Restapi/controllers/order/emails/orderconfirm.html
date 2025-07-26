@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Order Confirmation</title>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f4f6f8;
+    margin: 0;
+    padding: 20px;
+    color: #333;
+  }
+  .container {
+    max-width: 650px;
+    margin: auto;
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgb(0 0 0 / 0.1);
+    padding: 30px;
+  }
+  h1 {
+    color: #004aad;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+  p {
+    line-height: 1.6;
+    font-size: 16px;
+    margin: 10px 0;
+    color: #555;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 25px;
+  }
+  th, td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #e3e6ea;
+  }
+  th {
+    background-color: #f8f9fb;
+    font-weight: 600;
+    color: #555;
+  }
+  .product-image {
+    border-radius: 6px;
+    width: 90px;
+    height: 90px;
+    object-fit: cover;
+  }
+  .product-name {
+    font-weight: 700;
+    font-size: 16px;
+    color: #222;
+  }
+  .price {
+    color: #004aad;
+    font-weight: 700;
+    font-size: 15px;
+    text-align: right;
+  }
+  .summary {
+    margin-top: 25px;
+    border-top: 2px solid #004aad;
+  }
+  .summary-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    font-size: 15px;
+  }
+  .summary-item.total {
+    font-weight: 700;
+    border-top: 2px solid #004aad;
+    padding-top: 15px;
+    font-size: 17px;
+  }
+  .section-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #004aad;
+    margin-top: 35px;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #d6d6d6;
+    padding-bottom: 5px;
+  }
+  .address p {
+    margin: 4px 0;
+    font-size: 15px;
+    color: #444;
+  }
+  a.button {
+    display: inline-block;
+    margin-top: 30px;
+    background-color: #004aad;
+    color: #fff !important;
+    padding: 12px 28px;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 16px;
+  }
+  .footer {
+    margin-top: 40px;
+    font-size: 13px;
+    color: #999999;
+    text-align: center;
+  }
+
+  /* Responsive */
+  @media only screen and (max-width: 480px) {
+    .container {
+      padding: 20px 15px;
+    }
+    .product-image {
+      width: 70px;
+      height: 70px;
+    }
+    th, td {
+      padding: 10px 8px;
+    }
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <h1>Order Confirmation - #{{orderId}}</h1>
+    <p>Hi {{customerName}},</p>
+    <p>Thank you for your purchase! Here are the details of your order status: <strong>{{orderStatus}}</strong>.</p>
+
+    <div class="section-title">Order Items</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>Description</th>
+          <th style="text-align:right;">Price</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{orderItems}}
+      </tbody>
+    </table>
+
+    <div class="summary">
+      <div class="summary-item"><span>Subtotal:</span><span>₹{{subtotal}}</span></div>
+      <div class="summary-item"><span>Discount:</span><span>₹{{discount}}</span></div>
+      <div class="summary-item"><span>Utsav Discount:</span><span>₹{{utsavDiscount}}</span></div>
+      <div class="summary-item"><span>Coupon Discount:</span><span>₹{{couponDiscount}}</span></div>
+      <div class="summary-item"><span>Tax:</span><span>₹{{tax}}</span></div>
+      <div class="summary-item"><span>Shipping Cost:</span><span>₹{{shippingCost}}</span></div>
+      <div class="summary-item total"><span>Total:</span><span>₹{{totalPrice}}</span></div>
+    </div>
+
+    <div class="section-title">Shipping Address</div>
+    <div class="address">
+      <p>{{receiverName}}</p>
+      <p>{{address}}</p>
+      <p>Phone: {{receiverPhone}}</p>
+    </div>
+
+    <a href="https://finafd.com/orders/{{orderId}}" class="button" target="_blank" rel="noopener">Track Your Order</a>
+
+    <div class="footer">
+      <p>If you have any questions, please reply to this email or contact our support team at support@finafid.com</p>
+      <p>© {{year}} Finafid. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>

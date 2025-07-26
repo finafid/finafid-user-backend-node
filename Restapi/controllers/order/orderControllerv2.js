@@ -13,7 +13,7 @@ const Transaction = require("../../models/payment/paymentSc");
 const bcrypt = require("bcrypt");
 const { calculateCartPricing } = require("../../services/pricingService");
 const sendSms = require("./smsService");
-const sendOrderConfirmationEmail = require("./emailService");
+const sendOrderConfirmEmail = require("./emailService");
 const { generateAndUploadInvoice } = require("../../utils/invoiceGenerator");
 const { getSocketInstance } = require("../../socket");
 const placeOrderv2 = async (req, res) => {
@@ -276,11 +276,11 @@ const updateStatusv2 = async (req, res) => {
 
     // Emit via Socket.io
     const io = getSocketInstance();
-    io.emit("orderStatusUpdated", { orderId: orderDoc._id, status: newStatus });
+    io.emit("orderStatusUpdated", { orderId: orderDoc.orderNumber, status: newStatus });
 
     // Confirmed → send email/SMS
     if (newStatus === "Confirmed") {
-      await sendOrderConfirmationEmail(orderDoc, orderDoc.userId);
+      await sendOrderConfirmEmail(orderDoc, orderDoc.userId);
 
       const userData = await User.findOne({
         _id: orderDoc.userId._id,
