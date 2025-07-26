@@ -287,6 +287,7 @@ const updateStatusv2 = async (req, res) => {
         is_Active: true,
         blocking: false,
       });
+
       if (userData) {
         await sendSms("messageForOrderConfirmed", {
           phoneNumber: userData.phone,
@@ -298,12 +299,15 @@ const updateStatusv2 = async (req, res) => {
 
     // Shipping → invoice + SMS
     if (newStatus === "Shipping" || newStatus === "Shipped") {
+      // Assuming you have an invoiceGenerate function defined elsewhere
       await invoiceGenerate(orderDoc);
+
       const userData = await User.findOne({
         _id: orderDoc.userId._id,
         is_Active: true,
         blocking: false,
       });
+
       if (userData) {
         await sendSms("messageForOrderOnTheWay", {
           phoneNumber: userData.phone,
@@ -316,11 +320,13 @@ const updateStatusv2 = async (req, res) => {
     if (newStatus === "Delivered") {
       orderDoc.shippingInfo.deliveredAt = new Date();
       await orderDoc.save();
+
       const userData = await User.findOne({
         _id: orderDoc.userId._id,
         is_Active: true,
         blocking: false,
       });
+
       if (userData) {
         await sendSms("messageForOrderDelivary", { phoneNumber: userData.phone });
       }
@@ -344,11 +350,12 @@ const updateStatusv2 = async (req, res) => {
           await rewardDoc.save();
         }
       }
+
       // restore stock (outside of transaction here—order is already in DB)
       await Promise.all(
         orderDoc.orderItems.map(async (item) => {
           await Variant.findByIdAndUpdate(
-            item.productId,
+            item.variantId, // NOTE: your schema has `variantId` for orderItems, not productId
             { $inc: { quantity: item.quantity } },
             { new: true }
           );
@@ -372,7 +379,7 @@ const updateStatusv2 = async (req, res) => {
 
         // 1) Check Utsav membership qualification:
         const utsavTotalPrice = orderDoc.orderItems
-          .filter((i) => i.productId.isUtsav)
+          .filter((i) => i.variantId.isUtsav) // This assumes variantId is populated or a subdocument; if not, you'll need to populate or fetch product
           .reduce((sum, i) => sum + i.sellingPrice * i.quantity, 0);
 
         if (!userData.is_utsav && utsavTotalPrice >= membershipPlan.amount) {
@@ -448,6 +455,7 @@ const updateStatusv2 = async (req, res) => {
     });
   }
 };
+
 
 
 /**
