@@ -13,7 +13,7 @@ const Transaction = require("../../models/payment/paymentSc");
 const bcrypt = require("bcrypt");
 const { calculateCartPricing } = require("../../services/pricingService");
 const sendSms = require("./smsService");
-const sendOrderConfirmEmail = require("./emailService");
+const {sendOrderConfirmEmail} = require("./emailService");
 const { generateAndUploadInvoice } = require("../../utils/invoiceGenerator");
 const { getSocketInstance } = require("../../socket");
 const placeOrderv2 = async (req, res) => {
