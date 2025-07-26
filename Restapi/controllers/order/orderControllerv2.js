@@ -258,7 +258,7 @@ const placeOrderv2 = async (req, res) => {
  */
 const updateStatusv2 = async (req, res) => {
   try {
-    const orderId = req.params.orderId;
+    const orderId = req.body.orderId;
     const newStatus = req.body.status;
 
     const orderDoc = await Order.findById(orderId).populate("userId");
