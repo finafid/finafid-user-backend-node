@@ -32,6 +32,7 @@ const {
   otpVarification,
   passwordVarification,
 } = require("../middlewares/userValidation");
+
 const routs = express.Router();
 const {
   getAllProduct,
@@ -162,6 +163,7 @@ const {
   paymentDetails,
   verifySignature,
 } = require("../controllers/Payment/paymentController.js");
+const { updatePaymentStatusPayU } = require('../controllers/webhooks/webhookController.js'); 
 
 const { apiKeyMiddleware } = require("../middlewares/apikey.js");
 const {
@@ -565,10 +567,11 @@ routs.get("/validateUtsav", auth, validateCartForUtsav);
 routs.post("/deleteFromCart", auth, deleteFromCart);
 routs.get("/clearCart", auth, clearCart);
 routs.post("/removeFromCart", auth, removeFromCart);
-//order
+
 routs.post("/placeOrder", auth, apiKeyMiddleware, placeOrder);
 routs.post("/placeOrdernew", auth, apiKeyMiddleware, placeOrderv2);
 routs.post("/updateOrderStatus", updateStatusv2);
+routs.post("/webhook/payu", updatePaymentStatusPayU);
 routs.post("/updateUserOrderStatus/:orderId", auth, updateStatusv2);
 routs.get("/getOrderDetails", auth, getOrderDetails);
 routs.get("/getOrderById/:orderId", auth, getOrderById);
