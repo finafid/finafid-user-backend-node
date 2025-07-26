@@ -568,6 +568,8 @@ routs.post("/removeFromCart", auth, removeFromCart);
 //order
 routs.post("/placeOrder", auth, apiKeyMiddleware, placeOrder);
 routs.post("/placeOrdernew", auth, apiKeyMiddleware, placeOrderv2);
+routs.post("/updateOrderStatus/:orderId", updateStatusv2);
+routs.post("/updateUserOrderStatus/:orderId", auth, updateStatusv2);
 routs.get("/getOrderDetails", auth, getOrderDetails);
 routs.get("/getOrderById/:orderId", auth, getOrderById);
 routs.post("/updateStatus/:orderId", auth, updateStatus);
