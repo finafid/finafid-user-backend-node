@@ -1,39 +1,36 @@
-const mongoose = require("mongoose");
-const ObjectId = mongoose.Types.ObjectId;
-const Order = require("../../models/Order/orderSc");
+// controllers/webhookController.js
+const { verifyPayUSignature } = require("../../utils/verifyPayUSignature");
 
-const updatePaymentStatusPayU = async (req, res) => {
-  try {
-    
-    const { txnid, status: paymentStatus, event } = req.body;
-    if (!txnid) {
-      return res.status(400).json({ success: false, message: "Missing txnid" });
-    }
+const PAYU_SECRET_KEY = process.env.PAYU_SECRET_KEY;
 
-    const order = await Order.findOne({ orderId: txnid });
-    if (!order) {
-      return res.status(404).json({ success: false, message: "Order not found" });
-    }
+exports.handleWebhook = (req, res) => {
+  const signature = req.headers["x-pay-signature"];
 
-    const normalizedStatus = (paymentStatus || "").toLowerCase();
-    if (event === "payment_success" || normalizedStatus === "success" || normalizedStatus === "completed") {
-      order.payment_complete = true;
-      order.status = "Confirmed";
-    } else if (event === "payment_failure" || normalizedStatus === "failure" || normalizedStatus === "failed") {
-      order.payment_complete = false;
-      order.status = "Failed";
-    } else {
-      // For other payment states, do not update
-      return res.status(200).json({ success: true, message: "No status change needed", order });
-    }
-
-    await order.save();
-
-    return res.status(200).json({ success: true, message: "Payment status updated", order });
-  } catch (error) {
-    console.error("Error updating payment status:", error);
-    return res.status(500).json({ success: false, message: "Internal Server Error" });
+  if (!verifyPayUSignature(req.body, signature, PAYU_SECRET_KEY)) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Invalid signature" });
   }
-};
 
-module.exports = { updatePaymentStatusPayU };
+  // Handle different events from PayU
+  const event = req.body.event;
+
+  switch (event) {
+    case "payment_success":
+       // console.log("Payment successful:", req.body);
+      // Process the successful payment here
+      break;
+    case "payment_failure":
+       // console.log("Payment failed:", req.body);
+      // Handle payment failure here
+      break;
+    case "refund_success":
+       // console.log("Refund successful:", req.body);
+      // Process the refund here
+      break;
+    default:
+       // console.log("Unhandled event type:", event);
+  }
+
+  res.status(200).json({ success: true, message: "Webhook received" });
+};
