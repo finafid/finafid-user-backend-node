@@ -16,6 +16,53 @@ const sendSms = require("./smsService");
 const {sendOrderConfirmEmail} = require("./emailService");
 const { generateAndUploadInvoice } = require("../../utils/invoiceGenerator");
 const { getSocketInstance } = require("../../socket");
+
+
+async function invoiceGenerate(order) {
+  // Fetch user details if needed
+  // (Assume getUserInfo is your async DB fetch; else, remove/refactor)
+  // const user = await getUserInfo(order.userId);
+
+  const invoiceData = {
+    orderId: order.orderNumber,
+    invoiceNumber: "INV-" + Math.random().toString().slice(2, 10),
+    date: new Date().toISOString().split("T")[0], // YYYY-MM-DD
+    customerName: order.shippingAddress.fullName,
+    customerEmail: order.userId.email ?? "", // Not present in order object; add if available
+    customerPhoneNumber: order.billingAddress.phoneNumber,
+    customerBilling: `${order.billingAddress.addressLine1}${order.billingAddress.addressLine2 ? ', ' + order.billingAddress.addressLine2 : ''}, ${order.billingAddress.city}, ${order.billingAddress.state}, ${order.billingAddress.postalCode}`,
+    customerShipping: `${order.shippingAddress.addressLine1}${order.shippingAddress.addressLine2 ? ', ' + order.shippingAddress.addressLine2 : ''}, ${order.shippingAddress.city}, ${order.shippingAddress.state}, ${order.shippingAddress.postalCode}`,
+    payment_method: order.paymentInfo.method,
+    items: order.orderItems.map((item) => ({
+      name: item.name,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      discount: item.discount,
+      taxPercent: item.taxPercent,
+      price: item.sellingPrice,
+    })),
+    subtotal: order.pricing.itemsPrice,
+    discount: order.pricing.discountPrice,
+    gst: order.pricing.taxPrice,
+    couponDiscount: order.pricing.couponDiscount,
+    utsavDiscount: order.pricing.utsavDiscount,
+    shipping: order.pricing.shippingPrice,
+    total: order.pricing.totalPrice,
+  };
+
+  const fileName = await generateAndUploadInvoice(invoiceData); // Implement as needed
+  order.invoicePath = fileName;
+
+  // Save accordingly; if using Mongoose, do:
+  if (typeof order.save === "function") {
+    await order.save();
+  } else {
+    // Otherwise, update in your DB as needed
+    // e.g., await db.orders.update({ _id: order._id }, { $set: { invoicePath: fileName } });
+  }
+}
+
+
 const placeOrderv2 = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -151,7 +198,7 @@ const placeOrderv2 = async (req, res) => {
       },
 
       shippingAddress: req.body.shippingAddress,
-      billingAddress: req.body.billingAddress || null,
+      billingAddress: req.body.billingAddress || req.body.shippingAddress,
 
       paymentInfo: {
         method,
@@ -261,7 +308,7 @@ const updateStatusv2 = async (req, res) => {
     const orderId = req.body.orderId;
     const newStatus = req.body.status;
 
-    const orderDoc = await Order.findById(orderId).populate("userId");
+    const orderDoc = await Order.findById(orderId).populate({ path: "userId", model: "user" });
     if (!orderDoc) {
       return res.status(404).json({ success: false, message: "Order not found." });
     }
@@ -292,7 +339,7 @@ const updateStatusv2 = async (req, res) => {
         await sendSms("messageForOrderConfirmed", {
           phoneNumber: userData.phone,
           totalOrder: orderDoc.pricing.totalPrice,
-          itemName: orderDoc._id.toString(),
+          itemName: orderDoc.orderNumber.toString(),
         });
       }
     }
@@ -328,7 +375,7 @@ const updateStatusv2 = async (req, res) => {
       });
 
       if (userData) {
-        await sendSms("messageForOrderDelivary", { phoneNumber: userData.phone });
+         await sendSms("messageForOrderDelivary", { phoneNumber: userData.phone });
       }
     }
 

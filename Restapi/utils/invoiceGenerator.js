@@ -88,7 +88,7 @@ async function generateAndUploadInvoice(invoiceData) {
     doc.fontSize(12).fillColor(accentColor).font('Times-Bold').text('Bill To:', 50, 180);
     doc.fontSize(10).fillColor('#333333').font('Times-Bold').text(invoiceData.customerName, 50, doc.y + 5);
     doc.fontSize(9).fillColor('#666666').font('Times-Roman')
-      .text(invoiceData.customerAddress, 50, doc.y + 2, { width: 200 })
+      .text(invoiceData.customerBilling, 50, doc.y + 2, { width: 200 })
       .moveDown(0.5)
       .text(`Phone: ${invoiceData.customerPhoneNumber}`, 50, doc.y)
       .text(`Email: ${invoiceData.customerEmail || 'customer@example.com'}`, 50, doc.y + 2);
@@ -101,7 +101,7 @@ async function generateAndUploadInvoice(invoiceData) {
     doc.fontSize(12).fillColor(accentColor).font('Times-Bold').text('Ship To:', 300, 180);
     doc.fontSize(10).fillColor('#333333').font('Times-Bold').text(invoiceData.customerName, 300, doc.y + 5);
     doc.fontSize(9).fillColor('#666666').font('Times-Roman')
-      .text(`Address: ${invoiceData.shippingAddress || invoiceData.customerAddress}`, 300, doc.y + 2, { width: 200 });
+      .text(`Address: ${invoiceData.customerShipping || invoiceData.customerAddress}`, 300, doc.y + 2, { width: 200 });
 
     // Order details
     doc.fontSize(9).fillColor('#666666')
@@ -116,7 +116,7 @@ async function generateAndUploadInvoice(invoiceData) {
       .text('Item Description', 60, tableTop)
       .text('Qty', 300, tableTop, { width: 40, align: 'center' })
       .text('Rate', 340, tableTop, { width: 70, align: 'right' })
-      .text('Discount', 410, tableTop, { width: 70, align: 'center' })
+      .text('GST', 410, tableTop, { width: 70, align: 'center' })
       .text('Amount', 480, tableTop, { width: 60, align: 'center' });
 
     // Table rows
@@ -134,7 +134,7 @@ async function generateAndUploadInvoice(invoiceData) {
         .text(item.name, 60, y, { width: 170 })
         .text(item.quantity.toString(), 300, y, { width: 40, align: 'center' })
         .text(`${item.unitPrice.toFixed(2)}`, 340, y, { width: 70, align: 'right' })
-        .text(`${(item.discount || 0).toFixed(2)}`, 410, y, { width: 70, align: 'center' })
+        .text(`${(item.taxPercent || 0)+'%'}`, 410, y, { width: 70, align: 'center' })
         .text(`${(item.unitPrice * item.quantity).toFixed(2)}`, 480, y, { width: 60, align: 'center' });
 
       totalItems += item.quantity;
@@ -175,11 +175,11 @@ async function generateAndUploadInvoice(invoiceData) {
     const sgst = invoiceData.gst / 2;
     const gstPercent = ((invoiceData.gst / invoiceData.total) * 100).toFixed(2);
 
-    doc.text(`CGST (${(gstPercent / 2)}%):`, summaryX, y, { width: 100 })
+    doc.text(`CGST (incl) :`, summaryX, y, { width: 100 })
       .text(`${cgst.toFixed(2)}`, summaryX + 100, y, { width: 88, align: 'right' });
 
     y += 15;
-    doc.text(`CGST (${(gstPercent / 2)}%):`, summaryX, y, { width: 100 })
+    doc.text(`CGST (incl) :`, summaryX, y, { width: 100 })
       .text(`${sgst.toFixed(2)}`, summaryX + 100, y, { width: 88, align: 'right' });
 
     // Total

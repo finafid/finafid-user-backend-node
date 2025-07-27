@@ -991,13 +991,15 @@ async function invoiceGenerate(orderDetails) {
     customerName: orderDetails.userId.fullName,
     customerEmail: orderDetails.userId.email,
     customerPhoneNumber: orderDetails.userId.phone,
-    customerAddress: `${orderDetails.address.locality}, ${orderDetails.address.city}, ${orderDetails.address.state}, ${orderDetails.address.pinCode}`,
+    customerBilling: `${orderDetails.address.locality}, ${orderDetails.address.city}, ${orderDetails.address.state}, ${orderDetails.address.pinCode}`,
+    customerShipping: `${orderDetails.address.locality}, ${orderDetails.address.city}, ${orderDetails.address.state}, ${orderDetails.address.pinCode}`,
     payment_method: orderDetails.payment_method,
     items: orderDetails.orderItem.map((item) => ({
       name: item.productId.productGroup.name,
       quantity: item.itemQuantity,
       unitPrice: item.unitPrice,
       discount: item.discount,
+      taxPercent: item.taxPercent,
       price: item.sellingPrice,
     })),
 

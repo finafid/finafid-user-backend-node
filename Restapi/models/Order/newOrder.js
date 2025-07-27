@@ -125,7 +125,7 @@ const PaymentInfoSchema = new Schema(
     paymentStatus: {
       type: String,
       trim: true,
-      enum: ["Pending", "Completed", "Failed", "Refunded"],
+      enum: ["Initiated", "Pending", "Completed", "Failed", "Refunded"],
       default: "Pending"
     },
     gatewayResponse: {
