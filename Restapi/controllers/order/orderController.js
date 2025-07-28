@@ -222,7 +222,7 @@ const getOrderDetails = async (req, res) => {
           {
             $or: [
               { payment_complete: true },
-              { payment_method: { $in: ["COD", "Wallet"] } },
+              { payment_method: { $in: ["COD", "Wallet","PayU"] } },
             ],
           },
         ],

@@ -13,7 +13,7 @@ const Transaction = require("../../models/payment/paymentSc");
 const bcrypt = require("bcrypt");
 const { calculateCartPricing } = require("../../services/pricingService");
 const sendSms = require("./smsService");
-const {sendOrderConfirmEmail} = require("./emailService");
+const { sendOrderConfirmEmail } = require("./emailService");
 const { generateAndUploadInvoice } = require("../../utils/invoiceGenerator");
 const { getSocketInstance } = require("../../socket");
 
@@ -73,7 +73,7 @@ const placeOrderv2 = async (req, res) => {
 
 
     if (paymentInfo.method === "Wallet") {
-      
+
       const walletDoc = await Wallet.findOne({ userId }).session(session);
       if (!walletDoc) {
         throw new Error("No wallet found for this user.");
@@ -89,7 +89,7 @@ const placeOrderv2 = async (req, res) => {
           throw new Error("Incorrect wallet PIN.");
         }
       }
-      
+
     }
 
 
@@ -107,6 +107,7 @@ const placeOrderv2 = async (req, res) => {
       (req.body.paymentInfo.couponCode || "").trim().toUpperCase(),
       Boolean(req.body.paymentInfo.useReward)
     );
+
 
     // 2) Deduct stock inside the SAME session/transaction
     for (const item of cartItems) {
@@ -192,13 +193,13 @@ const placeOrderv2 = async (req, res) => {
         discountPrice: pricing.discount,
         couponDiscount: couponDiscount,
         utsavDiscount: pricing.utsavDiscount,
-        totalPrice: finalTotal,
-        rewardBalanceUsed: rewardUsed,
-        couponDiscount: couponDiscount,
+        rewardUsed:rewardUsed,
+        totalPrice: finalTotal
       },
 
       shippingAddress: req.body.shippingAddress,
       billingAddress: req.body.billingAddress || req.body.shippingAddress,
+
 
       paymentInfo: {
         method,
@@ -375,7 +376,7 @@ const updateStatusv2 = async (req, res) => {
       });
 
       if (userData) {
-         await sendSms("messageForOrderDelivary", { phoneNumber: userData.phone });
+        await sendSms("messageForOrderDelivary", { phoneNumber: userData.phone });
       }
     }
 
