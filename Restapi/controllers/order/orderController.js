@@ -999,7 +999,7 @@ async function invoiceGenerate(orderDetails) {
       quantity: item.itemQuantity,
       unitPrice: item.unitPrice,
       discount: item.discount,
-      taxPercent: item.taxPercent,
+      taxPercent: item.productId.taxPercent,
       price: item.sellingPrice,
     })),
 
