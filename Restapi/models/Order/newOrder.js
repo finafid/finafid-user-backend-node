@@ -232,7 +232,7 @@ const OrderSchema = new Schema(
       couponDiscount: { type: Number, required: true, min: 0 },
       discountPrice: { type: Number, required: true, min: 0 },
       utsavDiscount: { type: Number, required: true, min: 0 },
-      rewardUsed: { type: Number, required: true, min: 0 },
+      rewardUsed: { type: Number, required: false, min: 0 },
       totalPrice: { type: Number, required: true, min: 0 }
     },
 

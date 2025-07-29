@@ -6,7 +6,7 @@ const Wallet = require("../../models/Wallet/wallet");
 const WalletTransaction = require("../../models/Wallet/WalletTransaction");
 const Reward = require("../../models/reward/Reward");
 const RewardTransaction = require("../../models/reward/RewardTransaction");
-const User = require("../../models/auth/userSchema");
+const User = require("../../models/auth/userModel");
 const MembershipPlan = require("../../models/Utsab/MembershipPlan");
 const Referral = require("../../models/auth/referral");
 const Transaction = require("../../models/payment/paymentSc");
@@ -193,7 +193,7 @@ const placeOrderv2 = async (req, res) => {
         discountPrice: pricing.discount,
         couponDiscount: couponDiscount,
         utsavDiscount: pricing.utsavDiscount,
-        rewardUsed:rewardUsed,
+        rewardUsed: rewardUsed,
         totalPrice: finalTotal
       },
 
@@ -523,7 +523,231 @@ async function updateStatusDetails(orderId, status = "Pending") {
 }
 
 
+const getNewOrder = async (req, res) => {
+  try {
+    // Paging
+    const page = Math.max(Number(req.query.page) || 1, 1);
+    const limit = Math.min(Number(req.query.limit) || 20, 100);
+    const skip = (page - 1) * limit;
+
+    // Filters
+    const filters = {
+      isDeleted: { $ne: true },
+      userId: req.user._id
+    };
+
+    if (req.query.startDate || req.query.endDate) {
+      filters.createdAt = {};
+      if (req.query.startDate) filters.createdAt.$gte = new Date(req.query.startDate);
+      if (req.query.endDate) filters.createdAt.$lte = new Date(req.query.endDate);
+    }
+    if (req.query.status) filters.orderStatus = req.query.status;
+    if (req.query.paymentMethod) filters["paymentInfo.method"] = req.query.paymentMethod;
+
+    // Query orders with all items, but select only necessary fields
+    const [orders, total] = await Promise.all([
+      Order.find(filters)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .select(
+          "_id orderNumber createdAt orderStatus pricing paymentInfo.method orderItems"
+        )
+        .lean(),
+      Order.countDocuments(filters)
+    ]);
+
+    // For each order: Show first orderItem fields, and count others
+    const formattedOrders = orders.map(order => {
+      let firstItem = null, moreItemCount = 0;
+      if (order.orderItems && order.orderItems.length > 0) {
+        const item = order.orderItems[0];
+        firstItem = {
+          name: item.name,
+          sku: item.sku,
+          images: item.images || [],
+        };
+        moreItemCount = order.orderItems.length - 1;
+      }
+      return {
+        id: order._id,
+        orderNumber: order.orderNumber,
+        createdAt: order.createdAt,
+        orderStatus: order.orderStatus,
+        pricing: order.pricing,
+        paymentInfo: { method: order.paymentInfo.method },
+        firstItem,
+        moreItemCount
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+      orders: formattedOrders
+    });
+
+  } catch (err) {
+    console.error("getNewOrder error:", err);
+    res.status(500).json({
+      success: false,
+      message: err.message || "Internal server error"
+    });
+  }
+};
+
+
+// GET /api/orders/:orderId
+const getOrderDetailsID = async (req, res) => {
+  try {
+    const orderId = req.params.orderId;
+
+    const order = await Order.findOne({
+      _id: orderId,
+      userId: req.user._id,        // Only own orders!
+      isDeleted: { $ne: true }
+    })
+      .populate('userId', 'fullName email') // can remove, since user = self
+      .lean();
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    res.status(200).json({ success: true, order });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message || "Internal server error" });
+  }
+};
+
+// POST /api/orders/:orderId/cancel
+const cancelOrder = async (req, res) => {
+  try {
+    const orderId = req.params.orderId;
+
+    // Find & check order status
+    const order = await Order.findOne({
+      _id: orderId,
+      userId: req.user._id,
+      isDeleted: { $ne: true }
+    });
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found.' });
+    }
+
+    // Only allow cancel if not already shipping, shipped, delivered, cancelled, etc.
+    if (
+      ["Shipping", "Delivered", "Canceled", "Returned", "Refunded", "Completed"]
+        .includes(order.orderStatus)
+    ) {
+      return res.status(400).json({ success: false, message: "This order cannot be cancelled." });
+    }
+
+    // Update status
+    order.orderStatus = "Canceled";
+    order.statusHistory.push({
+      status: "Canceled", updatedAt: new Date(), note: req.body.note || "Cancelled by user."
+    });
+    await order.save();
+
+    res.status(200).json({ success: true, message: "Order cancelled.", orderStatus: order.orderStatus });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message || "Internal server error" });
+  }
+};
+
+// PUT /api/orders/:orderId/address
+const requestAddressChange = async (req, res) => {
+  try {
+    const orderId = req.params.orderId;
+    const newAddress = req.body.shippingAddress;
+
+    // Find the order
+    const order = await Order.findOne({
+      _id: orderId,
+      userId: req.user._id,
+      isDeleted: { $ne: true }
+    });
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found.' });
+    }
+
+    // Allow change only before Shipping state (do not allow after "Shipping" or later)
+    if (["Shipping", "Delivered", "Canceled", "Returned", "Refunded", "Completed"].includes(order.orderStatus)) {
+      return res.status(400).json({
+        success: false,
+        message: "Address change not allowed after order is shipped."
+      });
+    }
+
+    order.shippingAddress = newAddress;
+    order.statusHistory.push({
+      status: order.orderStatus,
+      updatedAt: new Date(),
+      note: "[User] requested address change."
+    });
+    await order.save();
+
+    res.status(200).json({ success: true, message: "Shipping address updated.", shippingAddress: order.shippingAddress });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message || "Internal server error" });
+  }
+};
+
+// PUT /api/orders/:orderId/payment-status
+const updatePaymentStatus = async (req, res) => {
+  try {
+    // Defensive: ensure auth context
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ success: false, message: 'Unauthorized: user context missing' });
+    }
+
+    const orderId = req.params.orderId;
+    const { isPaid, paymentStatus, paidAt, gatewayResponse, method } = req.body;
+
+    const order = await Order.findOne({
+      _id: orderId,
+      userId: req.user._id,         // Only the user's order!
+      isDeleted: { $ne: true },
+    });
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found." });
+    }
+
+    // Update payment info
+    if (typeof isPaid === "boolean") order.paymentInfo.isPaid = isPaid;
+    if (paymentStatus) order.paymentInfo.paymentStatus = paymentStatus;
+    if (paidAt) order.paymentInfo.paidAt = new Date(paidAt);
+    if (gatewayResponse !== undefined) order.paymentInfo.gatewayResponse = gatewayResponse;
+    if (order.paymentInfo.method === "COD" && method && method !== "COD") {
+      order.paymentInfo.method = method;
+    }
+    await order.save();
+
+    res.status(200).json({ success: true, message: "Payment status updated.", paymentInfo: order.paymentInfo });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message || "Internal server error" });
+  }
+};
+
+
+
+
+
+
+
 module.exports = {
   placeOrderv2,
   updateStatusv2,
+  getNewOrder,
+  getOrderDetailsID,
+  cancelOrder,
+  requestAddressChange,
+  updatePaymentStatus
 };
