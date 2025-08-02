@@ -18,7 +18,7 @@ const Wallet = require("../../models/Wallet/wallet");
 const walletTransaction = require("../../models/Wallet/WalletTransaction");
 
 const { getSocketInstance } = require("../order/socket");
-const { updateNewStatusv2 } = require("../order/orderControllerv2");
+const { updateStatusv2, updateNewStatusv2 } = require("../order/orderControllerv2");
 // Payment Request (Order or Wallet)
 const paymentDetail = async (req, res) => {
   try {
@@ -92,7 +92,7 @@ const newpaymentDetail = async (req, res) => {
       productinfo = "Order Payment";
     }
     console.log("Payment Mode:", orderId);
-    const hashString = `${PAYU_MERCHANT_SALT}|${status}|||||||||||${email}|${firstname}|${productinfo}|${amount}|${txnid}|${PAYU_MERCHANT_KEY}`;
+    const hashString = `${PAYU_MERCHANT_KEY}|${txnid}|${amount}|${productinfo}|${userDetails.fullName}|${userDetails.email}|||||||||||${PAYU_MERCHANT_SALT}`;
     const hash = crypto.createHash("sha512").update(hashString).digest("hex");
 
     const paymentData = {
@@ -213,6 +213,9 @@ const payuResponse = async (req, res) => {
       productinfo,
       hash
     } = req.body;
+
+    console.log("Incoming Payment Data:");
+    console.log({ txnid, status, amount, email, firstname, productinfo, hash });
 
     if (!txnid || !status || !amount || !email || !firstname || !productinfo || !hash) {
       return res.status(400).send("Invalid payment data");
