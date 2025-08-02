@@ -846,8 +846,8 @@ routs.post("/paymentDetail", auth, paymentDetail);
 routs.post("/newpaymentDetail", auth, newpaymentDetail);
 routs.post("/success", paymentResponse);
 routs.post("/failure", paymentResponse);
-routs.post("/payu-sucessfull", payuResponse);
-routs.post("/payu-failed", payuResponse);
+routs.post("/payusucessfull", payuResponse);
+routs.post("/payufailed", payuResponse);
 routs.get(
   "/getAllProductInformationBasedOnProduct",
   getAllProductInformationBasedOnProduct

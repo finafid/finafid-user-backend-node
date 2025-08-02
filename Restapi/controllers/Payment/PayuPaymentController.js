@@ -87,7 +87,7 @@ const newpaymentDetail = async (req, res) => {
       if (!orderDetails) {
         return res.status(400).json({ message: "Invalid order ID" });
       }
-      txnid = `${orderId}_${Date.now()}`;
+      txnid = orderId;
       productinfo = "Order Payment";
     }
     console.log("Payment Mode:", orderId);
@@ -216,7 +216,7 @@ const payuResponse = async (req, res) => {
     }
 
     if (status === "success") {
-        const orderId = txnid.split('_')[0];
+        const orderId = txnid;
         const updatedOrder = await NewOrder.findById(orderId);
 
         if (!updatedOrder) {
@@ -236,7 +236,9 @@ const payuResponse = async (req, res) => {
         await removeItemFromCart(updatedOrder.cartItems, updatedOrder.userId);
 
         return res.render("paymentSuccess");
-      }
+      } else {
+      return res.render("paymentFailure");
+    }
 
   } catch (error) {
     return res.status(500).send("Internal Server Error");
