@@ -17,6 +17,7 @@ const Wallet = require("../../models/Wallet/wallet");
 const walletTransaction = require("../../models/Wallet/WalletTransaction");
 
 const { getSocketInstance } = require("../order/socket");
+const { updateStatusv2 } = require("../order/orderControllerv2");
 // Payment Request (Order or Wallet)
 const paymentDetail = async (req, res) => {
   try {
@@ -52,8 +53,8 @@ const paymentDetail = async (req, res) => {
       firstname: userDetails.fullName,
       email: userDetails.email,
       phone: userDetails.phone.toString(),
-      surl: "https://finafid-backend-node-e762fd401cc5.herokuapp.com/api/v1/success",
-      furl: "https://finafid-backend-node-e762fd401cc5.herokuapp.com/api/v1/failure",
+      surl: "https://finafid.co.in/api/v1/success",
+      furl: "https://finafid.co.in/api/v1/failure",
       hash,
       service_provider: "payu_paisa",
       enforce_paymethod: paymentMode === "PAYU_UPI" ? "UPI" : "CC",
@@ -89,7 +90,7 @@ const newpaymentDetail = async (req, res) => {
       txnid = `${orderId}_${Date.now()}`;
       productinfo = "Order Payment";
     }
-     console.log("Payment Mode:", orderId);
+    console.log("Payment Mode:", orderId);
     const hashString = `${PAYU_MERCHANT_KEY}|${txnid}|${amount}|${productinfo}|${userDetails.fullName}|${userDetails.email}|||||||||||${PAYU_MERCHANT_SALT}`;
     const hash = crypto.createHash("sha512").update(hashString).digest("hex");
 
@@ -101,8 +102,8 @@ const newpaymentDetail = async (req, res) => {
       firstname: userDetails.fullName,
       email: userDetails.email,
       phone: userDetails.phone.toString(),
-      surl: "https://finafid-backend-node-e762fd401cc5.herokuapp.com/api/v1/success",
-      furl: "https://finafid-backend-node-e762fd401cc5.herokuapp.com/api/v1/failure",
+      surl: "https://finafid.co.in/api/v1/success",
+      furl: "https://finafid.co.in/api/v1/failure",
       hash,
       service_provider: "payu_paisa",
       enforce_paymethod: paymentMode === "PAYU_UPI" ? "UPI" : "CC",
@@ -178,7 +179,7 @@ const paymentResponse = async (req, res) => {
         ).populate("orderItem");
         const io = getSocketInstance();
         io.emit("orderStatusUpdated", {
-          orderId:updatedOrder._id,
+          orderId: updatedOrder._id,
           status: 'Confirmed',
         });
 
@@ -194,6 +195,49 @@ const paymentResponse = async (req, res) => {
     } else {
       return res.render("paymentFailure");
     }
+  } catch (error) {
+    return res.status(500).send("Internal Server Error");
+  }
+};
+
+const payuResponse = async (req, res) => {
+  try {
+    const { txnid, status, amount, email, firstname, productinfo, hash } = req.body;
+
+    if (!txnid || !status || !amount || !email || !firstname || !productinfo || !hash) {
+      return res.status(400).send("Invalid payment data");
+    }
+
+    const hashString = `${PAYU_MERCHANT_SALT}|${status}|||||||||||${email}|${firstname}|${productinfo}|${amount}|${txnid}|${PAYU_MERCHANT_KEY}`;
+    const generatedHash = crypto.createHash("sha512").update(hashString).digest("hex");
+
+    if (generatedHash !== hash) {
+      return res.status(400).send("Payment verification failed");
+    }
+
+    if (status === "success") {
+        const orderId = txnid.split('_')[0];
+        const updatedOrder = await NewOrder.findById(orderId);
+
+        if (!updatedOrder) {
+          return res.status(404).json({ success: false, message: "Order not found." });
+        }
+
+        updatedOrder.paymentInfo.isPaid = true;
+        updatedOrder.paymentInfo.paymentStatus = "Completed";
+        updatedOrder.paymentInfo.paidAt = new Date();
+        updatedOrder.paymentInfo.gatewayResponse = null;
+        await updatedOrder.save();
+
+        if (!updatedOrder) {
+          return res.status(400).send("Order not found");
+        }
+        await updateStatusv2(updatedOrder._id, "Confirmed");
+        await removeItemFromCart(updatedOrder.cartItems, updatedOrder.userId);
+
+        return res.render("paymentSuccess");
+      }
+
   } catch (error) {
     return res.status(500).send("Internal Server Error");
   }
@@ -242,5 +286,6 @@ module.exports = {
   paymentDetail,
   handlePaymentSuccess,
   handlePaymentFailure,
-  newpaymentDetail
+  newpaymentDetail,
+  payuResponse
 };
