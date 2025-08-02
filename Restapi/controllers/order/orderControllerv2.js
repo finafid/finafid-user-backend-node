@@ -504,6 +504,46 @@ const updateStatusv2 = async (req, res) => {
   }
 };
 
+const updateNewStatusv2 = async (orderId, status) => {
+  try {
+    const newStatus = status;
+
+    const orderDoc = await Order.findById(orderId).populate({ path: "userId", model: "user" });
+    if (!orderDoc) {
+      console.warn("Order not found:", orderId);
+      return;
+    }
+
+    orderDoc.orderStatus = newStatus;
+    orderDoc.statusHistory.push({
+      status: newStatus,
+      updatedAt: new Date(),
+      note: "", // You can optionally pass `note` from the calling function if needed
+    });
+    await orderDoc.save();
+
+    const io = getSocketInstance();
+    io.emit("orderStatusUpdated", { orderId: orderDoc.orderNumber, status: newStatus });
+
+    if (newStatus === "Confirmed") {
+      await sendOrderConfirmEmail(orderDoc, orderDoc.userId);
+      const userData = await User.findOne({ _id: orderDoc.userId._id, is_Active: true, blocking: false });
+      if (userData) {
+        await sendSms("messageForOrderConfirmed", {
+          phoneNumber: userData.phone,
+          totalOrder: orderDoc.pricing.totalPrice,
+          itemName: orderDoc.orderNumber.toString(),
+        });
+      }
+    }
+
+    console.log(`Order ${orderId} status updated to "${newStatus}"`);
+  } catch (err) {
+    console.error("updateNewStatusv2 error:", err.message);
+  }
+};
+
+
 
 
 /**
@@ -749,5 +789,6 @@ module.exports = {
   getOrderDetailsID,
   cancelOrder,
   requestAddressChange,
-  updatePaymentStatus
+  updatePaymentStatus,
+  updateNewStatusv2
 };

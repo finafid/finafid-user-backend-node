@@ -11,13 +11,14 @@ const {
 } = require("../../controllers/order/orderController");
 const {
   removeItemFromCart,
+  removeItemCart,
 } = require("../../controllers/cartAndwishlist/cartWlController");
 const Transaction = require("../../models/payment/paymentSc");
 const Wallet = require("../../models/Wallet/wallet");
 const walletTransaction = require("../../models/Wallet/WalletTransaction");
 
 const { getSocketInstance } = require("../order/socket");
-const { updateStatusv2 } = require("../order/orderControllerv2");
+const { updateStatusv2, updateNewStatusv2 } = require("../order/orderControllerv2");
 // Payment Request (Order or Wallet)
 const paymentDetail = async (req, res) => {
   try {
@@ -200,50 +201,58 @@ const paymentResponse = async (req, res) => {
   }
 };
 
+
 const payuResponse = async (req, res) => {
   try {
-    const { txnid, status, amount, email, firstname, productinfo, hash } = req.body;
+    const {
+      txnid,
+      status,
+      amount,
+      email,
+      firstname,
+      productinfo,
+      hash
+    } = req.body;
 
     if (!txnid || !status || !amount || !email || !firstname || !productinfo || !hash) {
       return res.status(400).send("Invalid payment data");
     }
 
-    const hashString = `${PAYU_MERCHANT_SALT}|${status}|||||||||||${email}|${firstname}|${productinfo}|${amount}|${txnid}|${PAYU_MERCHANT_KEY}`;
-    const generatedHash = crypto.createHash("sha512").update(hashString).digest("hex");
+    const hashString = `${PAYU_MERCHANT_KEY}|${txnid}|${amount}|${productinfo}|${firstname}|${email}|||||||||||${PAYU_MERCHANT_SALT}`;
+const generatedHash = crypto.createHash("sha512").update(hashString).digest("hex");
 
+    
     if (generatedHash !== hash) {
       return res.status(400).send("Payment verification failed");
     }
 
     if (status === "success") {
-        const orderId = txnid;
-        const updatedOrder = await NewOrder.findById(orderId);
+      const updatedOrder = await NewOrder.findOneAndUpdate({
+        _id: txnid
+      });
 
-        if (!updatedOrder) {
-          return res.status(404).json({ success: false, message: "Order not found." });
-        }
+      if (!updatedOrder) {
+        return res.status(404).json({ success: false, message: "Order not found." });
+      }
 
-        updatedOrder.paymentInfo.isPaid = true;
-        updatedOrder.paymentInfo.paymentStatus = "Completed";
-        updatedOrder.paymentInfo.paidAt = new Date();
-        updatedOrder.paymentInfo.gatewayResponse = null;
-        await updatedOrder.save();
-
-        if (!updatedOrder) {
-          return res.status(400).send("Order not found");
-        }
-        await updateStatusv2(updatedOrder._id, "Confirmed");
-        await removeItemFromCart(updatedOrder.cartItems, updatedOrder.userId);
-
-        return res.render("paymentSuccess");
-      } else {
+      updatedOrder.paymentInfo.isPaid = true;
+      updatedOrder.paymentInfo.paymentStatus = "Completed";
+      updatedOrder.paymentInfo.paidAt = new Date();
+      updatedOrder.paymentInfo.gatewayResponse = null;
+      await updatedOrder.save();
+      await updateNewStatusv2(updatedOrder._id, "Confirmed");
+      await removeItemCart(updatedOrder.orderItems, updatedOrder.userId);
+      return res.render("paymentSuccess");
+    } else {
       return res.render("paymentFailure");
     }
 
   } catch (error) {
+    console.error("💥 Internal Server Error:", error);
     return res.status(500).send("Internal Server Error");
   }
 };
+
 
 
 

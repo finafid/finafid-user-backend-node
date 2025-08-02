@@ -463,6 +463,27 @@ async function removeItemFromCart(productIdList, userId) {
   return { message: "Items removed from cart successfully" };
 }
 
+async function removeItemCart(productIdList, userId) {
+  const userCartDetails = await cart.findOne({ UserId: userId });
+
+  if (!userCartDetails) {
+    return { message: "Cart not found" };
+  }
+  // console.log({ userCartDetails: userCartDetails });
+  productIdList.forEach((element) => {
+    // console.log(element.productId._id);
+    const index = userCartDetails.cartItems.findIndex(
+      (item) => item.productId.toString() === element.variantId.toString()
+    );
+    if (index !== -1) {
+      // console.log(`Removing item with ID: ${element.productId._id}`);
+      userCartDetails.cartItems.splice(index, 1);
+    }
+  });
+  await userCartDetails.save();
+  return { message: "Items removed from cart successfully" };
+}
+
 const getNewCart = async (req, res) => {
   try {
     const userData = req.user;
@@ -741,5 +762,6 @@ module.exports = {
   clearCart,
   removeFromCart,
   removeItemFromCart,
-  validateCartForUtsav
+  validateCartForUtsav,
+  removeItemCart
 };
