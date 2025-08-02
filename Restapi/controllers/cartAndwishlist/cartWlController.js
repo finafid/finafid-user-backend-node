@@ -475,7 +475,7 @@ const getNewCart = async (req, res) => {
         populate: {
           path: "productId",
           select:
-            "unitPrice sellingPrice taxPercent utsavPrice shippingCost cod name attributes images",
+            "unitPrice sellingPrice taxPercent utsavPrice shippingCost cod name attributes images quantity",
          
         },
       });
