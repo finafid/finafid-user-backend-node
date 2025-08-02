@@ -5,6 +5,7 @@ const PAYU_BASE_URL = process.env.PAYU_BASE_URL;
 const User = require("../../models/auth/userSchema");
 const crypto = require("crypto");
 const Order = require("../../models/Order/orderSc");
+const NewOrder = require("../../models/Order/newOrder");
 const {
   updateStatusDetails,
 } = require("../../controllers/order/orderController");
@@ -59,6 +60,54 @@ const paymentDetail = async (req, res) => {
       pg: paymentMode === "PAYU_UPI" ? "UPI" : "CC",
     };
     console.log(paymentMode)
+
+    res.json({ paymentData, actionURL: `${PAYU_BASE_URL}/_payment` });
+  } catch (error) {
+    res.status(500).json({ message: "Internal Server Error: " + error.message });
+  }
+};
+
+const newpaymentDetail = async (req, res) => {
+  try {
+    const { amount, orderId, type, paymentMode } = req.body; // Accept paymentMode
+    const userDetails = await User.findById(req.user._id);
+
+    if (!amount || !userDetails) {
+      return res.status(400).json({ message: "Invalid request data" });
+    }
+
+    let txnid, productinfo;
+
+    if (type === "wallet") {
+      txnid = `wallet_${req.user._id}_${Date.now()}`;
+      productinfo = "Wallet Recharge";
+    } else {
+      const orderDetails = await NewOrder.findById(orderId);
+      if (!orderDetails) {
+        return res.status(400).json({ message: "Invalid order ID" });
+      }
+      txnid = `${orderId}_${Date.now()}`;
+      productinfo = "Order Payment";
+    }
+     console.log("Payment Mode:", orderId);
+    const hashString = `${PAYU_MERCHANT_KEY}|${txnid}|${amount}|${productinfo}|${userDetails.fullName}|${userDetails.email}|||||||||||${PAYU_MERCHANT_SALT}`;
+    const hash = crypto.createHash("sha512").update(hashString).digest("hex");
+
+    const paymentData = {
+      key: PAYU_MERCHANT_KEY,
+      txnid,
+      amount,
+      productinfo,
+      firstname: userDetails.fullName,
+      email: userDetails.email,
+      phone: userDetails.phone.toString(),
+      surl: "https://finafid-backend-node-e762fd401cc5.herokuapp.com/api/v1/success",
+      furl: "https://finafid-backend-node-e762fd401cc5.herokuapp.com/api/v1/failure",
+      hash,
+      service_provider: "payu_paisa",
+      enforce_paymethod: paymentMode === "PAYU_UPI" ? "UPI" : "CC",
+      pg: paymentMode === "PAYU_UPI" ? "UPI" : "CC",
+    };
 
     res.json({ paymentData, actionURL: `${PAYU_BASE_URL}/_payment` });
   } catch (error) {
@@ -193,4 +242,5 @@ module.exports = {
   paymentDetail,
   handlePaymentSuccess,
   handlePaymentFailure,
+  newpaymentDetail
 };

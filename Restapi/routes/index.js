@@ -371,6 +371,7 @@ const {
   paymentDetail,
   handlePaymentSuccess,
   handlePaymentFailure,
+  newpaymentDetail,
 } = require("../controllers/Payment/PayuPaymentController.js");
 
 const {
@@ -841,6 +842,7 @@ routs.get(
 
 routs.post("/paymentResponse", paymentResponse);
 routs.post("/paymentDetail", auth, paymentDetail);
+routs.post("/newpaymentDetail", auth, newpaymentDetail);
 routs.post("/success", paymentResponse);
 routs.post("/failure", paymentResponse);
 routs.get(
