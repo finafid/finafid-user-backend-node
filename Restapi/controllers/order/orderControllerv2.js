@@ -203,10 +203,10 @@ const placeOrderv2 = async (req, res) => {
 
       paymentInfo: {
         method,
-        isPaid: method !== "COD",
-        paidAt: method === "COD" ? null : new Date(),
-        transactionId: null,      // fill after creating Transaction
-        paymentStatus: method === "COD" ? "Pending" : "Completed",
+        isPaid: method === "PayU" ? false : method !== "COD",
+        paidAt: method === "COD" || method === "PayU" ? null : new Date(),
+        transactionId: null, // fill after creating Transaction
+        paymentStatus: method === "PayU" ? "Initiated" : method === "COD" ? "Pending" : "Completed",
         gatewayResponse: req.body.paymentInfo.gatewayResponse || null,
       },
 
