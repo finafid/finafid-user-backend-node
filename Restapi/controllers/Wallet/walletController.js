@@ -471,6 +471,100 @@ const updatePinRequirement = async (req, res, next) => {
   }
 };
 
+const getWalletTransactionsByDate = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    let { startDate, endDate, page = 1, limit = 10 } = req.query;
+
+    page = parseInt(page);
+    limit = parseInt(limit);
+    if (isNaN(page) || page < 1) page = 1;
+    if (isNaN(limit) || limit < 1) limit = 10;
+
+    const skip = (page - 1) * limit;
+
+    // Find the user's wallet
+    const walletDetails = await Wallet.findOne({ userId });
+    if (!walletDetails) {
+      return res.status(404).json({ success: false, message: "Wallet not found." });
+    }
+
+    // Build filter for Transaction find query
+    const filter = {
+      _id: { $in: walletDetails.transactions }, 
+    };
+
+    if (startDate) {
+      startDate = new Date(startDate);
+      startDate.setHours(0, 0, 0, 0);
+    }
+    if (endDate) {
+      endDate = new Date(endDate);
+      endDate.setHours(23, 59, 59, 999);
+    }
+
+    if (startDate && endDate) {
+      filter.date = { $gte: startDate, $lte: endDate };
+    } else if (startDate) {
+      filter.date = { $gte: startDate };
+    } else if (endDate) {
+      filter.date = { $lte: endDate };
+    }
+
+    // Query transactions with pagination
+    const transactions = await Transaction.find(filter)
+      .sort({ date: -1 })  // Assuming your transaction model uses ‘date’ field for timestamp
+      .skip(skip)
+      .limit(limit);
+
+    const totalTransactions = await Transaction.countDocuments(filter);
+
+    if (!transactions.length) {
+      return res.status(404).json({ success: false, message: "No transactions found." });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Transactions${startDate ? " from " + startDate.toISOString() : ""}${endDate ? " to " + endDate.toISOString() : ""}`,
+      page,
+      limit,
+      totalTransactions,
+      totalPages: Math.ceil(totalTransactions / limit),
+      transactions,
+    });
+
+  } catch (error) {
+    console.error("getWalletTransactionsByDate error:", error);
+    return res.status(500).json({ success: false, message: "Internal server error", error: error.message });
+  }
+};
+
+const getWalletBalance = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    let walletDetails = await Wallet.findOne({ userId });
+    
+    if (!walletDetails) {
+      // Create wallet if not exists
+      walletDetails = new Wallet({
+        userId,
+        balance: 0,
+        transactions: [],
+      });
+      await walletDetails.save();
+    }
+
+    return res.status(200).json({
+      success: true,
+      balance: walletDetails.balance,
+    });
+  } catch (error) {
+    console.error("getWalletBalance error:", error);
+    return res.status(500).json({ success: false, message: "Internal server error", error: error.message });
+  }
+};
+
+
 
 module.exports = {
   addBalance,
@@ -486,5 +580,7 @@ module.exports = {
   changeWalletPin,
   getResetQuestion,
   getPinRequirement,
-  updatePinRequirement
+  updatePinRequirement,
+  getWalletBalance,
+  getWalletTransactionsByDate
 };

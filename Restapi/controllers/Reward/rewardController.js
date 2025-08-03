@@ -103,6 +103,25 @@ const getRewardBalance = async (req, res) => {
   }
 };
 
+const getRewardPoint = async (req, res) => {
+  try {
+    let rewardDetails = await Reward.findOne({ userId: req.user._id });
+
+    if (!rewardDetails) {
+      rewardDetails = new Reward({
+        userId: req.user._id,
+        points: 0,
+      });
+      await rewardDetails.save();
+    }
+
+    return res.status(200).json({ points: rewardDetails.points });
+  } catch (error) {
+    res.status(500).json({ message: `${error.message} Internal Server Error` });
+  }
+};
+
+
 // Add Reward Points from Admin
 const addRewardFromAdmin = async (req, res) => {
     try {
@@ -186,6 +205,77 @@ const addRewardWallet = async (req, res) => {
   }
 };
 
+const getRewardTransactions = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    let { startDate, endDate, page = 1, limit = 10 } = req.query;
+
+    // Convert page and limit to numbers and apply defaults if invalid
+    page = parseInt(page);
+    limit = parseInt(limit);
+    if (isNaN(page) || page < 1) page = 1;
+    if (isNaN(limit) || limit < 1) limit = 10;
+
+    const skip = (page - 1) * limit;
+
+    // Find Reward document for user
+    const rewardDetails = await Reward.findOne({ userId });
+
+    if (!rewardDetails) {
+      return res.status(404).json({ success: false, message: "No reward details found for user." });
+    }
+
+    // Build transaction query filter dynamically based on date parameters
+    const transactionFilter = {
+      _id: { $in: rewardDetails.transactions },
+    };
+
+    if (startDate) {
+      startDate = new Date(startDate);
+      startDate.setHours(0, 0, 0, 0);
+    }
+
+    if (endDate) {
+      endDate = new Date(endDate);
+      endDate.setHours(23, 59, 59, 999);
+    }
+
+    if (startDate && endDate) {
+      transactionFilter.createdAt = { $gte: startDate, $lte: endDate };
+    } else if (startDate) {
+      transactionFilter.createdAt = { $gte: startDate };
+    } else if (endDate) {
+      transactionFilter.createdAt = { $lte: endDate };
+    }
+
+    // Query transactions with pagination
+    const transactions = await RewardTransaction.find(transactionFilter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const totalTransactions = await RewardTransaction.countDocuments(transactionFilter);
+
+    if (transactions.length === 0) {
+      return res.status(404).json({ success: false, message: "No transactions found matching the criteria." });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Transactions ${startDate ? "from " + startDate.toISOString() : ""} ${endDate ? "to " + endDate.toISOString() : ""}`.trim(),
+      page,
+      limit,
+      totalTransactions,
+      totalPages: Math.ceil(totalTransactions / limit),
+      transactions,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Internal server error", error: error.message });
+  }
+};
+
+
 module.exports = {
   addRewardPoints,
   showRewardTransactions,
@@ -194,4 +284,6 @@ module.exports = {
   getRewardBalanceFromAdmin,
   addRewardWallet,
   getTotalRewards,
+  getRewardTransactions,
+  getRewardPoint
 };

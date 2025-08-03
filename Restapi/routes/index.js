@@ -183,7 +183,9 @@ const {
   changeWalletPin,
   getResetQuestion,
   getPinRequirement,
-  updatePinRequirement
+  updatePinRequirement,
+  getWalletBalance,
+  getWalletTransactionsByDate
 } = require("../controllers/Wallet/walletController.js");
 const {
   totalIncome,
@@ -269,6 +271,8 @@ const {
   getRewardBalanceFromAdmin,
   addRewardWallet,
   getTotalRewards,
+  getRewardTransactions,
+  getRewardPoint
   
 } = require("../controllers/Reward/rewardController.js");
 
@@ -906,10 +910,17 @@ routs.get('/gethome', getAllComponents);
 routs.get('/home:id', getComponentById); 
 routs.put('/home:id', updateComponent); 
 routs.delete('/home:id', deleteComponent);
+
+//wallet
+routs.get("/getWalletBalance", auth, getWalletBalance)
+routs.get("/getWalletTransactions", auth, getWalletTransactionsByDate)
+
 //Reward
 routs.post("/addRewardPoints", auth, addRewardPoints);
 routs.get("/showRewardTransactions", auth, showRewardTransactions);
+routs.get("/rewardTransactions", auth, getRewardTransactions);
 routs.get("/getRewardBalance", auth, getRewardBalance);
+routs.get("/getRewardPoint", auth, getRewardPoint);
 routs.post("/addRewardFromAdmin", addRewardFromAdmin);
 routs.get("/getRewardBalanceFromAdmin/:userId", getRewardBalanceFromAdmin);
 routs.get("/addRewardWallet", addRewardWallet);
