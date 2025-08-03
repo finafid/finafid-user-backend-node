@@ -542,13 +542,14 @@ const getWalletTransactionsByDate = async (req, res) => {
 const getWalletBalance = async (req, res) => {
   try {
     const userId = req.user._id;
+    
     let walletDetails = await Wallet.findOne({ userId });
     
     if (!walletDetails) {
-      // Create wallet if not exists
       walletDetails = new Wallet({
         userId,
         balance: 0,
+        isPinRequired: false,
         transactions: [],
       });
       await walletDetails.save();
@@ -557,12 +558,18 @@ const getWalletBalance = async (req, res) => {
     return res.status(200).json({
       success: true,
       balance: walletDetails.balance,
+      isPinRequired: walletDetails.isPinRequired,
     });
   } catch (error) {
-    console.error("getWalletBalance error:", error);
-    return res.status(500).json({ success: false, message: "Internal server error", error: error.message });
+    console.error("getBalance error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
   }
 };
+
 
 
 
