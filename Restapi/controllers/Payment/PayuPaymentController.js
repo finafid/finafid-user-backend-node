@@ -229,7 +229,7 @@ const payuResponse = async (req, res) => {
       return res.status(400).send("Invalid payment data");
     }
 
-    // ✅ Correct REVERSE hash format for response verification
+    // ✅ Correct REVERSE hash format (used in PayU response verification)
     const hashString = `${PAYU_MERCHANT_SALT}|${status}|||||||||||${email}|${firstname}|${productinfo}|${amount}|${txnid}|${PAYU_MERCHANT_KEY}`;
     const generatedHash = crypto.createHash("sha512").update(hashString).digest("hex");
 
@@ -243,13 +243,9 @@ const payuResponse = async (req, res) => {
     }
 
     if (status === "success") {
-      console.log("✅ Payment successful. Finding order:", txnid);
+      console.log("✅ Payment successful. Finding order with ID:", txnid);
 
-      const updatedOrder = await NewOrder.findOneAndUpdate(
-        { _id: txnid },
-        {}, // this is necessary so it doesn't update anything if not needed
-        { new: true }
-      );
+      const updatedOrder = await NewOrder.findById(txnid); // ← Use this instead of findOneAndUpdate
 
       if (!updatedOrder) {
         console.log("❌ Order not found for txnid:", txnid);
@@ -259,7 +255,7 @@ const payuResponse = async (req, res) => {
       updatedOrder.paymentInfo.isPaid = true;
       updatedOrder.paymentInfo.paymentStatus = "Completed";
       updatedOrder.paymentInfo.paidAt = new Date();
-      updatedOrder.paymentInfo.gatewayResponse = req.body; // optional: store gateway payload
+      updatedOrder.paymentInfo.gatewayResponse = req.body;
       await updatedOrder.save();
 
       console.log("📝 Order updated. Updating order status...");
@@ -280,6 +276,7 @@ const payuResponse = async (req, res) => {
     return res.status(500).send("Internal Server Error");
   }
 };
+
 
 
 
