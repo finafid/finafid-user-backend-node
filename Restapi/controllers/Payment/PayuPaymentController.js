@@ -214,39 +214,64 @@ const payuResponse = async (req, res) => {
       hash
     } = req.body;
 
-    console.log("Incoming Payment Data:");
-    console.log({ txnid, status, amount, email, firstname, productinfo, hash });
+    console.log("💳 Incoming PayU Payment Data:", {
+      txnid,
+      status,
+      amount,
+      email,
+      firstname,
+      productinfo,
+      hash
+    });
 
     if (!txnid || !status || !amount || !email || !firstname || !productinfo || !hash) {
+      console.log("🚫 Missing required payment fields");
       return res.status(400).send("Invalid payment data");
     }
 
-    const hashString = `${PAYU_MERCHANT_KEY}|${txnid}|${amount}|${productinfo}|${firstname}|${email}|||||||||||${PAYU_MERCHANT_SALT}`;
-const generatedHash = crypto.createHash("sha512").update(hashString).digest("hex");
+    // ✅ Correct REVERSE hash format for response verification
+    const hashString = `${PAYU_MERCHANT_SALT}|${status}|||||||||||${email}|${firstname}|${productinfo}|${amount}|${txnid}|${PAYU_MERCHANT_KEY}`;
+    const generatedHash = crypto.createHash("sha512").update(hashString).digest("hex");
 
-    
+    console.log("🧮 Generated Hash String:", hashString);
+    console.log("🔑 Generated Hash:", generatedHash);
+    console.log("📦 Received Hash:", hash);
+
     if (generatedHash !== hash) {
+      console.log("❌ Hash mismatch! Payment verification failed.");
       return res.status(400).send("Payment verification failed");
     }
 
     if (status === "success") {
-      const updatedOrder = await NewOrder.findOneAndUpdate({
-        _id: txnid
-      });
+      console.log("✅ Payment successful. Finding order:", txnid);
+
+      const updatedOrder = await NewOrder.findOneAndUpdate(
+        { _id: txnid },
+        {}, // this is necessary so it doesn't update anything if not needed
+        { new: true }
+      );
 
       if (!updatedOrder) {
+        console.log("❌ Order not found for txnid:", txnid);
         return res.status(404).json({ success: false, message: "Order not found." });
       }
 
       updatedOrder.paymentInfo.isPaid = true;
       updatedOrder.paymentInfo.paymentStatus = "Completed";
       updatedOrder.paymentInfo.paidAt = new Date();
-      updatedOrder.paymentInfo.gatewayResponse = null;
+      updatedOrder.paymentInfo.gatewayResponse = req.body; // optional: store gateway payload
       await updatedOrder.save();
+
+      console.log("📝 Order updated. Updating order status...");
       await updateNewStatusv2(updatedOrder._id, "Confirmed");
+
+      console.log("🛒 Removing items from cart for user:", updatedOrder.userId);
       await removeItemCart(updatedOrder.orderItems, updatedOrder.userId);
+
+      console.log("🎉 Rendering payment success page");
       return res.render("paymentSuccess");
     } else {
+      console.log("⚠️ Payment failed. Rendering failure page.");
       return res.render("paymentFailure");
     }
 
@@ -255,6 +280,7 @@ const generatedHash = crypto.createHash("sha512").update(hashString).digest("hex
     return res.status(500).send("Internal Server Error");
   }
 };
+
 
 
 
