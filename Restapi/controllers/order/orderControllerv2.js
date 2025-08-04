@@ -777,6 +777,112 @@ const updatePaymentStatus = async (req, res) => {
 };
 
 
+async function adminGetOrders(req, res) {
+  try {
+    // 1. Parse pagination
+    const page = Math.max(Number(req.query.page) || 1, 1);
+    const limit = Math.min(Number(req.query.limit) || 20, 100);
+    const skip = (page - 1) * limit;
+
+    // 2. Build filters
+    const filters = { isDeleted: { $ne: true } };
+
+    // Date range filter (createdAt)
+    if (req.query.startDate || req.query.endDate) {
+      filters.createdAt = {};
+      if (req.query.startDate) filters.createdAt.$gte = new Date(req.query.startDate);
+      if (req.query.endDate) filters.createdAt.$lte = new Date(req.query.endDate);
+    }
+
+    // Status filter: allow comma separated or array
+    if (req.query.status) {
+      const statuses = Array.isArray(req.query.status)
+        ? req.query.status
+        : req.query.status.split(",").map(s => s.trim());
+      if (statuses.length)
+        filters.orderStatus = { $in: statuses };
+    }
+
+    // By order number (exact match)
+    if (req.query.orderNumber)
+      filters.orderNumber = req.query.orderNumber;
+
+    // By userId (optional: string or ObjectId)
+    if (req.query.userId) {
+      try {
+        filters.userId = mongoose.Types.ObjectId(req.query.userId);
+      } catch (_) {
+        return res.status(400).json({ success: false, message: "Invalid userId" });
+      }
+    }
+
+    // Additional filter: paymentMethod
+    if (req.query.paymentMethod)
+      filters["paymentInfo.method"] = req.query.paymentMethod;
+
+    // 3. Query total count and page
+    const [orders, total] = await Promise.all([
+      Order.find(filters)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate("userId", "fullName email phone") // Optionally populate
+        .select(
+          "_id orderNumber createdAt orderStatus pricing.paymentInfo pricing.totalPrice "
+          + "userId paymentInfo.method orderItems"
+        )
+        .lean(),
+      Order.countDocuments(filters)
+    ]);
+
+    // 4. Optionally, count by status for dashboard
+    const statusEnum = [
+      "Pending","Confirmed","Processing","Shipping","Delivered",
+      "Canceled","Returned","Refunded","Completed"
+    ];
+    const countsByStatus = await Order.aggregate([
+      { $match: { isDeleted: { $ne: true } } },
+      { $group: { _id: "$orderStatus", count: { $sum: 1 } } }
+    ]);
+    const statusStats = {};
+    statusEnum.forEach(sts => {
+      statusStats[sts] = (countsByStatus.find(d => d._id === sts) || {}).count || 0;
+    });
+
+    // 5. Response structure
+    res.status(200).json({
+      success: true,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+      stats: statusStats,
+      orders: orders.map(o => ({
+        id: o._id,
+        orderNumber: o.orderNumber,
+        createdAt: o.createdAt,
+        orderStatus: o.orderStatus,
+        totalPrice: o.pricing?.totalPrice,
+        paymentMethod: o.paymentInfo?.method,
+        user: o.userId
+          ? { id: o.userId._id, name: o.userId.fullName, email: o.userId.email, phone: o.userId.phone }
+          : null,
+        firstItem: o.orderItems && o.orderItems[0]
+          ? {
+              name: o.orderItems[0].name,
+              sku: o.orderItems[0].sku,
+              images: o.orderItems[0].images || [],
+            }
+          : null,
+        moreItemCount: o.orderItems ? o.orderItems.length - 1 : 0,
+      }))
+    });
+
+  } catch (err) {
+    console.error("adminGetOrders error:", err);
+    res.status(500).json({ success: false, message: err.message || "Internal server error" });
+  }
+}
 
 
 
@@ -790,5 +896,6 @@ module.exports = {
   cancelOrder,
   requestAddressChange,
   updatePaymentStatus,
-  updateNewStatusv2
+  updateNewStatusv2,
+  adminGetOrders
 };
