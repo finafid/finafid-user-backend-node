@@ -744,6 +744,138 @@ const approveLeaderRequest = async (req, res) => {
   }
 };
 
+const getReferredUserList = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    // Get current user's Referral document with referred_by and referred_user populated
+    const referralDoc = await Referral.findOne({ userId })
+      .populate({
+        path: 'referred_by',
+        select: 'fullName phone createdAt',
+      })
+      .populate({
+        path: 'referred_user',
+        select: 'fullName phone createdAt',
+      });
+
+    // Handle no Referral doc or no referred users case
+    if (!referralDoc) {
+      return res.status(200).json({
+        referredBy: null,
+        referralCode: currentUser ? currentUser.referralCode : null,
+        referredUsers: [],
+        total: 0,
+        page,
+        totalPages: 0,
+      });
+    }
+
+    const referredByUser = referralDoc.referred_by
+      ? {
+          name: referralDoc.referred_by.fullName,
+          number: referralDoc.referred_by.phone,
+          date: referralDoc.referred_by.createdAt,
+        }
+      : null;
+
+    const total = referralDoc.referred_user.length;
+    const totalPages = Math.ceil(total / limit);
+
+    // Paginate referred users array
+    const paginatedUsers = referralDoc.referred_user.slice(skip, skip + limit);
+
+    const referredUsers = paginatedUsers.map(user => ({
+      name: user.fullName,
+      number: user.phone,
+      date: user.createdAt,
+    }));
+
+    return res.status(200).json({
+      referralCode: referralDoc.code || null, // Added here
+      referredBy: referredByUser,
+      referredUsers,
+      total,
+      page,
+      totalPages,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message + ' Internal Server Error' });
+  }
+};
+
+const getReferralInfoForAdmin = async (req, res) => {
+  try {
+    const userId = req.params.userId; // admin provides any user ID here
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    // Find the Referral document for requested user with referred_by and referred_user populated
+    const referralDoc = await Referral.findOne({ userId })
+      .populate({
+        path: 'referred_by',
+        select: '_id fullName phone createdAt', // info about who referred this user
+      })
+      .populate({
+        path: 'referred_user',
+        select: '_id fullName phone createdAt',
+      });
+
+    if (!referralDoc) {
+      return res.status(200).json({
+        referredBy: null,
+        referredUsers: [],
+        total: 0,
+        page,
+        totalPages: 0,
+      });
+    }
+
+    // Prepare the referrer info
+    const referredByUser = referralDoc.referred_by
+      ? {
+          id: referralDoc.referred_by._id,
+          name: referralDoc.referred_by.fullName,
+          number: referralDoc.referred_by.phone,
+          date: referralDoc.referred_by.createdAt,
+        }
+      : null;
+
+    const total = referralDoc.referred_user.length;
+    const totalPages = Math.ceil(total / limit);
+
+    // Paginate referred users array
+    const paginatedUsers = referralDoc.referred_user.slice(skip, skip + limit);
+
+    // Map to response format
+    const referredUsers = paginatedUsers.map(user => ({
+      id: user._id,
+      name: user.fullName,
+      number: user.phone,
+      date: user.createdAt,
+    }));
+
+    return res.status(200).json({
+      referredBy: referredByUser,
+      referredUsers,
+      total,
+      page,
+      totalPages,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message + ' Internal Server Error' });
+  }
+};
+
+
+
+
+
+
 module.exports = {
   isUtsabApplicable,
   addMembershipPlan,
@@ -764,5 +896,7 @@ module.exports = {
   approveLeaderRequest,
   getAllApprovedLeader,
   getLeaderDetails,
-  getMemberByIdadmin
+  getMemberByIdadmin,
+  getReferredUserList,
+  getReferralInfoForAdmin
 };
