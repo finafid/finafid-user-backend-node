@@ -807,6 +807,30 @@ const getReferredUserList = async (req, res) => {
   }
 };
 
+const getReferCode = async (req, res) => {
+  try {
+    const userId = req.user._id;
+  
+
+    // Get current user's Referral document with referred_by and referred_user populated
+    const referralDoc = await Referral.findOne({ userId })
+      
+
+    // Handle no Referral doc or no referred users case
+    if (!referralDoc) {
+      return res.status(200).json({
+        referralCode: null,
+      });
+    }
+
+    return res.status(200).json({
+      referralCode: referralDoc.code || null
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message + ' Internal Server Error' });
+  }
+};
+
 const getReferralInfoForAdmin = async (req, res) => {
   try {
     const userId = req.params.userId; // admin provides any user ID here
@@ -898,5 +922,6 @@ module.exports = {
   getLeaderDetails,
   getMemberByIdadmin,
   getReferredUserList,
-  getReferralInfoForAdmin
+  getReferralInfoForAdmin,
+  getReferCode
 };

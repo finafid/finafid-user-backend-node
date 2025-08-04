@@ -324,7 +324,8 @@ const {
   getAllApprovedLeader,
   getMemberByIdadmin,
   getReferredUserList,
-  getReferralInfoForAdmin
+  getReferralInfoForAdmin,
+  getReferCode
 } = require("../controllers/Utsab/UtsabController.js");
 const {
   getAllReviews,
@@ -766,9 +767,10 @@ routs.post("/applyForBorrowMember", auth, addBorrowMember);
 routs.post("/addLeader/:userId", addLeader);
 
 routs.post("/getLeaderDetails/:userId", getLeaderDetails);
-routs.get("/getAllBorrowLIst", getAllBorrowLIst);
+routs.get("/getAllBorrowLIst", getAllBorrowLIst);getReferCode
 routs.get("/getAllLeader", getAllLeader);
 routs.get("/getAllMemberList", getAllMemberList);
+routs.get("/getReferCode",auth, getReferCode);
 routs.post("/addBorrowMembershipPlan", addBorrowMembershipPlan);
 routs.get("/getReferralDetails/:userId", getReferralDetailsSingle);
 routs.get("/getReferralInfoForAdmin/:userId", getReferralInfoForAdmin);
