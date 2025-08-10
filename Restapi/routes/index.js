@@ -121,7 +121,8 @@ const {
   getNewOrder,
   getOrderDetailsID, cancelOrder, requestAddressChange, updatePaymentStatus,
   adminGetOrders,
-  getOrderDetailsByAdmin
+  getOrderDetailsByAdmin,
+  updateNewStatusv2
 } = require("../controllers/order/orderControllerv2.js");
 const { upload, uploadImageToS3 } = require("../utils/fileUpload");
 
@@ -600,6 +601,7 @@ routs.get("/getOrderById/:orderId", auth, getOrderById);
 routs.post("/updateStatus/:orderId", auth, updateStatus);
 routs.get("/getOrderByIdAdmin/:orderId", getOrderById);
 routs.post("/updateStatusAdmin/:orderId", updateStatus);
+routs.post("/updateNewStatus/:orderId",authad, updateStatusv2);
 routs.post("/getOrderByStatus", auth, getOrderByStatus);
 routs.get("/getAllOrder",authad, getAllOrder);
 routs.get("/sales/percentage-by-category", getSalesPercentageByCategory);

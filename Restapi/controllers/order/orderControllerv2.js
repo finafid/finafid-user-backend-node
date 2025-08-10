@@ -306,9 +306,8 @@ const placeOrderv2 = async (req, res) => {
  */
 const updateStatusv2 = async (req, res) => {
   try {
-    const orderId = req.body.orderId;
+    const orderId = req.params.orderId;
     const newStatus = req.body.status;
-
     const orderDoc = await Order.findById(orderId).populate({ path: "userId", model: "user" });
     if (!orderDoc) {
       return res.status(404).json({ success: false, message: "Order not found." });
