@@ -120,7 +120,8 @@ const {
   updateStatusv2,
   getNewOrder,
   getOrderDetailsID, cancelOrder, requestAddressChange, updatePaymentStatus,
-  adminGetOrders
+  adminGetOrders,
+  getOrderDetailsByAdmin
 } = require("../controllers/order/orderControllerv2.js");
 const { upload, uploadImageToS3 } = require("../utils/fileUpload");
 
@@ -589,7 +590,8 @@ routs.post("/updateUserOrderStatus/:orderId", auth, updateStatusv2);
 routs.get("/getOrderDetails", auth, getOrderDetails);
 // new orders v2 
 routs.get("/getNewOrders", auth, getNewOrder);
-routs.get("/getAllNewOrders", adminGetOrders);
+routs.get("/getAllNewOrders",authad, adminGetOrders);
+routs.get("/getOrderById/:orderId",authad, getOrderDetailsByAdmin);
 routs.get("/orders/:orderId", auth, getOrderDetailsID);
 routs.post("/orders/:orderId/cancel", auth, cancelOrder);
 routs.put("/orders/:orderId/address", auth, requestAddressChange);

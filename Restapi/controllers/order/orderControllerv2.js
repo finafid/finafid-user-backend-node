@@ -662,6 +662,26 @@ const getOrderDetailsID = async (req, res) => {
     res.status(500).json({ success: false, message: err.message || "Internal server error" });
   }
 };
+const getOrderDetailsByAdmin = async (req, res) => {
+  try {
+    const orderId = req.params.orderId;
+
+    const order = await Order.findOne({
+      _id: orderId,     
+      isDeleted: { $ne: true }
+    })
+      .populate('userId', 'fullName email') // can remove, since user = self
+      .lean();
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    res.status(200).json({ success: true, order });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message || "Internal server error" });
+  }
+};
 
 // POST /api/orders/:orderId/cancel
 const cancelOrder = async (req, res) => {
@@ -897,5 +917,6 @@ module.exports = {
   requestAddressChange,
   updatePaymentStatus,
   updateNewStatusv2,
-  adminGetOrders
+  adminGetOrders,
+  getOrderDetailsByAdmin
 };
