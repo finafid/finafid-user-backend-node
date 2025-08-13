@@ -785,8 +785,14 @@ const getReferredUserList = async (req, res) => {
     const total = referralDoc.referred_user.length;
     const totalPages = Math.ceil(total / limit);
 
-    // Paginate referred users array
-    const paginatedUsers = referralDoc.referred_user.slice(skip, skip + limit);
+    // --- CHANGE IS HERE ---
+    // Reverse the array to show the most recent (last) users first.
+    // We use .slice() to create a shallow copy before reversing to avoid mutating the original document.
+    const reversedReferredUsers = referralDoc.referred_user.slice().reverse();
+
+    // Paginate the REVERSED users array
+    const paginatedUsers = reversedReferredUsers.slice(skip, skip + limit);
+    // --- END OF CHANGE ---
 
     const referredUsers = paginatedUsers.map(user => ({
       name: user.fullName,
@@ -795,9 +801,9 @@ const getReferredUserList = async (req, res) => {
     }));
 
     return res.status(200).json({
-      referralCode: referralDoc.code || null, // Added here
+      referralCode: referralDoc.code || null,
       referredBy: referredByUser,
-      referredUsers,
+      referredUsers, // This array is now in last-to-first order for the given page
       total,
       page,
       totalPages,
@@ -806,6 +812,7 @@ const getReferredUserList = async (req, res) => {
     return res.status(500).json({ message: error.message + ' Internal Server Error' });
   }
 };
+
 
 const getReferCode = async (req, res) => {
   try {
