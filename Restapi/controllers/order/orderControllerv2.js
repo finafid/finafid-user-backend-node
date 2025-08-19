@@ -150,11 +150,12 @@ const placeOrderv2 = async (req, res) => {
     // 5) Fetch user's is_utsav flag
     const userDoc = await User.findById(userId).session(session);
     const isUtsavUser = Boolean(userDoc.is_utsav);
-
+    
     // 6) Compute expected delivery
     const expectedDeliveryDate = new Date();
     expectedDeliveryDate.setDate(expectedDeliveryDate.getDate() + 6);
-
+    const initialStatus = method === "COD" ? "Confirmed" : "Pending";
+     
     // 7) Build the new Order document
     const newOrder = new Order({
       orderNumber: `FD${Date.now().toString().slice(-6)}${new Date().toISOString().slice(0, 10).replace(/-/g, "")}`,
@@ -219,7 +220,7 @@ const placeOrderv2 = async (req, res) => {
         deliveredAt: null,
       },
 
-      orderStatus: "Pending",
+      orderStatus: initialStatus,
       statusHistory: [],
 
       isActive: true,
@@ -280,11 +281,7 @@ const placeOrderv2 = async (req, res) => {
     session.endSession();
 
     // 12) Push initial statusHistory entry (“Pending”)
-    if (method === "COD"){
-       await updateStatusDetails(newOrder._id, "Confirmed");
-    } else {
-       await updateStatusDetails(newOrder._id, "Pending");
-    }
+    await updateStatusDetails(newOrder._id, "Pending");
 
     return res.status(201).json({
       success: true,
@@ -552,7 +549,7 @@ const updateNewStatusv2 = async (orderId, status) => {
 /**
  * Push initial statusHistory entry (“Pending”) if none exists
  */
-async function updateStatusDetails(orderId, status) {
+async function updateStatusDetails(orderId, status = "Pending") {
   try {
     const orderDoc = await Order.findById(orderId);
     if (!orderDoc) return;
