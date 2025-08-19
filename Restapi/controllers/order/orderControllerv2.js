@@ -552,7 +552,7 @@ const updateNewStatusv2 = async (orderId, status) => {
 /**
  * Push initial statusHistory entry (“Pending”) if none exists
  */
-async function updateStatusDetails(orderId, status = "Pending") {
+async function updateStatusDetails(orderId, status) {
   try {
     const orderDoc = await Order.findById(orderId);
     if (!orderDoc) return;
