@@ -280,7 +280,11 @@ const placeOrderv2 = async (req, res) => {
     session.endSession();
 
     // 12) Push initial statusHistory entry (“Pending”)
-    await updateStatusDetails(newOrder._id, "Pending");
+    if (method === "COD"){
+       await updateStatusDetails(newOrder._id, "Confirmed");
+    } else {
+       await updateStatusDetails(newOrder._id, "Pending");
+    }
 
     return res.status(201).json({
       success: true,
