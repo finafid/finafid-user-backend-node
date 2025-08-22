@@ -26,7 +26,7 @@ const appupdate = async (req, res) => {
       success: true,
       currentVersion,
       latestVersion,
-      updateAvailable,
+      updateAvailable:false,//please change it letter to updateAvailable
     });
   } catch (err) {
     console.error('Version check error:', err);
