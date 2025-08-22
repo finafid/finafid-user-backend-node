@@ -16,6 +16,7 @@ const sendSms = require("./smsService");
 const { sendOrderConfirmEmail } = require("./emailService");
 const { generateAndUploadInvoice } = require("../../utils/invoiceGenerator");
 const { getSocketInstance } = require("../../socket");
+const MemberShipPlan = require("../../models/Utsab/MembershipPlan");
 
 
 async function invoiceGenerate(order) {
@@ -150,12 +151,12 @@ const placeOrderv2 = async (req, res) => {
     // 5) Fetch user's is_utsav flag
     const userDoc = await User.findById(userId).session(session);
     const isUtsavUser = Boolean(userDoc.is_utsav);
-    
+
     // 6) Compute expected delivery
     const expectedDeliveryDate = new Date();
     expectedDeliveryDate.setDate(expectedDeliveryDate.getDate() + 6);
     const initialStatus = method === "COD" ? "Confirmed" : "Pending";
-     
+
     // 7) Build the new Order document
     const newOrder = new Order({
       orderNumber: `FD${Date.now().toString().slice(-6)}${new Date().toISOString().slice(0, 10).replace(/-/g, "")}`,
@@ -537,6 +538,178 @@ const updateNewStatusv2 = async (orderId, status) => {
       }
     }
 
+    if (newStatus == "Completed") {
+      try {
+
+        // console.log(orderDetail.userId._id);
+        const walletDetails = await Wallet.findOne({
+          userId: new ObjectId(orderDoc.userId._id),
+        });
+        const RewardDetails = await Reward.findOne({
+          userId: new ObjectId(orderDoc.userId._id),
+        });
+
+        const planDetails = await MemberShipPlan.findOne({
+          identity: "PLAN_IDENTITY",
+        });
+
+        const userData = await User.findOne({
+          _id: orderDoc.userId._id,
+          is_Active: true,
+          blocking: false,
+        });
+
+        if (!walletDetails || !planDetails || !userData) {
+          return res.status(404).json({
+            message: "Required details not found",
+            success: false,
+          });
+        }
+        const utsavTotalPrice = orderDoc.orderItems
+          .reduce((total, item) => total + item.sellingPrice * item.quantity, 0);
+
+        if (userData.is_utsav === false &&
+          utsavTotalPrice >= planDetails.amount
+        ) {
+
+          userData.is_utsav = true;
+          await userData.save();
+          await sendSms("messageForUtsavMember", { phoneNumber: userData.phone });
+          // Check if user was referred and it is the first purchase
+          const referralDetails = await Referral.findOne({
+            userId: orderDoc.userId._id,
+          });
+          // console.log({ referralDetails });
+
+          if (referralDetails && referralDetails.referred_by) {
+            const referredUserData = await User.findById(
+              referralDetails.referred_by
+            );
+            // console.log({ referredUserData });
+
+            if (
+              referredUserData &&
+              referredUserData.is_utsav === true &&
+              userData.firstOrderComplete === false &&
+              orderDoc.orderStatus !== "Completed"
+            ) {
+              // Reward ₹5 to the referrer
+              let walletDetailsOfReferredUser = await Reward.findOne({
+                userId: referralDetails.referred_by,
+              });
+
+              if (walletDetailsOfReferredUser) {
+                walletDetailsOfReferredUser.points += 5;
+                const newRewardTransaction = new RewardTransaction.findOne({
+                  userId: referralDetails.referred_by,
+                  type: "credit",
+                  transaction_message: "Referral Reward for First Purchase",
+                  points: 5,
+                  date: Date.now(),
+                });
+                // console.log(newWalletTransaction);
+                await newRewardTransaction.save();
+                walletDetailsOfReferredUser.transactions.push(
+                  newRewardTransaction
+                );
+                await walletDetailsOfReferredUser.save();
+
+                // Mark user's first order as complete
+                userData.firstOrderComplete = true;
+                await userData.save();
+              }
+            }
+          }
+        }
+
+        const referralDetails = await Referral.findOne({
+          userId: orderDoc.userId._id,
+        });
+
+        if (referralDetails && referralDetails.referred_by) {
+          const referredUserData = await User.findById(
+            referralDetails.referred_by
+          );
+
+          if (referredUserData && referredUserData.is_utsav === true) {
+            let walletDetailsOfReferredUser = await Wallet.findOne({
+              userId: referralDetails.referred_by,
+            });
+            let rewardDetailsOfReferredUser = await Reward.findOne({
+              userId: referralDetails.referred_by,
+            });
+            if (
+              walletDetailsOfReferredUser &&
+              userData.firstOrderComplete == false
+            ) {
+              // console.log({ walletDetailsOfReferredUser });
+
+              // Update referred user's wallet balance
+              rewardDetailsOfReferredUser.points += planDetails.reward;
+              const newRewardTransaction = new RewardTransaction({
+                userId: referralDetails.referred_by,
+                type: "credit",
+                transaction_message: "Referral Reward",
+                points: planDetails.reward,
+                date: Date.now(),
+              });
+              // console.log(newWalletTransaction);
+              await newRewardTransaction.save();
+              rewardDetailsOfReferredUser.transactions.push(
+                newRewardTransaction
+              );
+              await rewardDetailsOfReferredUser.save();
+              userData.firstOrderComplete = true;
+              await userData.save();
+            } else if (
+              rewardDetailsOfReferredUser &&
+              userData.firstOrderComplete == true &&
+              userData.is_utsav === true
+            ) {
+              rewardDetailsOfReferredUser.points += orderDoc.utsavReward;
+              const newRewardTransaction = new RewardTransaction({
+                userId: referralDetails.referred_by,
+                type: "credit",
+                transaction_message: "Referral Reward",
+                points: orderDoc.utsavReward,
+                date: Date.now(),
+              });
+              await newRewardTransaction.save();
+              rewardDetailsOfReferredUser.transactions.push(
+                newRewardTransaction
+              );
+              await rewardDetailsOfReferredUser.save();
+            } else {
+              RewardDetails.points += orderDoc.basicReward;
+              const newRewardTransaction = new RewardTransaction({
+                userId: userData._id,
+                type: "credit",
+                transaction_message: "Referral Reward",
+                points: orderDoc.basicReward,
+                date: Date.now(),
+              });
+              await newRewardTransaction.save();
+              RewardDetails.transactions.push(newRewardTransaction);
+              await RewardDetails.save();
+              return res.status(200).json({
+                message: "Rewards processed successfully",
+                success: true,
+              });
+            }
+          }
+        }
+        // Add basic reward to the user's wallet
+
+      } catch (err) {
+        console.error("Error processing rewards:", err.message);
+        return res.status(500).json({
+          message: "Internal server error",
+          success: false,
+          error: err.message,
+        });
+      }
+    }
+
     console.log(`Order ${orderId} status updated to "${newStatus}"`);
   } catch (err) {
     console.error("updateNewStatusv2 error:", err.message);
@@ -667,7 +840,7 @@ const getOrderDetailsByAdmin = async (req, res) => {
     const orderId = req.params.orderId;
 
     const order = await Order.findOne({
-      _id: orderId,     
+      _id: orderId,
       isDeleted: { $ne: true }
     })
       .populate('userId', 'fullName email') // can remove, since user = self
@@ -857,8 +1030,8 @@ async function adminGetOrders(req, res) {
 
     // 4. Optionally, count by status for dashboard
     const statusEnum = [
-      "Pending","Confirmed","Processing","Shipping","Delivered",
-      "Canceled","Returned","Refunded","Completed"
+      "Pending", "Confirmed", "Processing", "Shipping", "Delivered",
+      "Canceled", "Returned", "Refunded", "Completed"
     ];
     const countsByStatus = await Order.aggregate([
       { $match: { isDeleted: { $ne: true } } },
@@ -889,10 +1062,10 @@ async function adminGetOrders(req, res) {
           : null,
         firstItem: o.orderItems && o.orderItems[0]
           ? {
-              name: o.orderItems[0].name,
-              sku: o.orderItems[0].sku,
-              images: o.orderItems[0].images || [],
-            }
+            name: o.orderItems[0].name,
+            sku: o.orderItems[0].sku,
+            images: o.orderItems[0].images || [],
+          }
           : null,
         moreItemCount: o.orderItems ? o.orderItems.length - 1 : 0,
       }))
